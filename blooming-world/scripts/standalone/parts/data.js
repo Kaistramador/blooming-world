@@ -41,6 +41,12 @@ const I18N_RU = {
   'piggy.collect': 'Забрать 🪙 {n}', 'piggy.progress': 'Побед до вскрытия: {n}',
   'piggy.deposit': '🐷 +{n} в копилку ({w}/{m})', 'piggy.ready': 'Копилка готова к вскрытию!',
   'piggy.hint': 'Каждая победа кладёт монеты в копилку',
+  'daily.title': 'Уровень дня', 'daily.sub': '×2 награда · новый каждый день',
+  'daily.play': 'Играть · ур. {n}', 'daily.done': 'Пройден · ждём завтра',
+  'daily.badge': '📅 Уровень дня ×2', 'daily.weekendHint': 'В выходные ивенты: ×2 монеты и каскад-бонус',
+  'event.weekend': 'Ивент выходных', 'event.coinsBadge': '🪙 Золотые выходные ×2',
+  'event.cascadeBadge': '🌊 Каскад ×{n}: +{c} 🪙', 'event.today': 'Только сегодня',
+  'shop.seasonal': 'Сезонная коллекция', 'shop.seasonalSub': '{icon} {season} · смена по календарю', 'shop.seasonTag': 'Сезон',
   'shop.title': 'Магазин', 'shop.coins': 'Монеты',
   'shop.tab.boosters': 'Бусты', 'shop.tab.bank': 'Банк', 'shop.tab.skins': 'Скины',
   'shop.tab.avatars': 'Аватары', 'shop.tab.frames': 'Рамки', 'shop.tab.names': 'Имя', 'shop.tab.effects': 'Эффекты',
@@ -106,6 +112,12 @@ const I18N_EN = {
   'piggy.collect': 'Collect 🪙 {n}', 'piggy.progress': 'Wins until opening: {n}',
   'piggy.deposit': '🐷 +{n} to the piggy bank ({w}/{m})', 'piggy.ready': 'Piggy bank is ready to open!',
   'piggy.hint': 'Every win drops coins into the piggy bank',
+  'daily.title': 'Daily Level', 'daily.sub': '×2 reward · new every day',
+  'daily.play': 'Play · level {n}', 'daily.done': 'Completed · see you tomorrow',
+  'daily.badge': '📅 Daily level ×2', 'daily.weekendHint': 'Weekend events: ×2 coins and cascade bonus',
+  'event.weekend': 'Weekend event', 'event.coinsBadge': '🪙 Golden Weekend ×2',
+  'event.cascadeBadge': '🌊 Cascade ×{n}: +{c} 🪙', 'event.today': 'Today only',
+  'shop.seasonal': 'Seasonal Collection', 'shop.seasonalSub': '{icon} {season} · rotates with the calendar', 'shop.seasonTag': 'Season',
   'shop.title': 'Shop', 'shop.coins': 'Coins',
   'shop.tab.boosters': 'Boosters', 'shop.tab.bank': 'Bank', 'shop.tab.skins': 'Skins',
   'shop.tab.avatars': 'Avatars', 'shop.tab.frames': 'Frames', 'shop.tab.names': 'Name', 'shop.tab.effects': 'Effects',
@@ -352,7 +364,52 @@ const EFFECTS = [
   { id: 'ne-fire', kind: 'name', visual: 'fire', price: 300, name: { ru: 'Пламя', en: 'Flame' } },
   { id: 'ne-starlight', kind: 'name', visual: 'starlight', price: 450, name: { ru: 'Звёздный свет', en: 'Starlight' } },
 ];
-const TILE_EFFECTS = EFFECTS.filter((e) => e.kind === 'tile');
+/* ---------------- Волна 4: сезонная косметика (4 сезона × 6 предметов) ---------------- */
+GEM_SKINS.push(
+  { id: 'season-autumn', name: { ru: 'Осенний сад', en: 'Autumn Garden' }, price: 800, season: 'autumn', glyphs: ['🍁', '🌽', '🌰', '🫐', '🍇', '🎃'] },
+  { id: 'season-winter', name: { ru: 'Зимние узоры', en: 'Winter Patterns' }, price: 800, season: 'winter', glyphs: ['🎅', '⭐', '🎄', '❄️', '🔮', '🍊'] },
+  { id: 'season-spring', name: { ru: 'Весенний цвет', en: 'Spring Bloom' }, price: 800, season: 'spring', glyphs: ['🌷', '🌼', '🌱', '💧', '🦋', '🌸'] },
+  { id: 'season-summer', name: { ru: 'Летний бриз', en: 'Summer Breeze' }, price: 800, season: 'summer', glyphs: ['🍉', '🌞', '🌴', '🌊', '🐚', '🍍'] },
+);
+AVATARS.push(
+  { id: 'av-wheat', emoji: '🌾', bg: 'linear-gradient(135deg,#ffe8b0,#d9a441)', price: 180, season: 'autumn' },
+  { id: 'av-acorn', emoji: '🌰', bg: 'linear-gradient(135deg,#e8c8a0,#8a5f40)', price: 180, season: 'autumn' },
+  { id: 'av-snowman', emoji: '⛄', bg: 'linear-gradient(135deg,#e8f4ff,#8ab8e0)', price: 180, season: 'winter' },
+  { id: 'av-mitten', emoji: '🧤', bg: 'linear-gradient(135deg,#ffc8c8,#e05a5a)', price: 180, season: 'winter' },
+  { id: 'av-blossom', emoji: '🌸', bg: 'linear-gradient(135deg,#ffd8e8,#ff8ab8)', price: 180, season: 'spring' },
+  { id: 'av-duckling', emoji: '🐥', bg: 'linear-gradient(135deg,#fff8c8,#ffd21f)', price: 180, season: 'spring' },
+  { id: 'av-pineapple', emoji: '🍍', bg: 'linear-gradient(135deg,#fff0a0,#d9a41f)', price: 180, season: 'summer' },
+  { id: 'av-palm', emoji: '🌴', bg: 'linear-gradient(135deg,#c0f0d0,#2fa56d)', price: 180, season: 'summer' },
+);
+FRAMES.push(
+  { id: 'fr-amber', name: { ru: 'Янтарь', en: 'Amber' }, price: 320, css: '0 0 0 4px #ef8f2a, 0 0 14px rgba(239,143,42,.7)', season: 'autumn' },
+  { id: 'fr-snow', name: { ru: 'Снежная', en: 'Snow' }, price: 320, css: '0 0 0 4px #e8f4ff, 0 0 14px rgba(200,230,255,.85)', season: 'winter' },
+  { id: 'fr-petal', name: { ru: 'Лепестки', en: 'Petals' }, price: 320, css: '0 0 0 4px #ff9ab8, 0 0 14px rgba(255,154,184,.7)', season: 'spring' },
+  { id: 'fr-sunburst', name: { ru: 'Солнечная', en: 'Sunburst' }, price: 320, css: '0 0 0 4px #ffd83d, 0 0 16px rgba(255,216,61,.85)', season: 'summer' },
+);
+NAME_STYLES.push(
+  { id: 'ns-amber', name: { ru: 'Янтарный', en: 'Amber' }, price: 260, css: 'color:#ffc890;font-weight:900;text-shadow:0 1px 0 #a8611f,0 0 10px rgba(239,143,42,.7)', season: 'autumn' },
+  { id: 'ns-frost', name: { ru: 'Морозный', en: 'Frost' }, price: 260, css: 'color:#e8f4ff;font-weight:900;text-shadow:0 1px 0 #5a8ac0,0 0 10px rgba(200,230,255,.9)', season: 'winter' },
+  { id: 'ns-petal', name: { ru: 'Нежный', en: 'Petal' }, price: 260, css: 'color:#ffd8e8;font-weight:800;text-shadow:0 0 8px rgba(255,154,184,.8)', season: 'spring' },
+  { id: 'ns-sunny', name: { ru: 'Солнечный', en: 'Sunny' }, price: 260, css: 'color:#fff0a0;font-weight:900;text-shadow:0 0 10px rgba(255,216,61,.8)', season: 'summer' },
+);
+EFFECTS.push(
+  { id: 'fx-leaffall', kind: 'tile', visual: '🍂', price: 380, name: { ru: 'Листопад', en: 'Leaf Fall' }, season: 'autumn' },
+  { id: 'fx-snowflakes', kind: 'tile', visual: '❄️', price: 380, name: { ru: 'Снежинки', en: 'Snowflakes' }, season: 'winter' },
+  { id: 'fx-petalrain', kind: 'tile', visual: '🌷', price: 380, name: { ru: 'Лепестковый дождь', en: 'Petal Rain' }, season: 'spring' },
+  { id: 'fx-sunshine', kind: 'tile', visual: '☀️', price: 380, name: { ru: 'Солнечные зайчики', en: 'Sunshine' }, season: 'summer' },
+);
+/** Витрина сезона: 6 предметов (скин + 2 аватара + рамка + имя + эффект). */
+const TILE_EFFECTS = EFFECTS.filter((e) => e.kind === 'tile'); // после сезонных push (Волна 4)
+function seasonalBundleFor(season) {
+  return {
+    skin: GEM_SKINS.find((s) => s.season === season) || GEM_SKINS[0],
+    avatars: AVATARS.filter((a) => a.season === season),
+    frame: FRAMES.find((f) => f.season === season) || FRAMES[0],
+    nameStyle: NAME_STYLES.find((n) => n.season === season) || NAME_STYLES[0],
+    effect: TILE_EFFECTS.find((e) => e.season === season) || TILE_EFFECTS[0],
+  };
+}
 
 /* ---------------- level generator (100 levels / 10 chapters) ---------------- */
 const TOTAL_LEVELS = 100;

@@ -14,10 +14,14 @@ import {
   TILE_EFFECTS,
   AVATAR_EFFECTS,
   NAME_EFFECTS,
+  seasonalBundleFor,
 } from '@/lib/game/shop';
 import type { BoosterId } from '@/lib/game/shop';
+import { SEASONS, seasonOn } from '@/lib/game/events';
+import type { SeasonId } from '@/lib/game/events';
 import { GEM_SHAPE_CLIP } from '@/lib/game/shapes';
 import { usePlayer, useT } from '@/lib/store';
+import type { Owned, Equipped } from '@/lib/store';
 import { sfx } from '@/lib/game/sound';
 import { PlayerAvatar } from './game/PlayerBadge';
 
@@ -31,6 +35,11 @@ export function ShopScreen(_props: ShopScreenProps) {
   const [tab, setTab] = useState('boosters');
   const [demoPack, setDemoPack] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+
+  /* Волна 4: сезонная коллекция — витрина определяется календарём */
+  const season: SeasonId = seasonOn(new Date());
+  const seasonDef = SEASONS[season];
+  const bundle = seasonalBundleFor(season);
 
   const flash = (m: string) => {
     setMsg(m);
@@ -71,6 +80,109 @@ export function ShopScreen(_props: ShopScreenProps) {
         <h1 className="text-2xl font-black text-white bm-text-outline">{t('shop.title')}</h1>
         <div className="flex items-center gap-1 rounded-full bg-amber-400/95 px-3 py-1.5 text-sm font-black text-amber-950 shadow-lg">
           🪙 {player.coins.toLocaleString('ru-RU')}
+        </div>
+      </div>
+
+      {/* Волна 4: сезонная коллекция — 6 предметов текущего сезона */}
+      <div
+        className="mb-3 rounded-3xl bg-gradient-to-r from-rose-500/90 to-amber-400/90 p-3 shadow-lg"
+        style={{ border: '2px solid rgba(255,255,255,.4)' }}
+      >
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <div className="text-sm font-black text-white bm-text-outline">{t('shop.seasonal')}</div>
+          <div className="shrink-0 rounded-full bg-white/92 px-2.5 py-1 text-[11px] font-black text-rose-600">
+            {t('shop.seasonalSub', { icon: seasonDef.icon, season: seasonDef.name[player.lang] })}
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {([
+            {
+              id: bundle.skin.id,
+              preview: <span>{bundle.skin.glyphs?.slice(0, 2).join('')}</span>,
+              name: bundle.skin.name[player.lang],
+              price: bundle.skin.price,
+              ownedKind: 'skins' as keyof Owned,
+              equipKind: 'skin' as keyof Equipped,
+            },
+            ...bundle.avatars.map((a) => ({
+              id: a.id,
+              preview: <span>{a.emoji}</span>,
+              name: a.emoji,
+              price: a.price,
+              ownedKind: 'avatars' as keyof Owned,
+              equipKind: 'avatar' as keyof Equipped,
+            })),
+            {
+              id: bundle.frame.id,
+              preview: (
+                <span
+                  className="inline-block h-7 w-7 rounded-full bg-gradient-to-br from-amber-200 to-amber-400"
+                  style={{ boxShadow: bundle.frame.css }}
+                />
+              ),
+              name: bundle.frame.name[player.lang],
+              price: bundle.frame.price,
+              ownedKind: 'frames' as keyof Owned,
+              equipKind: 'frame' as keyof Equipped,
+            },
+            {
+              id: bundle.nameStyle.id,
+              preview: <span className="font-black text-slate-800">Aa</span>,
+              name: bundle.nameStyle.name[player.lang],
+              price: bundle.nameStyle.price,
+              ownedKind: 'nameStyles' as keyof Owned,
+              equipKind: 'nameStyle' as keyof Equipped,
+            },
+            {
+              id: bundle.effect.id,
+              preview: <span>{bundle.effect.visual}</span>,
+              name: bundle.effect.name[player.lang],
+              price: bundle.effect.price,
+              ownedKind: 'effects' as keyof Owned,
+              equipKind: 'tileEffect' as keyof Equipped,
+            },
+          ] as { id: string; preview: React.ReactNode; name: string; price: number; ownedKind: keyof Owned; equipKind: keyof Equipped }[]).map((c) => {
+            const owned = player.owned[c.ownedKind].includes(c.id);
+            const equipped = player.equipped[c.equipKind] === c.id;
+            return (
+              <div key={c.id} className="flex items-center gap-2 rounded-2xl bg-white/92 p-2 shadow">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center text-xl">{c.preview}</div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[11px] font-black text-slate-800">{c.name}</div>
+                  {equipped ? (
+                    <Button size="sm" className="mt-1 h-6 rounded-full bg-slate-200 px-2 text-[10px] font-bold text-slate-500" disabled>
+                      ✓
+                    </Button>
+                  ) : owned ? (
+                    <Button
+                      size="sm"
+                      className={`mt-1 h-6 rounded-full px-2 text-[10px] ${equipBtn}`}
+                      onClick={() => {
+                        player.equip(c.equipKind, c.id);
+                        sfx.click();
+                      }}
+                    >
+                      {t('shop.equip')}
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      className={`mt-1 h-6 rounded-full px-2 text-[10px] ${coinBtn}`}
+                      onClick={() => {
+                        if (player.buyCosmetic(c.ownedKind, c.id, c.price)) {
+                          player.equip(c.equipKind, c.id);
+                          sfx.coin();
+                          flash(t('shop.purchased'));
+                        } else flash(t('shop.notEnough'));
+                      }}
+                    >
+                      🪙 {c.price}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 

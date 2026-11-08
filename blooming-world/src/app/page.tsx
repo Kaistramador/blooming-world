@@ -34,6 +34,8 @@ export default function Home() {
   );
   const [screen, setScreen] = useState<Screen>('map');
   const [playingLevel, setPlayingLevel] = useState<number | null>(null);
+  /* Волна 4: признак уровня дня (×2 награда и бейджи событий) */
+  const [playingDaily, setPlayingDaily] = useState(false);
 
   useEffect(() => {
     if (hydrated) logSessionStart();
@@ -58,8 +60,9 @@ export default function Home() {
     return (
       <main>
         <GameScreen
-          key={playingLevel}
+          key={`${playingLevel}:${playingDaily ? 'd' : 'n'}`}
           level={playingLevel}
+          daily={playingDaily}
           onExit={() => setPlayingLevel(null)}
           onLevelChange={(lv) => setPlayingLevel(lv)}
         />
@@ -71,7 +74,7 @@ export default function Home() {
     <main className="relative min-h-screen overflow-hidden" style={{ background: theme.bg.sky }}>
       <BloomingBackground bg={theme.bg} seed={99} />
       <div className="relative z-10">
-        {screen === 'map' && <MapScreen onPlay={(lv) => setPlayingLevel(lv)} />}
+        {screen === 'map' && <MapScreen onPlay={(lv, opts) => { setPlayingDaily(!!opts?.daily); setPlayingLevel(lv); }} />}
         {screen === 'garden' && <GardenScreen onExit={() => setScreen('map')} />}
         {screen === 'shop' && <ShopScreen />}
         {screen === 'ranks' && <RanksScreen />}

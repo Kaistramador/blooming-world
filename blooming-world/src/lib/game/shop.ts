@@ -1,7 +1,11 @@
 /* ============================================================
  * Bloom Match — shop catalog: boosters, coin packs (demo) and
  * cosmetics (gem skins, avatars, frames, name styles, effects).
+ * Волна 4: сезонные коллекции — 6 предметов × 4 сезона, витрина
+ * rotates по календарю автоматически (events.ts → seasonOn).
  * ============================================================ */
+
+import type { SeasonId } from './events';
 
 export type BoosterId = 'hammer' | 'bomb' | 'cross' | 'shuffle' | 'undo' | 'moves5';
 
@@ -80,6 +84,8 @@ export interface GemSkinDef {
   palette?: string[];
   /** carved concentric ring inside the tile */
   ring?: boolean;
+  /** сезон коллекции (Волна 4): витрина показывается только в свой сезон */
+  season?: SeasonId;
 }
 
 export const GEM_SKINS: GemSkinDef[] = [
@@ -117,6 +123,23 @@ export const GEM_SKINS: GemSkinDef[] = [
     id: 'cosmos', name: { ru: 'Космос', en: 'Cosmos' }, price: 1200,
     glyphs: ['🚀', '🛸', '☄️', '🌌', '🔭', '👾'],
   },
+  /* --- Волна 4: сезонные скины (силуэты a11y не трогаем — §5.2) --- */
+  {
+    id: 'season-autumn', name: { ru: 'Осенний сад', en: 'Autumn Garden' }, price: 800, season: 'autumn',
+    glyphs: ['🍁', '🌽', '🌰', '🫐', '🍇', '🎃'],
+  },
+  {
+    id: 'season-winter', name: { ru: 'Зимние узоры', en: 'Winter Patterns' }, price: 800, season: 'winter',
+    glyphs: ['🎅', '⭐', '🎄', '❄️', '🔮', '🍊'],
+  },
+  {
+    id: 'season-spring', name: { ru: 'Весенний цвет', en: 'Spring Bloom' }, price: 800, season: 'spring',
+    glyphs: ['🌷', '🌼', '🌱', '💧', '🦋', '🌸'],
+  },
+  {
+    id: 'season-summer', name: { ru: 'Летний бриз', en: 'Summer Breeze' }, price: 800, season: 'summer',
+    glyphs: ['🍉', '🌞', '🌴', '🌊', '🐚', '🍍'],
+  },
 ];
 
 /* ---------------- Avatars ---------------- */
@@ -126,6 +149,8 @@ export interface AvatarDef {
   emoji: string;
   bg: string; // css gradient
   price: number;
+  /** сезон коллекции (Волна 4) */
+  season?: SeasonId;
 }
 
 export const AVATARS: AvatarDef[] = [
@@ -153,6 +178,15 @@ export const AVATARS: AvatarDef[] = [
   { id: 'av-mage', emoji: '🧙', bg: 'linear-gradient(135deg,#d8c0ff,#7426a8)', price: 400 },
   { id: 'av-phoenix', emoji: '🦅', bg: 'linear-gradient(135deg,#ffd8a0,#ff7a1f)', price: 500 },
   { id: 'av-rainbow', emoji: '🌈', bg: 'linear-gradient(135deg,#ff9ab8,#ffd83d,#6bff8f,#6be5ff,#d18bff)', price: 600 },
+  /* --- Волна 4: сезонные аватары --- */
+  { id: 'av-wheat', emoji: '🌾', bg: 'linear-gradient(135deg,#ffe8b0,#d9a441)', price: 180, season: 'autumn' },
+  { id: 'av-acorn', emoji: '🌰', bg: 'linear-gradient(135deg,#e8c8a0,#8a5f40)', price: 180, season: 'autumn' },
+  { id: 'av-snowman', emoji: '⛄', bg: 'linear-gradient(135deg,#e8f4ff,#8ab8e0)', price: 180, season: 'winter' },
+  { id: 'av-mitten', emoji: '🧤', bg: 'linear-gradient(135deg,#ffc8c8,#e05a5a)', price: 180, season: 'winter' },
+  { id: 'av-blossom', emoji: '🌸', bg: 'linear-gradient(135deg,#ffd8e8,#ff8ab8)', price: 180, season: 'spring' },
+  { id: 'av-duckling', emoji: '🐥', bg: 'linear-gradient(135deg,#fff8c8,#ffd21f)', price: 180, season: 'spring' },
+  { id: 'av-pineapple', emoji: '🍍', bg: 'linear-gradient(135deg,#fff0a0,#d9a41f)', price: 180, season: 'summer' },
+  { id: 'av-palm', emoji: '🌴', bg: 'linear-gradient(135deg,#c0f0d0,#2fa56d)', price: 180, season: 'summer' },
 ];
 
 /* ---------------- Frames ---------------- */
@@ -162,6 +196,8 @@ export interface FrameDef {
   name: { ru: string; en: string };
   price: number;
   css: string; // box-shadow / border style for avatar container
+  /** сезон коллекции (Волна 4) */
+  season?: SeasonId;
 }
 
 export const FRAMES: FrameDef[] = [
@@ -177,6 +213,11 @@ export const FRAMES: FrameDef[] = [
   { id: 'fr-royal', name: { ru: 'Королевский', en: 'Royal' }, price: 500, css: '0 0 0 4px #fff, 0 0 0 7px #ffd83d, 0 0 18px rgba(255,216,61,.8)' },
   { id: 'fr-neon', name: { ru: 'Неон', en: 'Neon' }, price: 500, css: '0 0 0 3px #22e0ff, 0 0 18px #22e0ff, 0 0 30px rgba(34,224,255,.5)' },
   { id: 'fr-rainbow', name: { ru: 'Радуга', en: 'Rainbow' }, price: 800, css: '0 0 0 4px transparent, 0 0 16px #ff9ab8, 0 0 24px #ffd83d, 0 0 32px #6bff8f' },
+  /* --- Волна 4: сезонные рамки --- */
+  { id: 'fr-amber', name: { ru: 'Янтарь', en: 'Amber' }, price: 320, css: '0 0 0 4px #ef8f2a, 0 0 14px rgba(239,143,42,.7)', season: 'autumn' },
+  { id: 'fr-snow', name: { ru: 'Снежная', en: 'Snow' }, price: 320, css: '0 0 0 4px #e8f4ff, 0 0 14px rgba(200,230,255,.85)', season: 'winter' },
+  { id: 'fr-petal', name: { ru: 'Лепестки', en: 'Petals' }, price: 320, css: '0 0 0 4px #ff9ab8, 0 0 14px rgba(255,154,184,.7)', season: 'spring' },
+  { id: 'fr-sunburst', name: { ru: 'Солнечная', en: 'Sunburst' }, price: 320, css: '0 0 0 4px #ffd83d, 0 0 16px rgba(255,216,61,.85)', season: 'summer' },
 ];
 
 /* ---------------- Name styles ---------------- */
@@ -186,6 +227,8 @@ export interface NameStyleDef {
   name: { ru: string; en: string };
   price: number;
   css: string; // css text style
+  /** сезон коллекции (Волна 4) */
+  season?: SeasonId;
 }
 
 export const NAME_STYLES: NameStyleDef[] = [
@@ -199,6 +242,11 @@ export const NAME_STYLES: NameStyleDef[] = [
   { id: 'ns-neon', name: { ru: 'Неон', en: 'Neon' }, price: 350, css: 'color:#22e0ff;font-weight:900;text-shadow:0 0 6px #22e0ff,0 0 14px rgba(34,224,255,.8)' },
   { id: 'ns-shadow', name: { ru: 'Тень', en: 'Shadow' }, price: 200, css: 'color:#3a3a4a;font-weight:900;text-shadow:0 2px 0 rgba(255,255,255,.25)' },
   { id: 'ns-magic', name: { ru: 'Магия', en: 'Magic' }, price: 400, css: 'color:#e8ccff;font-weight:900;font-style:italic;text-shadow:0 0 8px #c44dff,0 0 16px rgba(196,77,255,.6)' },
+  /* --- Волна 4: сезонные стили имени --- */
+  { id: 'ns-amber', name: { ru: 'Янтарный', en: 'Amber' }, price: 260, css: 'color:#ffc890;font-weight:900;text-shadow:0 1px 0 #a8611f,0 0 10px rgba(239,143,42,.7)', season: 'autumn' },
+  { id: 'ns-frost', name: { ru: 'Морозный', en: 'Frost' }, price: 260, css: 'color:#e8f4ff;font-weight:900;text-shadow:0 1px 0 #5a8ac0,0 0 10px rgba(200,230,255,.9)', season: 'winter' },
+  { id: 'ns-petal', name: { ru: 'Нежный', en: 'Petal' }, price: 260, css: 'color:#ffd8e8;font-weight:800;text-shadow:0 0 8px rgba(255,154,184,.8)', season: 'spring' },
+  { id: 'ns-sunny', name: { ru: 'Солнечный', en: 'Sunny' }, price: 260, css: 'color:#fff0a0;font-weight:900;text-shadow:0 0 10px rgba(255,216,61,.8)', season: 'summer' },
 ];
 
 /* ---------------- Effects ---------------- */
@@ -210,6 +258,8 @@ export interface EffectDef {
   kind: 'tile' | 'avatar' | 'name';
   /** particle emoji or css class key */
   visual: string;
+  /** сезон коллекции (Волна 4) */
+  season?: SeasonId;
 }
 
 export const EFFECTS: EffectDef[] = [
@@ -234,11 +284,37 @@ export const EFFECTS: EffectDef[] = [
   { id: 'ne-wave', kind: 'name', visual: 'wave', price: 300, name: { ru: 'Волна', en: 'Wave' } },
   { id: 'ne-fire', kind: 'name', visual: 'fire', price: 300, name: { ru: 'Пламя', en: 'Flame' } },
   { id: 'ne-starlight', kind: 'name', visual: 'starlight', price: 450, name: { ru: 'Звёздный свет', en: 'Starlight' } },
+  /* --- Волна 4: сезонные эффекты поля --- */
+  { id: 'fx-leaffall', kind: 'tile', visual: '🍂', price: 380, name: { ru: 'Листопад', en: 'Leaf Fall' }, season: 'autumn' },
+  { id: 'fx-snowflakes', kind: 'tile', visual: '❄️', price: 380, name: { ru: 'Снежинки', en: 'Snowflakes' }, season: 'winter' },
+  { id: 'fx-petalrain', kind: 'tile', visual: '🌷', price: 380, name: { ru: 'Лепестковый дождь', en: 'Petal Rain' }, season: 'spring' },
+  { id: 'fx-sunshine', kind: 'tile', visual: '☀️', price: 380, name: { ru: 'Солнечные зайчики', en: 'Sunshine' }, season: 'summer' },
 ];
 
 export const TILE_EFFECTS = EFFECTS.filter((e) => e.kind === 'tile');
 export const AVATAR_EFFECTS = EFFECTS.filter((e) => e.kind === 'avatar');
 export const NAME_EFFECTS = EFFECTS.filter((e) => e.kind === 'name');
+
+/**
+ * Волна 4: все предметы текущего сезонного набора (6 штук:
+ * скин, 2 аватара, рамка, стиль имени, эффект поля).
+ */
+export interface SeasonalBundle {
+  skin: GemSkinDef;
+  avatars: AvatarDef[];
+  frame: FrameDef;
+  nameStyle: NameStyleDef;
+  effect: EffectDef;
+}
+
+export function seasonalBundleFor(season: SeasonId): SeasonalBundle {
+  const skin = GEM_SKINS.find((s) => s.season === season) ?? GEM_SKINS[0];
+  const avatars = AVATARS.filter((a) => a.season === season);
+  const frame = FRAMES.find((f) => f.season === season) ?? FRAMES[0];
+  const nameStyle = NAME_STYLES.find((n) => n.season === season) ?? NAME_STYLES[0];
+  const effect = TILE_EFFECTS.find((e) => e.season === season) ?? TILE_EFFECTS[0];
+  return { skin, avatars, frame, nameStyle, effect };
+}
 
 export const SHOP_TOTAL_ITEMS =
   BOOSTERS.length + COIN_PACKS.length + GEM_SKINS.length + AVATARS.length + FRAMES.length + EFFECTS.length + NAME_STYLES.length;

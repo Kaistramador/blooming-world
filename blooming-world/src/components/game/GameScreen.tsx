@@ -28,7 +28,7 @@ import {
 } from '@/lib/game/engine';
 import type { Board, Frame, LevelConfig, MoveResult } from '@/lib/game/types';
 import { usePlayer, useT, STREAK_MAX_MULT } from '@/lib/store';
-import type { PiggyInfo } from '@/lib/store';
+import type { PiggyInfo, EventInfo } from '@/lib/store';
 import { PIGGY_WINS_TARGET } from '@/lib/game/garden';
 import { logEvent, logSessionStart } from '@/lib/game/analytics';
 import { sfx } from '@/lib/game/sound';
@@ -123,11 +123,13 @@ function WinConfetti() {
 
 interface GameScreenProps {
   level: number;
+  /** Волна 4: уровень дня (×2 награда, бейджи событий) */
+  daily?: boolean;
   onExit: () => void;
   onLevelChange: (lv: number) => void;
 }
 
-export function GameScreen({ level, onExit, onLevelChange }: GameScreenProps) {
+export function GameScreen({ level, daily = false, onExit, onLevelChange }: GameScreenProps) {
   const t = useT();
   const player = usePlayer();
   const [cfg, setCfg] = useState<LevelConfig | null>(null);
@@ -150,7 +152,7 @@ export function GameScreen({ level, onExit, onLevelChange }: GameScreenProps) {
   const [toast, setToast] = useState<string | null>(null);
   const [activeBooster, setActiveBooster] = useState<BoosterId | null>(null);
   const [buyBoosterId, setBuyBoosterId] = useState<BoosterId | null>(null);
-  const [winInfo, setWinInfo] = useState<{ stars: number; reward: number; firstClear: boolean; newStars: boolean; bonus: number; streak: number; mult: number; piggy: PiggyInfo } | null>(null);
+  const [winInfo, setWinInfo] = useState<{ stars: number; reward: number; firstClear: boolean; newStars: boolean; bonus: number; streak: number; mult: number; piggy: PiggyInfo; event: EventInfo } | null>(null);
   const [loseOpen, setLoseOpen] = useState(false);
   const [lostStreak, setLostStreak] = useState(0);
   const [plus5Used, setPlus5Used] = useState(0);
@@ -362,10 +364,11 @@ export function GameScreen({ level, onExit, onLevelChange }: GameScreenProps) {
         const stars = finalScore >= cfg.star3 ? 3 : finalScore >= cfg.star2 ? 2 : 1;
         sfx.win();
         setTimeout(() => sfx.star(1), 400);
-        const info = player.recordWin(cfg.level, stars, finalScore, res.maxCascade, movesUsed);
+        const info = player.recordWin(cfg.level, stars, finalScore, res.maxCascade, movesUsed, { daily });
         setScore(finalScore);
-        setWinInfo({ stars, reward: info.reward, firstClear: info.firstClear, newStars: info.newStars, bonus, streak: info.streak, mult: info.mult, piggy: info.piggy });
-        logEvent('level_win', { level: cfg.level, stars, score: finalScore, movesUsed, streak: info.streak, mult: info.mult, reward: info.reward, piggy: info.piggy.deposit });
+        setWinInfo({ stars, reward: info.reward, firstClear: info.firstClear, newStars: info.newStars, bonus, streak: info.streak, mult: info.mult, piggy: info.piggy, event: info.event });
+        logEvent('level_win', { level: cfg.level, stars, score: finalScore, movesUsed, streak: info.streak, mult: info.mult, reward: info.reward, piggy: info.piggy.deposit, daily: info.event.daily ? 1 : 0, weekend: info.event.weekend ?? '', cascade: info.event.cascadeCoins });
+        if (info.event.daily) logEvent('daily_win', { level: cfg.level, reward: info.reward });
       } else if (movesLeft <= 0) {
         sfx.lose();
         setLostStreak(player.streak);
@@ -910,6 +913,18 @@ export function GameScreen({ level, onExit, onLevelChange }: GameScreenProps) {
               🪙 +{winInfo?.reward}
               {winInfo && winInfo.mult > 1 && <span className="rounded-full bg-amber-950/25 px-1.5 text-xs">×{winInfo.mult}</span>}
             </div>
+            {/* Волна 4: бейджи событий */}
+            {winInfo?.event.daily && (
+              <div className="rounded-full bg-indigo-600/90 px-3 py-1 text-xs font-black text-white">{t('daily.badge')}</div>
+            )}
+            {winInfo?.event.weekend === 'coins' && (
+              <div className="rounded-full bg-orange-500/90 px-3 py-1 text-xs font-black text-white">{t('event.coinsBadge')}</div>
+            )}
+            {winInfo?.event.weekend === 'cascade' && winInfo.event.cascadeCoins > 0 && (
+              <div className="rounded-full bg-sky-600/90 px-3 py-1 text-xs font-black text-white">
+                {t('event.cascadeBadge', { n: winInfo.event.maxCascade, c: winInfo.event.cascadeCoins })}
+              </div>
+            )}
             {winInfo && (
               <div className="mt-1.5 flex flex-col items-center gap-1">
                 <div className="flex items-center gap-1.5 rounded-full bg-orange-600/90 px-3 py-1 text-xs font-black text-white">

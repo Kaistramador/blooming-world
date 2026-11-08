@@ -13,6 +13,8 @@ import { BOOSTER_MAP } from '@/lib/game/shop';
 import { setSoundEnabled } from '@/lib/game/sound';
 import { chapterOfLevel, TOTAL_LEVELS } from '@/lib/game/levels';
 import { GARDEN_MAP, gardenCoinsBack, piggyDeposit, PIGGY_WINS_TARGET } from '@/lib/game/garden';
+import { dateKeyOf, dailyLevelFor, DAILY_REWARD_MULT, cascadeBonus, weekendEventFor } from '@/lib/game/events';
+import type { WeekendEventId } from '@/lib/game/events';
 
 export interface Owned {
   skins: string[];
@@ -61,6 +63,30 @@ export interface PiggyInfo {
   ready: boolean;
 }
 
+/**
+ * Волна 4: сведения о наградах событий в модали победы.
+ */
+export interface EventInfo {
+  /** сыгран уровень дня (×2) */
+  daily: boolean;
+  /** активный ивент выходных (если есть) */
+  weekend: WeekendEventId | null;
+  /** бонус каскадного челленджа (монеты) */
+  cascadeCoins: number;
+  /** максимальный каскад в победе (для показа) */
+  maxCascade: number;
+}
+
+/** Снимок состояния уровня дня для карты. */
+export interface DailyState {
+  /** календарный день, к которому привязан уровень */
+  date: string;
+  /** уровень, выбранный на этот день (детерминирован, клампится к прогрессу) */
+  level: number;
+  /** уже пройден сегодня */
+  done: boolean;
+}
+
 interface PlayerState {
   name: string;
   lang: Lang;
@@ -80,13 +106,19 @@ interface PlayerState {
   garden: { restored: string[] };
   /** Волна 3: копилка — накопленные монеты и победы до вскрытия */
   piggy: { coins: number; wins: number };
+  /** Волна 4: уровень дня — фиксируется на день при первом открытии карты */
+  daily: DailyState;
   // actions
   setLang: (l: Lang) => void;
   setSound: (v: boolean) => void;
   setName: (n: string) => void;
   addCoins: (n: number) => void;
   spendCoins: (n: number) => boolean;
-  recordWin: (level: number, stars: number, score: number, maxCascade: number, movesUsed: number) => { firstClear: boolean; newStars: boolean; reward: number; base: number; streak: number; mult: number; piggy: PiggyInfo };
+  recordWin: (level: number, stars: number, score: number, maxCascade: number, movesUsed: number, opts?: { daily?: boolean }) => { firstClear: boolean; newStars: boolean; reward: number; base: number; streak: number; mult: number; piggy: PiggyInfo; event: EventInfo };
+  /** Волна 4: ЧИСТЫЙ расчёт уровня дня (без записи) — безопасен в рендере */
+  computeDaily: () => DailyState;
+  /** Волна 4: зафиксировать уровень дня, если наступили новые сутки (вызывать из эффектов) */
+  ensureDaily: () => DailyState;
   recordLoss: () => void;
   addBooster: (id: BoosterId, n: number) => void;
   useBooster: (id: BoosterId) => boolean;
@@ -144,6 +176,7 @@ export const usePlayer = create<PlayerState>()(
       starsSpent: 0,
       garden: { restored: [] },
       piggy: { coins: 0, wins: 0 },
+      daily: { date: '', level: 1, done: false },
 
       setLang: (l) => set({ lang: l }),
       setSound: (v) => {
@@ -157,7 +190,7 @@ export const usePlayer = create<PlayerState>()(
         set((s) => ({ coins: s.coins - n }));
         return true;
       },
-      recordWin: (level, stars, score, maxCascade, movesUsed) => {
+      recordWin: (level, stars, score, maxCascade, movesUsed, opts) => {
         const s = get();
         const prevStars = s.stars[level] ?? 0;
         const firstClear = !(level in s.stars);
@@ -168,7 +201,13 @@ export const usePlayer = create<PlayerState>()(
           : 10 + stars * 5;
         const streak = s.streak + 1;
         const mult = streakMult(streak);
-        const reward = base * mult;
+        /* Волна 4: события — уровень дня ×2, выходные ×2 монет / каскад-бонус */
+        const isDaily = !!opts?.daily;
+        const weekend = weekendEventFor(dateKeyOf(new Date()));
+        const cascadeCoins = weekend === 'cascade' ? cascadeBonus(maxCascade) : 0;
+        const eventMult = (isDaily ? DAILY_REWARD_MULT : 1) * (weekend === 'coins' ? 2 : 1);
+        const reward = base * mult * eventMult + cascadeCoins;
+        const event: EventInfo = { daily: isDaily, weekend, cascadeCoins, maxCascade };
         const nextStars = { ...s.stars, [level]: Math.max(prevStars, stars) };
         const nextScores = { ...s.scores, [level]: Math.max(s.scores[level] ?? 0, score) };
         /* Волна 3: копилка — каждый взнос победы капает в копилку */
@@ -176,11 +215,16 @@ export const usePlayer = create<PlayerState>()(
         const piggyWins = s.piggy.wins + 1;
         const piggyCoins = s.piggy.coins + deposit;
         const piggy: PiggyInfo = { deposit, coins: piggyCoins, wins: piggyWins, ready: piggyWins >= PIGGY_WINS_TARGET };
+        /* Волна 4: уровень дня отмечается пройденным только за свой день */
+        const today = dateKeyOf(new Date());
+        const dailyNext =
+          isDaily && s.daily.date === today ? { ...s.daily, done: true } : s.daily;
         set({
           stars: nextStars,
           scores: nextScores,
           coins: s.coins + reward,
           streak,
+          daily: dailyNext,
           piggy: { coins: piggyCoins, wins: piggyWins % PIGGY_WINS_TARGET },
           stats: {
             wins: s.stats.wins + 1,
@@ -190,7 +234,23 @@ export const usePlayer = create<PlayerState>()(
             bestStreak: Math.max(s.stats.bestStreak, streak),
           },
         });
-        return { firstClear, newStars, reward, base, streak, mult, piggy };
+        return { firstClear, newStars, reward, base, streak, mult, piggy, event };
+      },
+      /* Волна 4: уровень дня фиксируется при первом открытии в сутки и живёт до 00:00.
+       * computeDaily — чистый расчёт (безопасен во время рендера),
+       * ensureDaily — записывает перекат (вызывать из эффектов). */
+      computeDaily: () => {
+        const s = get();
+        const today = dateKeyOf(new Date());
+        if (s.daily.date === today) return s.daily;
+        return { date: today, level: Math.min(dailyLevelFor(today), Math.max(1, s.maxUnlocked())), done: false };
+      },
+      ensureDaily: () => {
+        const s = get();
+        const computed = get().computeDaily();
+        if (s.daily.date === computed.date) return s.daily;
+        set({ daily: computed });
+        return computed;
       },
       recordLoss: () => set((s) => (s.streak === 0 ? s : { streak: 0 })),
       addBooster: (id, n) =>
@@ -278,6 +338,7 @@ export const usePlayer = create<PlayerState>()(
           starsSpent: 0,
           garden: { restored: [] },
           piggy: { coins: 0, wins: 0 },
+          daily: { date: '', level: 1, done: false },
         }),
     }),
     {

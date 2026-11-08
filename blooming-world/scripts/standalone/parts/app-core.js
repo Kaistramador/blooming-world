@@ -55,6 +55,57 @@ const DEFAULT_BOOSTERS = { hammer: 1, bomb: 0, cross: 0, shuffle: 1, undo: 0, mo
 /* Волна 2: множитель награды за серию побед (поражение обнуляет) */
 const STREAK_MAX_MULT = 5;
 function streakMult(streak) { return Math.max(1, Math.min(STREAK_MAX_MULT, streak || 0)); }
+
+/* ---------------- Волна 4: события (детерминированы по календарю) ---------------- */
+function dateKeyOf(now) {
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + d;
+}
+function dateSeed(dateKey) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < dateKey.length; i++) {
+    h ^= dateKey.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+const DAILY_REWARD_MULT = 2;
+function dailyLevelFor(dateKey) {
+  const rng = mulberry32(dateSeed(dateKey));
+  return 1 + Math.floor(rng() * TOTAL_LEVELS);
+}
+const WEEKEND_EVENT_DEFS = {
+  coins: { id: 'coins', icon: '🪙', name: { ru: 'Золотые выходные', en: 'Golden Weekend' }, desc: { ru: 'Все победы приносят ×2 монет — только сегодня!', en: 'All wins grant ×2 coins — today only!' } },
+  cascade: { id: 'cascade', icon: '🌊', name: { ru: 'Каскадный уикенд', en: 'Cascade Weekend' }, desc: { ru: 'Каскады 3+ приносят бонусные монеты к награде!', en: 'Cascades of 3+ grant bonus coins on top of the reward!' } },
+};
+function weekendEventFor(dateKey) {
+  const p = dateKey.split('-');
+  const dow = new Date(+p[0], +p[1] - 1, +p[2]).getDay();
+  if (dow === 6) return 'coins';
+  if (dow === 0) return 'cascade';
+  return null;
+}
+const CASCADE_BONUS_FROM = 3;
+function cascadeBonus(maxCascade) {
+  const steps = Math.max(0, Math.min(maxCascade || 0, 8) - (CASCADE_BONUS_FROM - 1));
+  return steps * 30;
+}
+const SEASON_DEFS = {
+  autumn: { id: 'autumn', icon: '🍂', name: { ru: 'Осень', en: 'Autumn' } },
+  winter: { id: 'winter', icon: '❄️', name: { ru: 'Зима', en: 'Winter' } },
+  spring: { id: 'spring', icon: '🌷', name: { ru: 'Весна', en: 'Spring' } },
+  summer: { id: 'summer', icon: '☀️', name: { ru: 'Лето', en: 'Summer' } },
+};
+function seasonOfMonth(month0) {
+  const m = ((month0 % 12) + 12) % 12 + 1;
+  if (m === 12 || m <= 2) return 'winter';
+  if (m <= 5) return 'spring';
+  if (m <= 8) return 'summer';
+  return 'autumn';
+}
+function seasonOn(now) { return seasonOfMonth(now.getMonth()); }
 function defaultState() {
   return {
     name: '', lang: 'ru', sound: true, coins: 300, stars: {}, scores: {},
@@ -70,6 +121,8 @@ function defaultState() {
     starsSpent: 0,
     garden: { restored: [] },
     piggy: { coins: 0, wins: 0 },
+    /* Волна 4: уровень дня (фиксируется на сутки при первом открытии карты) */
+    daily: { date: '', level: 1, done: false },
   };
 }
 function normalizeState(s) {
@@ -87,6 +140,12 @@ function normalizeState(s) {
   out.piggy = {
     coins: s && s.piggy && typeof s.piggy.coins === 'number' ? s.piggy.coins : 0,
     wins: s && s.piggy && typeof s.piggy.wins === 'number' ? s.piggy.wins : 0,
+  };
+  /* Волна 4: аддитивная миграция уровня дня */
+  out.daily = {
+    date: s && s.daily && typeof s.daily.date === 'string' ? s.daily.date : '',
+    level: s && s.daily && typeof s.daily.level === 'number' ? s.daily.level : 1,
+    done: !!(s && s.daily && s.daily.done),
   };
   out.lang = out.lang === 'en' ? 'en' : 'ru';
   return out;
@@ -116,7 +175,7 @@ const store = {
     if (App.player.coins < n) return false;
     App.player.coins -= n; saveState(); return true;
   },
-  recordWin(level, stars, score, maxCascade, movesUsed) {
+  recordWin(level, stars, score, maxCascade, movesUsed, opts) {
     const s = App.player;
     const prevStars = s.stars[level] || 0;
     const firstClear = !(level in s.stars);
@@ -125,11 +184,19 @@ const store = {
     const base = firstClear ? 30 + stars * 10 + chapter * 5 : 10 + stars * 5;
     const streak = (s.streak || 0) + 1;
     const mult = streakMult(streak);
-    const reward = base * mult;
+    /* Волна 4: события — уровень дня ×2, выходные ×2 монет / каскад-бонус */
+    const isDaily = !!(opts && opts.daily);
+    const weekend = weekendEventFor(dateKeyOf(new Date()));
+    const cascadeCoins = weekend === 'cascade' ? cascadeBonus(maxCascade) : 0;
+    const eventMult = (isDaily ? DAILY_REWARD_MULT : 1) * (weekend === 'coins' ? 2 : 1);
+    const reward = base * mult * eventMult + cascadeCoins;
     s.stars[level] = Math.max(prevStars, stars);
     s.scores[level] = Math.max(s.scores[level] || 0, score);
     s.coins += reward;
     s.streak = streak;
+    /* Волна 4: уровень дня отмечается пройденным только за свой день */
+    const today = dateKeyOf(new Date());
+    if (isDaily && s.daily && s.daily.date === today) { s.daily.done = true; }
     s.stats.wins += 1;
     s.stats.bestCascade = Math.max(s.stats.bestCascade || 0, maxCascade);
     s.stats.totalScore += score;
@@ -142,7 +209,17 @@ const store = {
     s.piggy.coins = piggyCoins;
     s.piggy.wins = piggyWins % PIGGY_WINS_TARGET;
     saveState();
-    return { firstClear, newStars, reward, base, streak, mult, piggy: { deposit, coins: piggyCoins, wins: piggyWins, ready: piggyWins >= PIGGY_WINS_TARGET } };
+    return { firstClear, newStars, reward, base, streak, mult, piggy: { deposit, coins: piggyCoins, wins: piggyWins, ready: piggyWins >= PIGGY_WINS_TARGET }, event: { daily: isDaily, weekend: weekend, cascadeCoins: cascadeCoins, maxCascade: maxCascade } };
+  },
+  /* Волна 4: уровень дня фиксируется при первом открытии в сутки и живёт до 00:00 */
+  ensureDaily() {
+    const s = App.player;
+    const today = dateKeyOf(new Date());
+    if (s.daily && s.daily.date === today) return s.daily;
+    const daily = { date: today, level: Math.min(dailyLevelFor(today), Math.max(1, this.maxUnlocked())), done: false };
+    s.daily = daily;
+    saveState();
+    return daily;
   },
   recordLoss() { if (App.player.streak) { App.player.streak = 0; saveState(); } },
   addBooster(id, n) { App.player.boosters[id] = (App.player.boosters[id] || 0) + n; saveState(); },

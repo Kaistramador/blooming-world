@@ -6,6 +6,7 @@
 const App = {
   screen: 'map',        // map | garden | shop | ranks | profile
   level: null,          // playing level number or null
+  daily: false,         // Волна 4: текущий забег — уровень дня (×2)
   player: null,
   bots: null,
   shopTab: 'boosters',
@@ -221,10 +222,47 @@ function renderMap(box) {
 
   const playBtn = el('button', 'btn btn-primary');
   playBtn.type = 'button';
-  playBtn.style.cssText = 'width:100%;margin-bottom:16px;padding:18px;font-size:18px;';
+  playBtn.style.cssText = 'width:100%;margin-bottom:12px;padding:18px;font-size:18px;';
   playBtn.textContent = '▶ ' + t('map.continue') + ' · ' + t('map.level') + ' ' + maxUnlocked;
-  playBtn.onclick = () => { sfx.click(); App.level = maxUnlocked; renderApp(); };
+  playBtn.onclick = () => { sfx.click(); App.level = maxUnlocked; App.daily = false; renderApp(); };
   wrap.appendChild(playBtn);
+
+  /* Волна 4: уровень дня (фиксируется на сутки, перекат в 00:00) */
+  const daily = store.ensureDaily();
+  const dailyCard = el('div', 'daily-card' + (daily.done ? ' done' : ''));
+  const dailyIcon = el('div', 'daily-icon', daily.done ? '✅' : '📅');
+  const dailyMid = el('div', 'daily-mid');
+  dailyMid.innerHTML = '<div class="daily-title bm-text-outline">' + t('daily.title') + ' <span class="daily-x2">×2</span></div>' +
+    '<div class="daily-sub bm-text-outline">' + (daily.done ? t('daily.done') : t('daily.sub')) + '</div>';
+  dailyCard.appendChild(dailyIcon);
+  dailyCard.appendChild(dailyMid);
+  if (!daily.done) {
+    const dailyBtn = el('button', 'btn btn-gold daily-play');
+    dailyBtn.type = 'button';
+    dailyBtn.textContent = t('daily.play', { n: daily.level });
+    dailyBtn.onclick = () => {
+      sfx.click();
+      logEvent('daily_start', { level: daily.level, date: daily.date });
+      App.level = daily.level; App.daily = true; renderApp();
+    };
+    dailyCard.appendChild(dailyBtn);
+  }
+  wrap.appendChild(dailyCard);
+
+  /* Волна 4: баннер ивента выходных (сб/вс, переключается календарём) */
+  const weekendId = weekendEventFor(dateKeyOf(new Date()));
+  if (weekendId) {
+    const we = WEEKEND_EVENT_DEFS[weekendId];
+    const banner = el('div', 'weekend-banner');
+    const wIcon = el('div', 'weekend-icon', we.icon);
+    const wMid = el('div', 'weekend-mid');
+    wMid.innerHTML = '<div class="weekend-name">' + we.name[App.player.lang] +
+      ' <span class="weekend-today">' + t('event.today') + '</span></div>' +
+      '<div class="weekend-desc">' + we.desc[App.player.lang] + '</div>';
+    banner.appendChild(wIcon);
+    banner.appendChild(wMid);
+    wrap.appendChild(banner);
+  }
 
   for (const ch of CHAPTERS) {
     const unlocked = ch.id <= currentChapter;
@@ -261,7 +299,7 @@ function renderMap(box) {
       btn.innerHTML = '<span>' + (lvUnlocked ? lv : '🔒') + '</span>' +
         '<span class="level-stars">' + (lvStars > 0 ? '⭐'.repeat(lvStars) : (lvUnlocked ? '' : '·')) + '</span>';
       if (lvUnlocked) {
-        btn.onclick = () => { sfx.click(); App.level = lv; renderApp(); };
+        btn.onclick = () => { sfx.click(); App.level = lv; App.daily = false; renderApp(); };
       } else {
         btn.disabled = true;
       }
@@ -917,10 +955,11 @@ const Game = {
       const stars = finalScore >= this.cfg.star3 ? 3 : finalScore >= this.cfg.star2 ? 2 : 1;
       sfx.win();
       setTimeout(() => sfx.star(1), 400);
-      const info = store.recordWin(this.cfg.level, stars, finalScore, res.maxCascade, movesUsed);
+      const info = store.recordWin(this.cfg.level, stars, finalScore, res.maxCascade, movesUsed, { daily: !!App.daily });
       this.score = finalScore;
-      this.winInfo = { stars, reward: info.reward, firstClear: info.firstClear, newStars: info.newStars, bonus, streak: info.streak, mult: info.mult, piggy: info.piggy };
-      logEvent('level_win', { level: this.cfg.level, stars: stars, score: finalScore, movesUsed: movesUsed, streak: info.streak, mult: info.mult, reward: info.reward });
+      this.winInfo = { stars, reward: info.reward, firstClear: info.firstClear, newStars: info.newStars, bonus, streak: info.streak, mult: info.mult, piggy: info.piggy, event: info.event };
+      logEvent('level_win', { level: this.cfg.level, stars: stars, score: finalScore, movesUsed: movesUsed, streak: info.streak, mult: info.mult, reward: info.reward, daily: info.event.daily ? 1 : 0, weekend: info.event.weekend || '', cascade: info.event.cascadeCoins });
+      if (info.event.daily) logEvent('daily_win', { level: this.cfg.level, reward: info.reward });
       this.updateHud();
       this.renderModals();
     } else if (movesLeft <= 0) {
@@ -1114,6 +1153,23 @@ const Game = {
       const reward = el('div', 'reward-pill');
       reward.textContent = '🪙 +' + this.winInfo.reward + (this.winInfo.mult > 1 ? '  ×' + this.winInfo.mult : '');
       modal.appendChild(reward);
+      /* Волна 4: бейджи событий */
+      const ev = this.winInfo.event;
+      if (ev && ev.daily) {
+        const b = el('div', 'event-badge daily');
+        b.textContent = t('daily.badge');
+        modal.appendChild(b);
+      }
+      if (ev && ev.weekend === 'coins') {
+        const b = el('div', 'event-badge coins');
+        b.textContent = t('event.coinsBadge');
+        modal.appendChild(b);
+      }
+      if (ev && ev.weekend === 'cascade' && ev.cascadeCoins > 0) {
+        const b = el('div', 'event-badge cascade');
+        b.textContent = t('event.cascadeBadge', { n: ev.maxCascade, c: ev.cascadeCoins });
+        modal.appendChild(b);
+      }
       /* Волна 2: серия побед */
       const streakBox = el('div');
       streakBox.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;margin-top:6px;';
@@ -1172,6 +1228,7 @@ const Game = {
       nextBtn.textContent = t('game.next') + ' →';
       nextBtn.onclick = () => {
         this.winInfo = null;
+        App.daily = false;
         if (this.cfg.level < TOTAL_LEVELS) { App.level = this.cfg.level + 1; renderApp(); }
         else { App.level = null; renderApp(); }
       };
@@ -1329,6 +1386,36 @@ function renderShop(box) {
     }
     return btn;
   };
+
+  /* Волна 4: сезонная коллекция — витрина определяется календарём */
+  const season = seasonOn(new Date());
+  const seasonDef = SEASON_DEFS[season];
+  const bundle = seasonalBundleFor(season);
+  const seasonalBox = el('div', 'seasonal-box');
+  const seasonalHead = el('div', 'seasonal-head');
+  seasonalHead.innerHTML = '<span class="seasonal-title bm-text-outline">' + t('shop.seasonal') + '</span>' +
+    '<span class="seasonal-sub">' + t('shop.seasonalSub', { icon: seasonDef.icon, season: seasonDef.name[App.player.lang] }) + '</span>';
+  seasonalBox.appendChild(seasonalHead);
+  const seasonalGrid = el('div', 'seasonal-grid');
+  const seasonItems = [
+    { kind: 'skin', id: bundle.skin.id, name: bundle.skin.name[App.player.lang], preview: bundle.skin.glyphs ? bundle.skin.glyphs.slice(0, 2).join('') : '🎨', price: bundle.skin.price },
+    ...bundle.avatars.map((a) => ({ kind: 'avatar', id: a.id, name: a.emoji, preview: a.emoji, price: a.price })),
+    { kind: 'frame', id: bundle.frame.id, name: bundle.frame.name[App.player.lang], preview: '🖼️', price: bundle.frame.price },
+    { kind: 'nameStyle', id: bundle.nameStyle.id, name: bundle.nameStyle.name[App.player.lang], preview: 'Aa', price: bundle.nameStyle.price },
+    { kind: 'tileEffect', id: bundle.effect.id, name: bundle.effect.name[App.player.lang], preview: bundle.effect.visual, price: bundle.effect.price },
+  ];
+  for (const it of seasonItems) {
+    const card = el('div', 'seasonal-card');
+    const ic = el('div', 'seasonal-ico', it.preview);
+    const mid = el('div', 'seasonal-mid');
+    mid.innerHTML = '<div class="seasonal-name">' + it.name + '</div>';
+    mid.appendChild(equipBtn(it.kind, it.id, it.price));
+    card.appendChild(ic);
+    card.appendChild(mid);
+    seasonalGrid.appendChild(card);
+  }
+  seasonalBox.appendChild(seasonalGrid);
+  wrap.appendChild(seasonalBox);
 
   if (App.shopTab === 'boosters') {
     for (const b of BOOSTERS) {

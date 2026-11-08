@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -14,11 +14,12 @@ import { CHAPTERS, chapterTheme } from '@/lib/game/themes';
 import { CHAPTER_SIZE, TOTAL_CHAPTERS, TOTAL_LEVELS } from '@/lib/game/levels';
 import { usePlayer, useT } from '@/lib/store';
 import { PIGGY_WINS_TARGET } from '@/lib/game/garden';
+import { WEEKEND_EVENTS, dateKeyOf, weekendEventFor } from '@/lib/game/events';
 import { logEvent } from '@/lib/game/analytics';
 import { sfx } from '@/lib/game/sound';
 
 interface MapScreenProps {
-  onPlay: (level: number) => void;
+  onPlay: (level: number, opts?: { daily?: boolean }) => void;
 }
 
 export function MapScreen({ onPlay }: MapScreenProps) {
@@ -31,6 +32,17 @@ export function MapScreen({ onPlay }: MapScreenProps) {
   const totalStars = player.totalStars();
   const starsAvail = player.starsAvailable();
   const piggyReady = player.piggy.wins >= PIGGY_WINS_TARGET;
+  /* Волна 4: уровень дня + ивент выходных (сами перекатываются в 00:00) */
+  const daily = player.computeDaily();
+  const weekendId = weekendEventFor(dateKeyOf(new Date()));
+  const weekend = weekendId ? WEEKEND_EVENTS[weekendId] : null;
+
+  /* фиксация/перекат уровня дня — ТОЛЬКО из эффектов (не в рендере) */
+  useEffect(() => {
+    player.ensureDaily();
+    const id = setInterval(() => player.ensureDaily(), 30000);
+    return () => clearInterval(id);
+  }, [player]);
 
   const doOpenPiggy = () => {
     const got = player.openPiggy();
@@ -87,7 +99,7 @@ export function MapScreen({ onPlay }: MapScreenProps) {
       </div>
 
       <Button
-        className="mb-4 w-full rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 py-5 text-lg font-black text-white shadow-lg hover:from-emerald-400 hover:to-teal-400"
+        className="mb-3 w-full rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 py-5 text-lg font-black text-white shadow-lg hover:from-emerald-400 hover:to-teal-400"
         onClick={() => {
           sfx.click();
           onPlay(maxUnlocked);
@@ -95,6 +107,59 @@ export function MapScreen({ onPlay }: MapScreenProps) {
       >
         ▶ {t('map.continue')} · {t('map.level')} {maxUnlocked}
       </Button>
+
+      {/* Волна 4: уровень дня */}
+      <div
+        className={`mb-3 flex items-center gap-3 rounded-3xl p-3 shadow-lg ${
+          daily.done ? 'bg-white/15 backdrop-blur-sm' : 'bg-gradient-to-r from-indigo-500/95 to-violet-500/95'
+        }`}
+        style={{ border: '2px solid rgba(255,255,255,.35)' }}
+      >
+        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-2xl ${daily.done ? 'bg-white/25' : 'bg-white/95'}`}>
+          {daily.done ? '✅' : '📅'}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 text-sm font-black text-white bm-text-outline">
+            {t('daily.title')}
+            <span className="rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-black text-amber-950">×2</span>
+          </div>
+          <div className="truncate text-[11px] font-bold text-white/85 bm-text-outline">
+            {daily.done ? t('daily.done') : t('daily.sub')}
+          </div>
+        </div>
+        {!daily.done && (
+          <Button
+            size="sm"
+            className="h-9 shrink-0 rounded-full bg-amber-400 px-4 text-sm font-black text-amber-950 hover:bg-amber-300"
+            onClick={() => {
+              sfx.click();
+              logEvent('daily_start', { level: daily.level, date: daily.date });
+              onPlay(daily.level, { daily: true });
+            }}
+          >
+            {t('daily.play', { n: daily.level })}
+          </Button>
+        )}
+      </div>
+
+      {/* Волна 4: баннер ивента выходных (сб/вс) */}
+      {weekend && (
+        <div
+          className="mb-3 flex items-center gap-3 rounded-3xl bg-gradient-to-r from-amber-400/95 to-orange-500/95 p-3 shadow-lg"
+          style={{ border: '2px solid rgba(255,255,255,.4)' }}
+        >
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/95 text-2xl">
+            {weekend.icon}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-black text-amber-950">
+              {weekend.name[player.lang]}
+              <span className="ml-1.5 rounded-full bg-amber-950/25 px-1.5 py-0.5 text-[10px] text-white">{t('event.today')}</span>
+            </div>
+            <div className="truncate text-[11px] font-bold text-amber-950/85">{weekend.desc[player.lang]}</div>
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col gap-3">
         {CHAPTERS.map((ch) => {
