@@ -12,6 +12,7 @@ import type { BoosterId } from '@/lib/game/shop';
 import { BOOSTER_MAP } from '@/lib/game/shop';
 import { setSoundEnabled } from '@/lib/game/sound';
 import { chapterOfLevel, TOTAL_LEVELS } from '@/lib/game/levels';
+import { GARDEN_MAP, gardenCoinsBack, piggyDeposit, PIGGY_WINS_TARGET } from '@/lib/game/garden';
 
 export interface Owned {
   skins: string[];
@@ -50,6 +51,16 @@ export function streakMult(streak: number): number {
   return Math.max(1, Math.min(STREAK_MAX_MULT, streak));
 }
 
+/**
+ * Волна 3: информация о копилке после победы.
+ */
+export interface PiggyInfo {
+  deposit: number;
+  coins: number;
+  wins: number;
+  ready: boolean;
+}
+
 interface PlayerState {
   name: string;
   lang: Lang;
@@ -63,13 +74,19 @@ interface PlayerState {
   stats: PlayerStats;
   /** текущая серия побед подряд (обнуляется поражением) */
   streak: number;
+  /** Волна 3: звёзды, потраченные в саду (доступные = earned - spent) */
+  starsSpent: number;
+  /** Волна 3: восстановленные объекты сада (id из garden.ts) */
+  garden: { restored: string[] };
+  /** Волна 3: копилка — накопленные монеты и победы до вскрытия */
+  piggy: { coins: number; wins: number };
   // actions
   setLang: (l: Lang) => void;
   setSound: (v: boolean) => void;
   setName: (n: string) => void;
   addCoins: (n: number) => void;
   spendCoins: (n: number) => boolean;
-  recordWin: (level: number, stars: number, score: number, maxCascade: number, movesUsed: number) => { firstClear: boolean; newStars: boolean; reward: number; base: number; streak: number; mult: number };
+  recordWin: (level: number, stars: number, score: number, maxCascade: number, movesUsed: number) => { firstClear: boolean; newStars: boolean; reward: number; base: number; streak: number; mult: number; piggy: PiggyInfo };
   recordLoss: () => void;
   addBooster: (id: BoosterId, n: number) => void;
   useBooster: (id: BoosterId) => boolean;
@@ -78,6 +95,12 @@ interface PlayerState {
   equip: (kind: keyof Equipped, id: string) => void;
   maxUnlocked: () => number;
   totalStars: () => number;
+  /** Волна 3: звёзды, доступные на траты в саду */
+  starsAvailable: () => number;
+  /** Волна 3: восстановить объект сада за звёзды (false — недостаток звёзд/уже стоит) */
+  restoreGarden: (id: string) => boolean;
+  /** Волна 3: вскрыть копилку, если набраны победы; возвращает монеты или 0 */
+  openPiggy: () => number;
   resetAll: () => void;
 }
 
@@ -118,6 +141,9 @@ export const usePlayer = create<PlayerState>()(
       },
       stats: { wins: 0, bestCascade: 0, totalScore: 0, movesMade: 0, bestStreak: 0 },
       streak: 0,
+      starsSpent: 0,
+      garden: { restored: [] },
+      piggy: { coins: 0, wins: 0 },
 
       setLang: (l) => set({ lang: l }),
       setSound: (v) => {
@@ -145,11 +171,17 @@ export const usePlayer = create<PlayerState>()(
         const reward = base * mult;
         const nextStars = { ...s.stars, [level]: Math.max(prevStars, stars) };
         const nextScores = { ...s.scores, [level]: Math.max(s.scores[level] ?? 0, score) };
+        /* Волна 3: копилка — каждый взнос победы капает в копилку */
+        const deposit = piggyDeposit(level);
+        const piggyWins = s.piggy.wins + 1;
+        const piggyCoins = s.piggy.coins + deposit;
+        const piggy: PiggyInfo = { deposit, coins: piggyCoins, wins: piggyWins, ready: piggyWins >= PIGGY_WINS_TARGET };
         set({
           stars: nextStars,
           scores: nextScores,
           coins: s.coins + reward,
           streak,
+          piggy: { coins: piggyCoins, wins: piggyWins % PIGGY_WINS_TARGET },
           stats: {
             wins: s.stats.wins + 1,
             bestCascade: Math.max(s.stats.bestCascade, maxCascade),
@@ -158,7 +190,7 @@ export const usePlayer = create<PlayerState>()(
             bestStreak: Math.max(s.stats.bestStreak, streak),
           },
         });
-        return { firstClear, newStars, reward, base, streak, mult };
+        return { firstClear, newStars, reward, base, streak, mult, piggy };
       },
       recordLoss: () => set((s) => (s.streak === 0 ? s : { streak: 0 })),
       addBooster: (id, n) =>
@@ -199,6 +231,25 @@ export const usePlayer = create<PlayerState>()(
         const s = get();
         return Object.values(s.stars).reduce((a, b) => a + b, 0);
       },
+      starsAvailable: () => Math.max(0, get().totalStars() - get().starsSpent),
+      restoreGarden: (id) => {
+        const s = get();
+        const def = GARDEN_MAP[id];
+        if (!def || s.garden.restored.includes(id)) return false;
+        if (s.starsAvailable() < def.cost) return false;
+        set({
+          starsSpent: s.starsSpent + def.cost,
+          coins: s.coins + gardenCoinsBack(def.cost),
+          garden: { restored: [...s.garden.restored, id] },
+        });
+        return true;
+      },
+      openPiggy: () => {
+        const s = get();
+        if (s.piggy.coins <= 0) return 0;
+        set({ coins: s.coins + s.piggy.coins, piggy: { coins: 0, wins: 0 } });
+        return s.piggy.coins;
+      },
       resetAll: () =>
         set({
           name: '',
@@ -224,6 +275,9 @@ export const usePlayer = create<PlayerState>()(
           },
           stats: { wins: 0, bestCascade: 0, totalScore: 0, movesMade: 0, bestStreak: 0 },
           streak: 0,
+          starsSpent: 0,
+          garden: { restored: [] },
+          piggy: { coins: 0, wins: 0 },
         }),
     }),
     {

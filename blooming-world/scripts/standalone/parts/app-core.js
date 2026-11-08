@@ -66,6 +66,10 @@ function defaultState() {
     equipped: { skin: 'classic', avatar: 'av-seed', frame: 'fr-none', nameStyle: 'ns-basic', tileEffect: '', avatarEffect: '', nameEffect: '' },
     stats: { wins: 0, bestCascade: 0, totalScore: 0, movesMade: 0, bestStreak: 0 },
     streak: 0,
+    /* Волна 3: сад + копилка (аддитивно, §5.4) */
+    starsSpent: 0,
+    garden: { restored: [] },
+    piggy: { coins: 0, wins: 0 },
   };
 }
 function normalizeState(s) {
@@ -77,6 +81,13 @@ function normalizeState(s) {
   out.owned = Object.assign({}, d.owned, s && s.owned ? s.owned : {});
   out.equipped = Object.assign({}, d.equipped, s && s.equipped ? s.equipped : {});
   out.stats = Object.assign({}, d.stats, s && s.stats ? s.stats : {});
+  /* Волна 3: аддитивная миграция сад/копилка */
+  out.starsSpent = typeof (s && s.starsSpent) === 'number' ? s.starsSpent : 0;
+  out.garden = { restored: Array.isArray(s && s.garden && s.garden.restored) ? s.garden.restored.slice() : [] };
+  out.piggy = {
+    coins: s && s.piggy && typeof s.piggy.coins === 'number' ? s.piggy.coins : 0,
+    wins: s && s.piggy && typeof s.piggy.wins === 'number' ? s.piggy.wins : 0,
+  };
   out.lang = out.lang === 'en' ? 'en' : 'ru';
   return out;
 }
@@ -124,8 +135,14 @@ const store = {
     s.stats.totalScore += score;
     s.stats.movesMade += movesUsed;
     s.stats.bestStreak = Math.max(s.stats.bestStreak || 0, streak);
+    /* Волна 3: взнос победы в копилку */
+    const deposit = piggyDeposit(level);
+    const piggyWins = (s.piggy.wins || 0) + 1;
+    const piggyCoins = (s.piggy.coins || 0) + deposit;
+    s.piggy.coins = piggyCoins;
+    s.piggy.wins = piggyWins % PIGGY_WINS_TARGET;
     saveState();
-    return { firstClear, newStars, reward, base, streak, mult };
+    return { firstClear, newStars, reward, base, streak, mult, piggy: { deposit, coins: piggyCoins, wins: piggyWins, ready: piggyWins >= PIGGY_WINS_TARGET } };
   },
   recordLoss() { if (App.player.streak) { App.player.streak = 0; saveState(); } },
   addBooster(id, n) { App.player.boosters[id] = (App.player.boosters[id] || 0) + n; saveState(); },
@@ -160,6 +177,31 @@ const store = {
   totalStars() {
     const vals = Object.values(App.player.stars);
     return vals.reduce((a, b) => a + b, 0);
+  },
+  /* Волна 3: звёзды, доступные на траты в саду */
+  starsAvailable() {
+    return Math.max(0, this.totalStars() - (App.player.starsSpent || 0));
+  },
+  restoreGarden(id) {
+    const s = App.player;
+    const def = GARDEN_OBJECTS.find((o) => o.id === id);
+    if (!def || s.garden.restored.includes(id)) return false;
+    if (this.starsAvailable() < def.cost) return false;
+    s.starsSpent += def.cost;
+    s.coins += gardenCoinsBack(def.cost);
+    s.garden.restored.push(id);
+    saveState();
+    return true;
+  },
+  openPiggy() {
+    const s = App.player;
+    if (!s.piggy.coins) return 0;
+    const got = s.piggy.coins;
+    s.coins += got;
+    s.piggy.coins = 0;
+    s.piggy.wins = 0;
+    saveState();
+    return got;
   },
   resetAll() {
     const keepLang = App.player.lang;

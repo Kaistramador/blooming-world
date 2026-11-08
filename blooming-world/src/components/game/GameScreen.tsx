@@ -28,6 +28,8 @@ import {
 } from '@/lib/game/engine';
 import type { Board, Frame, LevelConfig, MoveResult } from '@/lib/game/types';
 import { usePlayer, useT, STREAK_MAX_MULT } from '@/lib/store';
+import type { PiggyInfo } from '@/lib/store';
+import { PIGGY_WINS_TARGET } from '@/lib/game/garden';
 import { logEvent, logSessionStart } from '@/lib/game/analytics';
 import { sfx } from '@/lib/game/sound';
 
@@ -148,7 +150,7 @@ export function GameScreen({ level, onExit, onLevelChange }: GameScreenProps) {
   const [toast, setToast] = useState<string | null>(null);
   const [activeBooster, setActiveBooster] = useState<BoosterId | null>(null);
   const [buyBoosterId, setBuyBoosterId] = useState<BoosterId | null>(null);
-  const [winInfo, setWinInfo] = useState<{ stars: number; reward: number; firstClear: boolean; newStars: boolean; bonus: number; streak: number; mult: number } | null>(null);
+  const [winInfo, setWinInfo] = useState<{ stars: number; reward: number; firstClear: boolean; newStars: boolean; bonus: number; streak: number; mult: number; piggy: PiggyInfo } | null>(null);
   const [loseOpen, setLoseOpen] = useState(false);
   const [lostStreak, setLostStreak] = useState(0);
   const [plus5Used, setPlus5Used] = useState(0);
@@ -362,8 +364,8 @@ export function GameScreen({ level, onExit, onLevelChange }: GameScreenProps) {
         setTimeout(() => sfx.star(1), 400);
         const info = player.recordWin(cfg.level, stars, finalScore, res.maxCascade, movesUsed);
         setScore(finalScore);
-        setWinInfo({ stars, reward: info.reward, firstClear: info.firstClear, newStars: info.newStars, bonus, streak: info.streak, mult: info.mult });
-        logEvent('level_win', { level: cfg.level, stars, score: finalScore, movesUsed, streak: info.streak, mult: info.mult, reward: info.reward });
+        setWinInfo({ stars, reward: info.reward, firstClear: info.firstClear, newStars: info.newStars, bonus, streak: info.streak, mult: info.mult, piggy: info.piggy });
+        logEvent('level_win', { level: cfg.level, stars, score: finalScore, movesUsed, streak: info.streak, mult: info.mult, reward: info.reward, piggy: info.piggy.deposit });
       } else if (movesLeft <= 0) {
         sfx.lose();
         setLostStreak(player.streak);
@@ -913,6 +915,17 @@ export function GameScreen({ level, onExit, onLevelChange }: GameScreenProps) {
                 <div className="flex items-center gap-1.5 rounded-full bg-orange-600/90 px-3 py-1 text-xs font-black text-white">
                   🔥 {t('streak.title')}: {winInfo.streak}
                 </div>
+                {/* Волна 3: копилка */}
+                <div
+                  className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-black text-white ${
+                    winInfo.piggy.ready ? 'bg-pink-600' : 'bg-rose-400/80'
+                  }`}
+                >
+                  {t('piggy.deposit', { n: winInfo.piggy.deposit, w: Math.min(winInfo.piggy.wins, PIGGY_WINS_TARGET), m: PIGGY_WINS_TARGET })}
+                </div>
+                {winInfo.piggy.ready && (
+                  <div className="text-[11px] font-black text-amber-200">🐷 {t('piggy.ready')}</div>
+                )}
                 <div className="flex items-center gap-1">
                   {Array.from({ length: STREAK_MAX_MULT - 1 }, (_, i) => i + 2).map((m) => (
                     <span

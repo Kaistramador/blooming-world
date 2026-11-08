@@ -4,13 +4,16 @@
  * ============================================================ */
 
 const App = {
-  screen: 'map',        // map | shop | ranks | profile
+  screen: 'map',        // map | garden | shop | ranks | profile
   level: null,          // playing level number or null
   player: null,
   bots: null,
   shopTab: 'boosters',
   ranksQuery: '',
   savedFlash: false,
+  /* Волна 3: копилка */
+  piggyDialog: null,    // null | 'status' | 'result'
+  piggyGot: 0,
 };
 
 function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
@@ -28,6 +31,7 @@ function renderApp() {
     Game.mount(screenBox);
   } else {
     if (App.screen === 'map') renderMap(screenBox);
+    else if (App.screen === 'garden') renderGarden(screenBox);
     else if (App.screen === 'shop') renderShop(screenBox);
     else if (App.screen === 'ranks') renderRanks(screenBox);
     else renderProfile(screenBox);
@@ -41,6 +45,7 @@ function buildNav() {
   const row = el('div', 'row');
   const items = [
     { key: 'map', icon: '🗺️', label: store.t('nav.map') },
+    { key: 'garden', icon: '🌸', label: store.t('nav.garden') },
     { key: 'shop', icon: '🛍️', label: store.t('nav.shop') },
     { key: 'ranks', icon: '🏆', label: store.t('nav.ranks') },
     { key: 'profile', icon: '👤', label: store.t('nav.profile') },
@@ -60,6 +65,102 @@ function coinPill() {
   const d = el('span', 'coin-pill');
   d.innerHTML = '🪙 ' + fmt(App.player.coins);
   return d;
+}
+
+/* Волна 3: пилюля копилки (карта) */
+function piggyPill() {
+  const t = (k, v) => store.t(k, v);
+  const ready = App.player.piggy.wins >= PIGGY_WINS_TARGET;
+  const d = el('button', 'piggy-pill' + (ready ? ' piggy-pill-ready' : ''));
+  d.type = 'button';
+  d.setAttribute('aria-label', t('piggy.title'));
+  const meter = el('span', 'piggy-meter');
+  for (let i = 0; i < PIGGY_WINS_TARGET; i++) {
+    const dot = el('span', i < App.player.piggy.wins ? 'on' : '');
+    meter.appendChild(dot);
+  }
+  d.innerHTML = '🐷 ' + fmt(App.player.piggy.coins) + ' ';
+  d.appendChild(meter);
+  d.onclick = () => {
+    sfx.click();
+    if (ready) {
+      openPiggyFlow();
+    } else {
+      App.piggyDialog = 'status';
+      renderPiggyDialog();
+    }
+  };
+  return d;
+}
+
+function openPiggyFlow() {
+  const got = store.openPiggy();
+  if (got > 0) {
+    sfx.coin();
+    setTimeout(() => sfx.star(3), 200);
+    logEvent('piggy_open', { coins: got });
+    App.piggyGot = got;
+    App.piggyDialog = 'result';
+  } else {
+    App.piggyDialog = 'status';
+  }
+  renderPiggyDialog();
+}
+
+function renderPiggyDialog() {
+  const old = document.getElementById('bm-piggy-modal');
+  if (old) old.remove();
+  if (!App.piggyDialog) return;
+  const t = (k, v) => store.t(k, v);
+  const over = el('div', 'modal-overlay');
+  over.id = 'bm-piggy-modal';
+  over.style.zIndex = '90';
+  const modal = el('div', 'modal win');
+  if (App.piggyDialog === 'status') {
+    modal.innerHTML = '<h2>🐷 ' + t('piggy.title') + '</h2>';
+    const pig = el('div', 'piggy-big', '🐷');
+    modal.appendChild(pig);
+    const coins = el('div', 'reward-pill');
+    coins.textContent = '🪙 ' + fmt(App.player.piggy.coins);
+    modal.appendChild(coins);
+    const meter = el('div', 'piggy-meter');
+    meter.style.cssText = 'justify-content:center;margin:8px 0;';
+    for (let i = 0; i < PIGGY_WINS_TARGET; i++) {
+      meter.appendChild(el('span', i < App.player.piggy.wins ? 'on' : ''));
+    }
+    modal.appendChild(meter);
+    const info = el('div', 'sub');
+    info.style.cssText = 'font-weight:700;color:#fbcfe8;';
+    info.textContent = App.player.piggy.wins >= PIGGY_WINS_TARGET ? t('piggy.ready') : t('piggy.progress', { n: PIGGY_WINS_TARGET - App.player.piggy.wins });
+    modal.appendChild(info);
+    const hint = el('div', 'sub');
+    hint.style.cssText = 'font-size:11px;opacity:.8;';
+    hint.textContent = t('piggy.hint');
+    modal.appendChild(hint);
+    const col = el('div', 'col');
+    const closeBtn = el('button', 'btn btn-ghost');
+    closeBtn.type = 'button';
+    closeBtn.textContent = t('common.close');
+    closeBtn.onclick = () => { App.piggyDialog = null; renderPiggyDialog(); };
+    col.appendChild(closeBtn);
+    modal.appendChild(col);
+  } else {
+    modal.innerHTML = '<h2>🎉 ' + t('piggy.full') + '</h2>';
+    const pig = el('div', 'piggy-big', '🪙');
+    modal.appendChild(pig);
+    const got = el('div', 'reward-pill');
+    got.textContent = '+' + fmt(App.piggyGot);
+    modal.appendChild(got);
+    const col = el('div', 'col');
+    const okBtn = el('button', 'btn btn-white');
+    okBtn.type = 'button';
+    okBtn.textContent = t('common.ok');
+    okBtn.onclick = () => { App.piggyDialog = null; App.piggyGot = 0; renderPiggyDialog(); renderApp(); };
+    col.appendChild(okBtn);
+    modal.appendChild(col);
+  }
+  over.appendChild(modal);
+  document.body.appendChild(over);
 }
 
 let toastTimer = null;
@@ -106,9 +207,13 @@ function renderMap(box) {
 
   const head = el('div', 'map-head');
   head.innerHTML = '<div><h1 class="bm-text-outline">' + t('app.title') + '</h1><p class="bm-text-outline">' + t('app.subtitle') + '</p></div>';
-  const starsPill = el('span', 'coin-pill');
-  starsPill.innerHTML = '⭐ ' + store.totalStars();
+  /* Волна 3: пилюля звёзд показывает ДОСТУПНЫЕ на сад звёзды */
+  const starsAvail = store.starsAvailable();
+  const starsTotal = store.totalStars();
+  const starsPill = el('span', 'coin-pill' + (starsAvail < starsTotal ? ' stars-avail' : ''));
+  starsPill.innerHTML = '⭐ ' + starsAvail;
   head.appendChild(starsPill);
+  head.appendChild(piggyPill());
   wrap.appendChild(head);
 
   const maxUnlocked = store.maxUnlocked();
@@ -179,6 +284,231 @@ function renderMap(box) {
   wrap.appendChild(soon);
 
   box.appendChild(wrap);
+}
+
+/* ============================================================
+ * GARDEN SCREEN (Волна 3)
+ * ============================================================ */
+const GARDEN_BANDS = [
+  { zone: 0, top: 0, height: 33, ground: 'linear-gradient(180deg,#7fb86b,#5d9a4e)', groundDim: 'linear-gradient(180deg,#8b9377,#6f7a60)' },
+  { zone: 1, top: 33, height: 34, ground: 'linear-gradient(180deg,#63a94f,#3f8a3c)', groundDim: 'linear-gradient(180deg,#7d8a68,#5c6e4e)' },
+  { zone: 2, top: 67, height: 33, ground: 'linear-gradient(180deg,#4f9c46,#32743a)', groundDim: 'linear-gradient(180deg,#6f8560,#4c6247)' },
+];
+const GARDEN_ZONE_KEYS = ['garden.zone0', 'garden.zone1', 'garden.zone2'];
+
+function renderGarden(box) {
+  const wrap = el('div', 'map-wrap');
+  const t = (k, v) => store.t(k, v);
+  const lang = App.player.lang;
+  const maxUnlocked = store.maxUnlocked();
+  const gardenOpen = maxUnlocked > 10;
+  const restoredSet = new Set(App.player.garden.restored);
+  const starsAvail = store.starsAvailable();
+  const bloom = restoredSet.size / GARDEN_OBJECTS.length;
+
+  /* ---------- закрытый сад ---------- */
+  const head = el('div', 'map-head');
+  const backBtn = el('button', 'btn btn-ghost');
+  backBtn.type = 'button';
+  backBtn.style.cssText = 'padding:8px 14px;';
+  backBtn.textContent = '← ' + t('game.exit');
+  backBtn.onclick = () => { sfx.click(); App.screen = 'map'; renderApp(); };
+  head.appendChild(backBtn);
+  wrap.appendChild(head);
+
+  if (!gardenOpen) {
+    const lock = el('div', 'card');
+    lock.style.cssText = 'margin-top:28px;padding:32px 20px;text-align:center;';
+    lock.innerHTML =
+      '<div style="font-size:52px;line-height:1">🌱</div>' +
+      '<h2 class="bm-text-outline" style="margin-top:10px;font-size:20px;">' + t('garden.lockedTitle') + '</h2>' +
+      '<p class="bm-text-outline" style="font-size:13px;opacity:.9;margin-top:4px;">' + t('garden.lockedHint') + '</p>' +
+      '<div style="display:inline-block;margin-top:10px;background:rgba(255,255,255,.2);border-radius:999px;padding:3px 12px;font-size:12px;font-weight:700;">' +
+      t('map.chapter') + ' 1 · ' + Math.min(10, maxUnlocked - 1) + '/10</div>';
+    wrap.appendChild(lock);
+    box.appendChild(wrap);
+    return;
+  }
+
+  const zoneUnlocked = (zone) => maxUnlocked > gardenZoneUnlockLevel(zone);
+
+  /* ---------- шапка: заголовок + счётчики ---------- */
+  const titleBox = el('div');
+  titleBox.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:-44px;padding-top:0;';
+  const tb = el('div');
+  tb.style.cssText = 'text-align:center;flex:1;';
+  tb.innerHTML = '<div class="bm-text-outline" style="font-size:18px;font-weight:900;">🌸 ' + t('garden.title') + '</div>' +
+    '<div class="bm-text-outline" style="font-size:10px;opacity:.85;">' + t('garden.subtitle') + '</div>';
+  titleBox.appendChild(tb);
+  const pillBox = el('div');
+  pillBox.style.cssText = 'display:flex;flex-direction:column;gap:4px;align-items:flex-end;';
+  const stPill = el('span', 'coin-pill' + (starsAvail < store.totalStars() ? ' stars-avail' : ''));
+  stPill.style.fontSize = '12px';
+  stPill.innerHTML = '⭐ ' + starsAvail;
+  pillBox.appendChild(stPill);
+  const coinP = el('span', 'coin-pill');
+  coinP.style.fontSize = '12px';
+  coinP.innerHTML = '🪙 ' + fmt(App.player.coins);
+  pillBox.appendChild(coinP);
+  titleBox.appendChild(pillBox);
+  wrap.appendChild(titleBox);
+
+  /* ---------- прогресс расцвета ---------- */
+  const prog = el('div', 'card');
+  prog.style.cssText = 'margin-top:10px;padding:10px 12px;';
+  const progRow = el('div');
+  progRow.style.cssText = 'display:flex;justify-content:space-between;font-size:11px;font-weight:700;';
+  progRow.innerHTML = '<span>🌸 ' + t('garden.bloom') + '</span><span>' +
+    t('garden.restoredCount', { n: restoredSet.size, m: GARDEN_OBJECTS.length }) + '</span>';
+  prog.appendChild(progRow);
+  const bar = el('div', 'gd-bloom-bar');
+  bar.style.marginTop = '6px';
+  const fill = el('div', 'gd-bloom-fill');
+  fill.style.width = Math.round(bloom * 100) + '%';
+  bar.appendChild(fill);
+  prog.appendChild(bar);
+  wrap.appendChild(prog);
+
+  /* ---------- сцена ---------- */
+  const scene = el('div', 'gd-scene');
+  scene.style.marginTop = '10px';
+  const sky = el('div', 'gd-sky');
+  sky.style.background = 'linear-gradient(180deg, rgba(96,125,139,' + (0.42 * (1 - bloom)).toFixed(2) + ') 0%, rgba(255,255,255,0) 45%)';
+  scene.appendChild(sky);
+  if (bloom > 0.25) scene.appendChild(el('div', 'gd-sun'));
+  for (let i = 0; i < 3; i++) {
+    const c = el('div', 'gd-cloud');
+    c.style.top = (4 + i * 7) + '%';
+    c.style.animationDuration = (70 + i * 25) + 's';
+    c.style.animationDelay = (-i * 22) + 's';
+    c.style.opacity = String(0.5 + bloom * 0.45);
+    scene.appendChild(c);
+  }
+  const hillL = el('div', 'gd-hill');
+  hillL.style.cssText = 'left:-18%;top:20%;width:70%;height:18%;background:rgba(96,150,90,' + (0.5 + bloom * 0.25).toFixed(2) + ')';
+  scene.appendChild(hillL);
+  const hillR = el('div', 'gd-hill');
+  hillR.style.cssText = 'right:-22%;top:24%;width:75%;height:16%;background:rgba(76,132,80,' + (0.45 + bloom * 0.25).toFixed(2) + ')';
+  scene.appendChild(hillR);
+
+  for (const band of GARDEN_BANDS) {
+    const open = zoneUnlocked(band.zone);
+    const bd = el('div', 'gd-band');
+    bd.style.cssText = 'top:' + band.top + '%;height:' + band.height + '%;background:' + (open ? band.ground : band.groundDim) + ';opacity:' + (open ? 1 : 0.75) + ';';
+    const label = el('div', 'gd-band-label');
+    label.style.top = '6px';
+    label.innerHTML = '🌄 ' + t(GARDEN_ZONE_KEYS[band.zone]) + (!open ? ' 🔒 ' + t('garden.zoneLocked', { n: GARDEN_ZONE_CHAPTER[band.zone] + 1 }) : '');
+    bd.appendChild(label);
+    scene.appendChild(bd);
+  }
+
+  /* ambient petals by bloom */
+  const petalCount = Math.floor(bloom * 10);
+  const PETALS = ['🌸', '✨', '🦋'];
+  for (let i = 0; i < petalCount; i++) {
+    const p = el('span', 'gd-petal', PETALS[i % 3]);
+    p.style.left = (((i * 37) % 92) + 3) + '%';
+    p.style.top = (18 + ((i * 53) % 70)) + '%';
+    p.style.fontSize = (10 + (i % 3) * 4) + 'px';
+    p.style.animationDuration = (3 + (i % 4)) + 's';
+    p.style.animationDelay = (-i * 0.7) + 's';
+    scene.appendChild(p);
+  }
+
+  /* objects */
+  let flashTimer = null;
+  const flash = (msg) => {
+    let fl = document.getElementById('bm-gd-flash');
+    if (!fl) {
+      fl = el('div');
+      fl.id = 'bm-gd-flash';
+      fl.style.cssText = 'position:fixed;left:50%;top:64px;transform:translateX(-50%);z-index:60;';
+      fl.innerHTML = '<div class="toast-box bm-toast-in" style="background:rgba(0,0,0,.8);border-radius:999px;padding:8px 16px;font-size:13px;font-weight:700;color:#fff;"></div>';
+      document.body.appendChild(fl);
+    }
+    fl.firstChild.textContent = msg;
+    if (flashTimer) clearTimeout(flashTimer);
+    flashTimer = setTimeout(() => { fl.remove(); }, 1600);
+  };
+
+  for (const obj of GARDEN_OBJECTS) {
+    const isRestored = restoredSet.has(obj.id);
+    const open = zoneUnlocked(obj.zone);
+    const canAfford = starsAvail >= obj.cost;
+    const slot = el('div', 'gd-slot');
+    slot.style.cssText = 'left:' + obj.x + '%;top:' + obj.y + '%;';
+    if (isRestored) {
+      const objBtn = el('button', 'gd-obj');
+      objBtn.type = 'button';
+      objBtn.setAttribute('aria-label', obj.name[lang]);
+      objBtn.innerHTML = '<span class="gd-obj-emoji" style="font-size:' + Math.round(26 * obj.size) + 'px;animation-delay:' + ((obj.x % 7) * 0.4) + 's">' + obj.emoji + '</span>' +
+        '<span class="gd-obj-name">' + obj.name[lang] + '</span>';
+      objBtn.onclick = () => { sfx.click(); flash('🌳 ' + obj.name[lang]); };
+      slot.appendChild(objBtn);
+    } else {
+      const emptyBtn = el('button', 'gd-obj gd-empty-slot' + (open ? '' : ' dim'));
+      emptyBtn.type = 'button';
+      emptyBtn.style.opacity = open ? '1' : '0.7';
+      emptyBtn.setAttribute('aria-label', obj.name[lang] + ' — ' + t('garden.restore', { n: obj.cost }));
+      emptyBtn.innerHTML = '<span class="gd-empty' + (open && canAfford ? ' gd-empty-can' : '') + '">' + (open ? '➕' : '🔒') + '</span>' +
+        '<span class="gd-cost">⭐' + obj.cost + '</span>';
+      emptyBtn.onclick = () => {
+        if (!open) { sfx.click(); flash(t('garden.zoneLocked', { n: GARDEN_ZONE_CHAPTER[obj.zone] + 1 })); return; }
+        renderGardenConfirm(obj, flash, () => { renderApp(); });
+      };
+      slot.appendChild(emptyBtn);
+    }
+    scene.appendChild(slot);
+  }
+  wrap.appendChild(scene);
+
+  if (bloom >= 1) {
+    const done = el('div');
+    done.style.cssText = 'margin-top:10px;border-radius:18px;background:rgba(251,191,36,.9);padding:9px;text-align:center;font-size:14px;font-weight:900;color:#451a03;';
+    done.textContent = '🌈 ' + t('garden.done');
+    wrap.appendChild(done);
+  }
+
+  box.appendChild(wrap);
+}
+
+/* подтверждение восстановления объекта сада */
+function renderGardenConfirm(obj, flash, onRestored) {
+  const t = (k, v) => store.t(k, v);
+  const lang = App.player.lang;
+  const over = el('div', 'modal-overlay');
+  over.style.zIndex = '90';
+  const modal = el('div', 'modal light');
+  modal.innerHTML = '<h2><span style="font-size:28px">' + obj.emoji + '</span> ' +
+    t('garden.confirmTitle', { name: obj.name[lang] }) + '</h2>' +
+    '<div class="sub" style="opacity:.8">' + t('garden.restore', { n: obj.cost }) + ' · ' +
+    t('garden.coinsBack', { n: gardenCoinsBack(obj.cost) }) + '</div>';
+  const col = el('div', 'col');
+  const yes = el('button', 'btn btn-primary');
+  yes.type = 'button';
+  yes.textContent = '🌱 ' + t('garden.restore', { n: obj.cost });
+  yes.onclick = () => {
+    if (store.restoreGarden(obj.id)) {
+      sfx.coin();
+      setTimeout(() => sfx.star(2), 180);
+      logEvent('garden_restore', { id: obj.id, cost: obj.cost });
+      flash(t('garden.coinsBack', { n: gardenCoinsBack(obj.cost) }));
+    } else {
+      flash(t('garden.needStars'));
+    }
+    over.remove();
+    onRestored();
+  };
+  col.appendChild(yes);
+  const no = el('button', 'btn');
+  no.type = 'button';
+  no.style.cssText = 'background:#e2e8f0;color:#334155;';
+  no.textContent = t('garden.cancel');
+  no.onclick = () => over.remove();
+  col.appendChild(no);
+  modal.appendChild(col);
+  over.appendChild(modal);
+  document.body.appendChild(over);
 }
 
 /* ============================================================
@@ -589,7 +919,7 @@ const Game = {
       setTimeout(() => sfx.star(1), 400);
       const info = store.recordWin(this.cfg.level, stars, finalScore, res.maxCascade, movesUsed);
       this.score = finalScore;
-      this.winInfo = { stars, reward: info.reward, firstClear: info.firstClear, newStars: info.newStars, bonus, streak: info.streak, mult: info.mult };
+      this.winInfo = { stars, reward: info.reward, firstClear: info.firstClear, newStars: info.newStars, bonus, streak: info.streak, mult: info.mult, piggy: info.piggy };
       logEvent('level_win', { level: this.cfg.level, stars: stars, score: finalScore, movesUsed: movesUsed, streak: info.streak, mult: info.mult, reward: info.reward });
       this.updateHud();
       this.renderModals();
@@ -809,6 +1139,22 @@ const Game = {
         : t('streak.next', { m: this.winInfo.mult + 1, n: this.winInfo.mult + 1 - this.winInfo.streak });
       streakBox.appendChild(nextHint);
       modal.appendChild(streakBox);
+      /* Волна 3: копилка в модали победы */
+      const pig = this.winInfo.piggy;
+      const pigPill = el('div');
+      pigPill.style.cssText = 'border-radius:999px;padding:3px 12px;font-size:12px;font-weight:900;color:#fff;margin-top:4px;display:inline-block;' +
+        (pig.ready ? 'background:#db2777;' : 'background:rgba(251,113,133,.8);');
+      pigPill.textContent = t('piggy.deposit', { n: pig.deposit, w: Math.min(pig.wins, PIGGY_WINS_TARGET), m: PIGGY_WINS_TARGET });
+      const pigWrap = el('div');
+      pigWrap.style.cssText = 'text-align:center;';
+      pigWrap.appendChild(pigPill);
+      if (pig.ready) {
+        const pigReady = el('div');
+        pigReady.style.cssText = 'font-size:11px;font-weight:900;color:#fde68a;margin-top:2px;';
+        pigReady.textContent = '🐷 ' + t('piggy.ready');
+        pigWrap.appendChild(pigReady);
+      }
+      modal.appendChild(pigWrap);
       if (this.winInfo.firstClear) {
         const l = el('div', 'sub');
         l.style.cssText = 'font-weight:700;color:#d1fae5;';

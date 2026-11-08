@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { GameScreen } from '@/components/game/GameScreen';
+import { GardenScreen } from '@/components/game/GardenScreen';
 import { MapScreen } from '@/components/MapScreen';
 import { ShopScreen } from '@/components/ShopScreen';
 import { RanksScreen } from '@/components/RanksScreen';
@@ -14,10 +15,11 @@ import { logSessionStart } from '@/lib/game/analytics';
 import { sfx } from '@/lib/game/sound';
 import { translate } from '@/lib/i18n';
 
-type Screen = 'map' | 'shop' | 'ranks' | 'profile';
+type Screen = 'map' | 'garden' | 'shop' | 'ranks' | 'profile';
 
 const NAV: { key: Screen; icon: string; labelKey: string }[] = [
   { key: 'map', icon: '🗺️', labelKey: 'nav.map' },
+  { key: 'garden', icon: '🌸', labelKey: 'nav.garden' },
   { key: 'shop', icon: '🛍️', labelKey: 'nav.shop' },
   { key: 'ranks', icon: '🏆', labelKey: 'nav.ranks' },
   { key: 'profile', icon: '👤', labelKey: 'nav.profile' },
@@ -70,6 +72,7 @@ export default function Home() {
       <BloomingBackground bg={theme.bg} seed={99} />
       <div className="relative z-10">
         {screen === 'map' && <MapScreen onPlay={(lv) => setPlayingLevel(lv)} />}
+        {screen === 'garden' && <GardenScreen onExit={() => setScreen('map')} />}
         {screen === 'shop' && <ShopScreen />}
         {screen === 'ranks' && <RanksScreen />}
         {screen === 'profile' && <ProfileScreen />}
@@ -92,7 +95,7 @@ export default function Home() {
                   sfx.click();
                   setScreen(item.key);
                 }}
-                className={`flex min-h-[44px] min-w-[64px] flex-col items-center justify-center rounded-2xl px-3 py-1.5 text-[10px] font-bold transition ${
+                className={`flex min-h-[44px] min-w-[56px] flex-1 flex-col items-center justify-center rounded-2xl px-1.5 py-1.5 text-[10px] font-bold transition ${
                   active ? 'bg-white/95 text-slate-800 shadow' : 'text-white/75 hover:text-white'
                 }`}
                 aria-current={active ? 'page' : undefined}

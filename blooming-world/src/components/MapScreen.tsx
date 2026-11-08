@@ -1,10 +1,20 @@
 'use client';
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { BloomingBackground } from './game/BloomingBackground';
 import { CHAPTERS, chapterTheme } from '@/lib/game/themes';
 import { CHAPTER_SIZE, TOTAL_CHAPTERS, TOTAL_LEVELS } from '@/lib/game/levels';
 import { usePlayer, useT } from '@/lib/store';
+import { PIGGY_WINS_TARGET } from '@/lib/game/garden';
+import { logEvent } from '@/lib/game/analytics';
 import { sfx } from '@/lib/game/sound';
 
 interface MapScreenProps {
@@ -14,9 +24,23 @@ interface MapScreenProps {
 export function MapScreen({ onPlay }: MapScreenProps) {
   const t = useT();
   const player = usePlayer();
+  const [piggyOpen, setPiggyOpen] = useState(false);
+  const [piggyGot, setPiggyGot] = useState(0);
   const maxUnlocked = player.maxUnlocked();
   const currentChapter = Math.min(TOTAL_CHAPTERS - 1, Math.floor((maxUnlocked - 1) / CHAPTER_SIZE));
   const totalStars = player.totalStars();
+  const starsAvail = player.starsAvailable();
+  const piggyReady = player.piggy.wins >= PIGGY_WINS_TARGET;
+
+  const doOpenPiggy = () => {
+    const got = player.openPiggy();
+    if (got > 0) {
+      sfx.coin();
+      setTimeout(() => sfx.star(3), 200);
+      logEvent('piggy_open', { coins: got });
+      setPiggyGot(got);
+    }
+  };
 
   const chapterBlooming = (ch: number) => {
     const levels = Array.from({ length: CHAPTER_SIZE }, (_, i) => ch * CHAPTER_SIZE + i + 1);
@@ -33,8 +57,32 @@ export function MapScreen({ onPlay }: MapScreenProps) {
           </h1>
           <p className="text-xs text-white/80 bm-text-outline">{t('app.subtitle')}</p>
         </div>
-        <div className="flex items-center gap-1 rounded-full bg-amber-400/95 px-3 py-1.5 text-sm font-black text-amber-950 shadow-lg">
-          ⭐ {totalStars}
+        <div className="flex items-center gap-1.5">
+          <div
+            className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-black shadow-lg ${
+              starsAvail < totalStars ? 'bg-white/90 text-emerald-800' : 'bg-amber-400/95 text-amber-950'
+            }`}
+            title={t('garden.subtitle')}
+          >
+            ⭐ {starsAvail}
+          </div>
+          <button
+            type="button"
+            className={`piggy-pill ${piggyReady ? 'piggy-pill-ready' : ''}`}
+            onClick={() => {
+              sfx.click();
+              if (piggyReady) doOpenPiggy();
+              else setPiggyOpen(true);
+            }}
+            aria-label={t('piggy.title')}
+          >
+            🐷 {player.piggy.coins}
+            <span className="piggy-meter" aria-hidden>
+              {Array.from({ length: PIGGY_WINS_TARGET }, (_, i) => (
+                <span key={i} className={i < player.piggy.wins ? 'on' : ''} />
+              ))}
+            </span>
+          </button>
         </div>
       </div>
 
@@ -126,6 +174,70 @@ export function MapScreen({ onPlay }: MapScreenProps) {
       </div>
 
       <p className="mt-4 text-center text-[11px] text-white/60">{t('map.comingSoon')}</p>
+
+      {/* Волна 3: копилка — статус / вскрытие */}
+      <Dialog open={piggyOpen} onOpenChange={setPiggyOpen}>
+        <DialogContent className="max-w-xs rounded-3xl border-0 bg-gradient-to-b from-pink-500 to-rose-600 text-white">
+          <DialogHeader className="items-center">
+            <DialogTitle className="text-center text-xl font-black">🐷 {t('piggy.title')}</DialogTitle>
+            <DialogDescription className="sr-only">{t('piggy.title')}</DialogDescription>
+            <div className="mt-1 text-5xl" style={{ animation: 'piggy-wiggle 1.1s ease-in-out infinite' }}>🐷</div>
+            <div className="mt-2 rounded-full bg-black/25 px-4 py-1.5 text-lg font-black">
+              🪙 {player.piggy.coins}
+            </div>
+            <div className="piggy-meter mt-2" aria-hidden>
+              {Array.from({ length: PIGGY_WINS_TARGET }, (_, i) => (
+                <span key={i} className={i < player.piggy.wins ? 'on' : ''} />
+              ))}
+            </div>
+            <div className="mt-1 text-xs font-bold text-pink-100">
+              {piggyReady ? t('piggy.ready') : t('piggy.progress', { n: PIGGY_WINS_TARGET - player.piggy.wins })}
+            </div>
+            <div className="text-[11px] text-pink-100/85">{t('piggy.hint')}</div>
+          </DialogHeader>
+          <div className="flex flex-col gap-2">
+            {piggyReady ? (
+              <Button
+                className="rounded-full bg-amber-400 font-black text-amber-950 hover:bg-amber-300"
+                onClick={() => {
+                  doOpenPiggy();
+                  setPiggyOpen(false);
+                }}
+              >
+                {t('piggy.collect', { n: player.piggy.coins })}
+              </Button>
+            ) : (
+              <Button
+                variant="secondary"
+                className="rounded-full bg-white/20 text-white hover:bg-white/30"
+                onClick={() => setPiggyOpen(false)}
+              >
+                {t('common.close')}
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Волна 3: копилка вскрыта — результат */}
+      <Dialog open={piggyGot > 0} onOpenChange={(o) => !o && setPiggyGot(0)}>
+        <DialogContent className="max-w-xs rounded-3xl border-0 bg-gradient-to-b from-amber-400 to-orange-500 text-white">
+          <DialogHeader className="items-center">
+            <DialogTitle className="text-center text-2xl font-black">🎉 {t('piggy.full')}</DialogTitle>
+            <DialogDescription className="sr-only">{t('piggy.full')}</DialogDescription>
+            <div className="mt-2 text-5xl">🪙</div>
+            <div className="mt-2 rounded-full bg-white/95 px-5 py-2 text-xl font-black text-orange-600 shadow-lg">
+              +{piggyGot}
+            </div>
+          </DialogHeader>
+          <Button
+            className="rounded-full bg-white font-black text-orange-600 hover:bg-orange-50"
+            onClick={() => setPiggyGot(0)}
+          >
+            {t('common.ok')}
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
