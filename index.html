@@ -343,6 +343,39 @@ input { font-family: inherit; }
 .piggy-big { font-size: 48px; line-height: 1; margin: 6px 0; }
 .stars-avail { background: rgba(255,255,255,.92) !important; color: #065f46 !important; }
 
+/* ---------- Волна 4: события (уровень дня, выходные, сезонное) ---------- */
+.btn-gold { background: linear-gradient(135deg,#ffd83d,#ffb300); color: #78350f; box-shadow: 0 4px 12px rgba(255,179,0,.45); }
+.btn-gold:hover { filter: brightness(1.06); }
+.daily-card { display: flex; align-items: center; gap: 12px; border-radius: 24px; padding: 12px; margin-bottom: 12px; background: linear-gradient(135deg,rgba(99,102,241,.95),rgba(139,92,246,.95)); border: 2px solid rgba(255,255,255,.35); box-shadow: 0 6px 20px rgba(0,0,0,.3); }
+.daily-card.done { background: rgba(255,255,255,.15); backdrop-filter: blur(4px); }
+.daily-icon { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 16px; font-size: 24px; background: rgba(255,255,255,.95); box-shadow: 0 3px 10px rgba(0,0,0,.25); }
+.daily-card.done .daily-icon { background: rgba(255,255,255,.25); }
+.daily-mid { flex: 1 1 auto; min-width: 0; }
+.daily-title { font-size: 14px; font-weight: 900; color: #fff; display: flex; align-items: center; gap: 6px; }
+.daily-x2 { background: #ffd83d; color: #78350f; border-radius: 999px; padding: 1px 6px; font-size: 10px; font-weight: 900; }
+.daily-sub { font-size: 11px; font-weight: 700; color: rgba(255,255,255,.88); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.daily-play { flex: 0 0 auto; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 900; }
+.weekend-banner { display: flex; align-items: center; gap: 12px; border-radius: 24px; padding: 12px; margin-bottom: 12px; background: linear-gradient(135deg,rgba(251,191,36,.95),rgba(249,115,22,.95)); border: 2px solid rgba(255,255,255,.4); box-shadow: 0 6px 20px rgba(0,0,0,.3); }
+.weekend-icon { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 16px; font-size: 24px; background: rgba(255,255,255,.95); box-shadow: 0 3px 10px rgba(0,0,0,.25); }
+.weekend-mid { flex: 1 1 auto; min-width: 0; }
+.weekend-name { font-size: 14px; font-weight: 900; color: #451a03; }
+.weekend-today { background: rgba(120,53,15,.3); color: #fff; border-radius: 999px; padding: 1px 7px; font-size: 10px; font-weight: 900; margin-left: 4px; }
+.weekend-desc { font-size: 11px; font-weight: 700; color: rgba(69,26,3,.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.event-badge { border-radius: 999px; padding: 3px 12px; font-size: 12px; font-weight: 900; color: #fff; margin: 3px auto 0; display: inline-block; }
+.event-badge.daily { background: rgba(79,70,229,.92); }
+.event-badge.coins { background: rgba(234,88,12,.92); }
+.event-badge.cascade { background: rgba(2,132,199,.92); }
+.seasonal-box { border-radius: 24px; padding: 12px; margin-bottom: 14px; background: linear-gradient(135deg,rgba(244,63,94,.9),rgba(251,191,36,.9)); border: 2px solid rgba(255,255,255,.4); box-shadow: 0 6px 20px rgba(0,0,0,.3); }
+.seasonal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.seasonal-title { font-size: 14px; font-weight: 900; color: #fff; }
+.seasonal-sub { background: rgba(255,255,255,.92); color: #e11d48; border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 900; white-space: nowrap; }
+.seasonal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.seasonal-card { display: flex; align-items: center; gap: 8px; border-radius: 16px; background: rgba(255,255,255,.93); padding: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.18); }
+.seasonal-ico { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; font-size: 20px; }
+.seasonal-mid { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.seasonal-name { font-size: 11px; font-weight: 900; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.seasonal-mid .btn { padding: 4px 10px; font-size: 10px; border-radius: 999px; align-self: flex-start; }
+
 </style>
 </head>
 <body>
@@ -411,6 +444,12 @@ const I18N_RU = {
   'piggy.collect': 'Забрать 🪙 {n}', 'piggy.progress': 'Побед до вскрытия: {n}',
   'piggy.deposit': '🐷 +{n} в копилку ({w}/{m})', 'piggy.ready': 'Копилка готова к вскрытию!',
   'piggy.hint': 'Каждая победа кладёт монеты в копилку',
+  'daily.title': 'Уровень дня', 'daily.sub': '×2 награда · новый каждый день',
+  'daily.play': 'Играть · ур. {n}', 'daily.done': 'Пройден · ждём завтра',
+  'daily.badge': '📅 Уровень дня ×2', 'daily.weekendHint': 'В выходные ивенты: ×2 монеты и каскад-бонус',
+  'event.weekend': 'Ивент выходных', 'event.coinsBadge': '🪙 Золотые выходные ×2',
+  'event.cascadeBadge': '🌊 Каскад ×{n}: +{c} 🪙', 'event.today': 'Только сегодня',
+  'shop.seasonal': 'Сезонная коллекция', 'shop.seasonalSub': '{icon} {season} · смена по календарю', 'shop.seasonTag': 'Сезон',
   'shop.title': 'Магазин', 'shop.coins': 'Монеты',
   'shop.tab.boosters': 'Бусты', 'shop.tab.bank': 'Банк', 'shop.tab.skins': 'Скины',
   'shop.tab.avatars': 'Аватары', 'shop.tab.frames': 'Рамки', 'shop.tab.names': 'Имя', 'shop.tab.effects': 'Эффекты',
@@ -476,6 +515,12 @@ const I18N_EN = {
   'piggy.collect': 'Collect 🪙 {n}', 'piggy.progress': 'Wins until opening: {n}',
   'piggy.deposit': '🐷 +{n} to the piggy bank ({w}/{m})', 'piggy.ready': 'Piggy bank is ready to open!',
   'piggy.hint': 'Every win drops coins into the piggy bank',
+  'daily.title': 'Daily Level', 'daily.sub': '×2 reward · new every day',
+  'daily.play': 'Play · level {n}', 'daily.done': 'Completed · see you tomorrow',
+  'daily.badge': '📅 Daily level ×2', 'daily.weekendHint': 'Weekend events: ×2 coins and cascade bonus',
+  'event.weekend': 'Weekend event', 'event.coinsBadge': '🪙 Golden Weekend ×2',
+  'event.cascadeBadge': '🌊 Cascade ×{n}: +{c} 🪙', 'event.today': 'Today only',
+  'shop.seasonal': 'Seasonal Collection', 'shop.seasonalSub': '{icon} {season} · rotates with the calendar', 'shop.seasonTag': 'Season',
   'shop.title': 'Shop', 'shop.coins': 'Coins',
   'shop.tab.boosters': 'Boosters', 'shop.tab.bank': 'Bank', 'shop.tab.skins': 'Skins',
   'shop.tab.avatars': 'Avatars', 'shop.tab.frames': 'Frames', 'shop.tab.names': 'Name', 'shop.tab.effects': 'Effects',
@@ -722,7 +767,52 @@ const EFFECTS = [
   { id: 'ne-fire', kind: 'name', visual: 'fire', price: 300, name: { ru: 'Пламя', en: 'Flame' } },
   { id: 'ne-starlight', kind: 'name', visual: 'starlight', price: 450, name: { ru: 'Звёздный свет', en: 'Starlight' } },
 ];
-const TILE_EFFECTS = EFFECTS.filter((e) => e.kind === 'tile');
+/* ---------------- Волна 4: сезонная косметика (4 сезона × 6 предметов) ---------------- */
+GEM_SKINS.push(
+  { id: 'season-autumn', name: { ru: 'Осенний сад', en: 'Autumn Garden' }, price: 800, season: 'autumn', glyphs: ['🍁', '🌽', '🌰', '🫐', '🍇', '🎃'] },
+  { id: 'season-winter', name: { ru: 'Зимние узоры', en: 'Winter Patterns' }, price: 800, season: 'winter', glyphs: ['🎅', '⭐', '🎄', '❄️', '🔮', '🍊'] },
+  { id: 'season-spring', name: { ru: 'Весенний цвет', en: 'Spring Bloom' }, price: 800, season: 'spring', glyphs: ['🌷', '🌼', '🌱', '💧', '🦋', '🌸'] },
+  { id: 'season-summer', name: { ru: 'Летний бриз', en: 'Summer Breeze' }, price: 800, season: 'summer', glyphs: ['🍉', '🌞', '🌴', '🌊', '🐚', '🍍'] },
+);
+AVATARS.push(
+  { id: 'av-wheat', emoji: '🌾', bg: 'linear-gradient(135deg,#ffe8b0,#d9a441)', price: 180, season: 'autumn' },
+  { id: 'av-acorn', emoji: '🌰', bg: 'linear-gradient(135deg,#e8c8a0,#8a5f40)', price: 180, season: 'autumn' },
+  { id: 'av-snowman', emoji: '⛄', bg: 'linear-gradient(135deg,#e8f4ff,#8ab8e0)', price: 180, season: 'winter' },
+  { id: 'av-mitten', emoji: '🧤', bg: 'linear-gradient(135deg,#ffc8c8,#e05a5a)', price: 180, season: 'winter' },
+  { id: 'av-blossom', emoji: '🌸', bg: 'linear-gradient(135deg,#ffd8e8,#ff8ab8)', price: 180, season: 'spring' },
+  { id: 'av-duckling', emoji: '🐥', bg: 'linear-gradient(135deg,#fff8c8,#ffd21f)', price: 180, season: 'spring' },
+  { id: 'av-pineapple', emoji: '🍍', bg: 'linear-gradient(135deg,#fff0a0,#d9a41f)', price: 180, season: 'summer' },
+  { id: 'av-palm', emoji: '🌴', bg: 'linear-gradient(135deg,#c0f0d0,#2fa56d)', price: 180, season: 'summer' },
+);
+FRAMES.push(
+  { id: 'fr-amber', name: { ru: 'Янтарь', en: 'Amber' }, price: 320, css: '0 0 0 4px #ef8f2a, 0 0 14px rgba(239,143,42,.7)', season: 'autumn' },
+  { id: 'fr-snow', name: { ru: 'Снежная', en: 'Snow' }, price: 320, css: '0 0 0 4px #e8f4ff, 0 0 14px rgba(200,230,255,.85)', season: 'winter' },
+  { id: 'fr-petal', name: { ru: 'Лепестки', en: 'Petals' }, price: 320, css: '0 0 0 4px #ff9ab8, 0 0 14px rgba(255,154,184,.7)', season: 'spring' },
+  { id: 'fr-sunburst', name: { ru: 'Солнечная', en: 'Sunburst' }, price: 320, css: '0 0 0 4px #ffd83d, 0 0 16px rgba(255,216,61,.85)', season: 'summer' },
+);
+NAME_STYLES.push(
+  { id: 'ns-amber', name: { ru: 'Янтарный', en: 'Amber' }, price: 260, css: 'color:#ffc890;font-weight:900;text-shadow:0 1px 0 #a8611f,0 0 10px rgba(239,143,42,.7)', season: 'autumn' },
+  { id: 'ns-frost', name: { ru: 'Морозный', en: 'Frost' }, price: 260, css: 'color:#e8f4ff;font-weight:900;text-shadow:0 1px 0 #5a8ac0,0 0 10px rgba(200,230,255,.9)', season: 'winter' },
+  { id: 'ns-petal', name: { ru: 'Нежный', en: 'Petal' }, price: 260, css: 'color:#ffd8e8;font-weight:800;text-shadow:0 0 8px rgba(255,154,184,.8)', season: 'spring' },
+  { id: 'ns-sunny', name: { ru: 'Солнечный', en: 'Sunny' }, price: 260, css: 'color:#fff0a0;font-weight:900;text-shadow:0 0 10px rgba(255,216,61,.8)', season: 'summer' },
+);
+EFFECTS.push(
+  { id: 'fx-leaffall', kind: 'tile', visual: '🍂', price: 380, name: { ru: 'Листопад', en: 'Leaf Fall' }, season: 'autumn' },
+  { id: 'fx-snowflakes', kind: 'tile', visual: '❄️', price: 380, name: { ru: 'Снежинки', en: 'Snowflakes' }, season: 'winter' },
+  { id: 'fx-petalrain', kind: 'tile', visual: '🌷', price: 380, name: { ru: 'Лепестковый дождь', en: 'Petal Rain' }, season: 'spring' },
+  { id: 'fx-sunshine', kind: 'tile', visual: '☀️', price: 380, name: { ru: 'Солнечные зайчики', en: 'Sunshine' }, season: 'summer' },
+);
+/** Витрина сезона: 6 предметов (скин + 2 аватара + рамка + имя + эффект). */
+const TILE_EFFECTS = EFFECTS.filter((e) => e.kind === 'tile'); // после сезонных push (Волна 4)
+function seasonalBundleFor(season) {
+  return {
+    skin: GEM_SKINS.find((s) => s.season === season) || GEM_SKINS[0],
+    avatars: AVATARS.filter((a) => a.season === season),
+    frame: FRAMES.find((f) => f.season === season) || FRAMES[0],
+    nameStyle: NAME_STYLES.find((n) => n.season === season) || NAME_STYLES[0],
+    effect: TILE_EFFECTS.find((e) => e.season === season) || TILE_EFFECTS[0],
+  };
+}
 
 /* ---------------- level generator (100 levels / 10 chapters) ---------------- */
 const TOTAL_LEVELS = 100;
@@ -1743,6 +1833,57 @@ const DEFAULT_BOOSTERS = { hammer: 1, bomb: 0, cross: 0, shuffle: 1, undo: 0, mo
 /* Волна 2: множитель награды за серию побед (поражение обнуляет) */
 const STREAK_MAX_MULT = 5;
 function streakMult(streak) { return Math.max(1, Math.min(STREAK_MAX_MULT, streak || 0)); }
+
+/* ---------------- Волна 4: события (детерминированы по календарю) ---------------- */
+function dateKeyOf(now) {
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + d;
+}
+function dateSeed(dateKey) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < dateKey.length; i++) {
+    h ^= dateKey.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+const DAILY_REWARD_MULT = 2;
+function dailyLevelFor(dateKey) {
+  const rng = mulberry32(dateSeed(dateKey));
+  return 1 + Math.floor(rng() * TOTAL_LEVELS);
+}
+const WEEKEND_EVENT_DEFS = {
+  coins: { id: 'coins', icon: '🪙', name: { ru: 'Золотые выходные', en: 'Golden Weekend' }, desc: { ru: 'Все победы приносят ×2 монет — только сегодня!', en: 'All wins grant ×2 coins — today only!' } },
+  cascade: { id: 'cascade', icon: '🌊', name: { ru: 'Каскадный уикенд', en: 'Cascade Weekend' }, desc: { ru: 'Каскады 3+ приносят бонусные монеты к награде!', en: 'Cascades of 3+ grant bonus coins on top of the reward!' } },
+};
+function weekendEventFor(dateKey) {
+  const p = dateKey.split('-');
+  const dow = new Date(+p[0], +p[1] - 1, +p[2]).getDay();
+  if (dow === 6) return 'coins';
+  if (dow === 0) return 'cascade';
+  return null;
+}
+const CASCADE_BONUS_FROM = 3;
+function cascadeBonus(maxCascade) {
+  const steps = Math.max(0, Math.min(maxCascade || 0, 8) - (CASCADE_BONUS_FROM - 1));
+  return steps * 30;
+}
+const SEASON_DEFS = {
+  autumn: { id: 'autumn', icon: '🍂', name: { ru: 'Осень', en: 'Autumn' } },
+  winter: { id: 'winter', icon: '❄️', name: { ru: 'Зима', en: 'Winter' } },
+  spring: { id: 'spring', icon: '🌷', name: { ru: 'Весна', en: 'Spring' } },
+  summer: { id: 'summer', icon: '☀️', name: { ru: 'Лето', en: 'Summer' } },
+};
+function seasonOfMonth(month0) {
+  const m = ((month0 % 12) + 12) % 12 + 1;
+  if (m === 12 || m <= 2) return 'winter';
+  if (m <= 5) return 'spring';
+  if (m <= 8) return 'summer';
+  return 'autumn';
+}
+function seasonOn(now) { return seasonOfMonth(now.getMonth()); }
 function defaultState() {
   return {
     name: '', lang: 'ru', sound: true, coins: 300, stars: {}, scores: {},
@@ -1758,6 +1899,8 @@ function defaultState() {
     starsSpent: 0,
     garden: { restored: [] },
     piggy: { coins: 0, wins: 0 },
+    /* Волна 4: уровень дня (фиксируется на сутки при первом открытии карты) */
+    daily: { date: '', level: 1, done: false },
   };
 }
 function normalizeState(s) {
@@ -1775,6 +1918,12 @@ function normalizeState(s) {
   out.piggy = {
     coins: s && s.piggy && typeof s.piggy.coins === 'number' ? s.piggy.coins : 0,
     wins: s && s.piggy && typeof s.piggy.wins === 'number' ? s.piggy.wins : 0,
+  };
+  /* Волна 4: аддитивная миграция уровня дня */
+  out.daily = {
+    date: s && s.daily && typeof s.daily.date === 'string' ? s.daily.date : '',
+    level: s && s.daily && typeof s.daily.level === 'number' ? s.daily.level : 1,
+    done: !!(s && s.daily && s.daily.done),
   };
   out.lang = out.lang === 'en' ? 'en' : 'ru';
   return out;
@@ -1804,7 +1953,7 @@ const store = {
     if (App.player.coins < n) return false;
     App.player.coins -= n; saveState(); return true;
   },
-  recordWin(level, stars, score, maxCascade, movesUsed) {
+  recordWin(level, stars, score, maxCascade, movesUsed, opts) {
     const s = App.player;
     const prevStars = s.stars[level] || 0;
     const firstClear = !(level in s.stars);
@@ -1813,11 +1962,19 @@ const store = {
     const base = firstClear ? 30 + stars * 10 + chapter * 5 : 10 + stars * 5;
     const streak = (s.streak || 0) + 1;
     const mult = streakMult(streak);
-    const reward = base * mult;
+    /* Волна 4: события — уровень дня ×2, выходные ×2 монет / каскад-бонус */
+    const isDaily = !!(opts && opts.daily);
+    const weekend = weekendEventFor(dateKeyOf(new Date()));
+    const cascadeCoins = weekend === 'cascade' ? cascadeBonus(maxCascade) : 0;
+    const eventMult = (isDaily ? DAILY_REWARD_MULT : 1) * (weekend === 'coins' ? 2 : 1);
+    const reward = base * mult * eventMult + cascadeCoins;
     s.stars[level] = Math.max(prevStars, stars);
     s.scores[level] = Math.max(s.scores[level] || 0, score);
     s.coins += reward;
     s.streak = streak;
+    /* Волна 4: уровень дня отмечается пройденным только за свой день */
+    const today = dateKeyOf(new Date());
+    if (isDaily && s.daily && s.daily.date === today) { s.daily.done = true; }
     s.stats.wins += 1;
     s.stats.bestCascade = Math.max(s.stats.bestCascade || 0, maxCascade);
     s.stats.totalScore += score;
@@ -1830,7 +1987,17 @@ const store = {
     s.piggy.coins = piggyCoins;
     s.piggy.wins = piggyWins % PIGGY_WINS_TARGET;
     saveState();
-    return { firstClear, newStars, reward, base, streak, mult, piggy: { deposit, coins: piggyCoins, wins: piggyWins, ready: piggyWins >= PIGGY_WINS_TARGET } };
+    return { firstClear, newStars, reward, base, streak, mult, piggy: { deposit, coins: piggyCoins, wins: piggyWins, ready: piggyWins >= PIGGY_WINS_TARGET }, event: { daily: isDaily, weekend: weekend, cascadeCoins: cascadeCoins, maxCascade: maxCascade } };
+  },
+  /* Волна 4: уровень дня фиксируется при первом открытии в сутки и живёт до 00:00 */
+  ensureDaily() {
+    const s = App.player;
+    const today = dateKeyOf(new Date());
+    if (s.daily && s.daily.date === today) return s.daily;
+    const daily = { date: today, level: Math.min(dailyLevelFor(today), Math.max(1, this.maxUnlocked())), done: false };
+    s.daily = daily;
+    saveState();
+    return daily;
   },
   recordLoss() { if (App.player.streak) { App.player.streak = 0; saveState(); } },
   addBooster(id, n) { App.player.boosters[id] = (App.player.boosters[id] || 0) + n; saveState(); },
@@ -2173,6 +2340,7 @@ function buildBackground(bg, seed, asRoot, eraId) {
 const App = {
   screen: 'map',        // map | garden | shop | ranks | profile
   level: null,          // playing level number or null
+  daily: false,         // Волна 4: текущий забег — уровень дня (×2)
   player: null,
   bots: null,
   shopTab: 'boosters',
@@ -2388,10 +2556,47 @@ function renderMap(box) {
 
   const playBtn = el('button', 'btn btn-primary');
   playBtn.type = 'button';
-  playBtn.style.cssText = 'width:100%;margin-bottom:16px;padding:18px;font-size:18px;';
+  playBtn.style.cssText = 'width:100%;margin-bottom:12px;padding:18px;font-size:18px;';
   playBtn.textContent = '▶ ' + t('map.continue') + ' · ' + t('map.level') + ' ' + maxUnlocked;
-  playBtn.onclick = () => { sfx.click(); App.level = maxUnlocked; renderApp(); };
+  playBtn.onclick = () => { sfx.click(); App.level = maxUnlocked; App.daily = false; renderApp(); };
   wrap.appendChild(playBtn);
+
+  /* Волна 4: уровень дня (фиксируется на сутки, перекат в 00:00) */
+  const daily = store.ensureDaily();
+  const dailyCard = el('div', 'daily-card' + (daily.done ? ' done' : ''));
+  const dailyIcon = el('div', 'daily-icon', daily.done ? '✅' : '📅');
+  const dailyMid = el('div', 'daily-mid');
+  dailyMid.innerHTML = '<div class="daily-title bm-text-outline">' + t('daily.title') + ' <span class="daily-x2">×2</span></div>' +
+    '<div class="daily-sub bm-text-outline">' + (daily.done ? t('daily.done') : t('daily.sub')) + '</div>';
+  dailyCard.appendChild(dailyIcon);
+  dailyCard.appendChild(dailyMid);
+  if (!daily.done) {
+    const dailyBtn = el('button', 'btn btn-gold daily-play');
+    dailyBtn.type = 'button';
+    dailyBtn.textContent = t('daily.play', { n: daily.level });
+    dailyBtn.onclick = () => {
+      sfx.click();
+      logEvent('daily_start', { level: daily.level, date: daily.date });
+      App.level = daily.level; App.daily = true; renderApp();
+    };
+    dailyCard.appendChild(dailyBtn);
+  }
+  wrap.appendChild(dailyCard);
+
+  /* Волна 4: баннер ивента выходных (сб/вс, переключается календарём) */
+  const weekendId = weekendEventFor(dateKeyOf(new Date()));
+  if (weekendId) {
+    const we = WEEKEND_EVENT_DEFS[weekendId];
+    const banner = el('div', 'weekend-banner');
+    const wIcon = el('div', 'weekend-icon', we.icon);
+    const wMid = el('div', 'weekend-mid');
+    wMid.innerHTML = '<div class="weekend-name">' + we.name[App.player.lang] +
+      ' <span class="weekend-today">' + t('event.today') + '</span></div>' +
+      '<div class="weekend-desc">' + we.desc[App.player.lang] + '</div>';
+    banner.appendChild(wIcon);
+    banner.appendChild(wMid);
+    wrap.appendChild(banner);
+  }
 
   for (const ch of CHAPTERS) {
     const unlocked = ch.id <= currentChapter;
@@ -2428,7 +2633,7 @@ function renderMap(box) {
       btn.innerHTML = '<span>' + (lvUnlocked ? lv : '🔒') + '</span>' +
         '<span class="level-stars">' + (lvStars > 0 ? '⭐'.repeat(lvStars) : (lvUnlocked ? '' : '·')) + '</span>';
       if (lvUnlocked) {
-        btn.onclick = () => { sfx.click(); App.level = lv; renderApp(); };
+        btn.onclick = () => { sfx.click(); App.level = lv; App.daily = false; renderApp(); };
       } else {
         btn.disabled = true;
       }
@@ -3084,10 +3289,11 @@ const Game = {
       const stars = finalScore >= this.cfg.star3 ? 3 : finalScore >= this.cfg.star2 ? 2 : 1;
       sfx.win();
       setTimeout(() => sfx.star(1), 400);
-      const info = store.recordWin(this.cfg.level, stars, finalScore, res.maxCascade, movesUsed);
+      const info = store.recordWin(this.cfg.level, stars, finalScore, res.maxCascade, movesUsed, { daily: !!App.daily });
       this.score = finalScore;
-      this.winInfo = { stars, reward: info.reward, firstClear: info.firstClear, newStars: info.newStars, bonus, streak: info.streak, mult: info.mult, piggy: info.piggy };
-      logEvent('level_win', { level: this.cfg.level, stars: stars, score: finalScore, movesUsed: movesUsed, streak: info.streak, mult: info.mult, reward: info.reward });
+      this.winInfo = { stars, reward: info.reward, firstClear: info.firstClear, newStars: info.newStars, bonus, streak: info.streak, mult: info.mult, piggy: info.piggy, event: info.event };
+      logEvent('level_win', { level: this.cfg.level, stars: stars, score: finalScore, movesUsed: movesUsed, streak: info.streak, mult: info.mult, reward: info.reward, daily: info.event.daily ? 1 : 0, weekend: info.event.weekend || '', cascade: info.event.cascadeCoins });
+      if (info.event.daily) logEvent('daily_win', { level: this.cfg.level, reward: info.reward });
       this.updateHud();
       this.renderModals();
     } else if (movesLeft <= 0) {
@@ -3281,6 +3487,23 @@ const Game = {
       const reward = el('div', 'reward-pill');
       reward.textContent = '🪙 +' + this.winInfo.reward + (this.winInfo.mult > 1 ? '  ×' + this.winInfo.mult : '');
       modal.appendChild(reward);
+      /* Волна 4: бейджи событий */
+      const ev = this.winInfo.event;
+      if (ev && ev.daily) {
+        const b = el('div', 'event-badge daily');
+        b.textContent = t('daily.badge');
+        modal.appendChild(b);
+      }
+      if (ev && ev.weekend === 'coins') {
+        const b = el('div', 'event-badge coins');
+        b.textContent = t('event.coinsBadge');
+        modal.appendChild(b);
+      }
+      if (ev && ev.weekend === 'cascade' && ev.cascadeCoins > 0) {
+        const b = el('div', 'event-badge cascade');
+        b.textContent = t('event.cascadeBadge', { n: ev.maxCascade, c: ev.cascadeCoins });
+        modal.appendChild(b);
+      }
       /* Волна 2: серия побед */
       const streakBox = el('div');
       streakBox.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;margin-top:6px;';
@@ -3339,6 +3562,7 @@ const Game = {
       nextBtn.textContent = t('game.next') + ' →';
       nextBtn.onclick = () => {
         this.winInfo = null;
+        App.daily = false;
         if (this.cfg.level < TOTAL_LEVELS) { App.level = this.cfg.level + 1; renderApp(); }
         else { App.level = null; renderApp(); }
       };
@@ -3496,6 +3720,36 @@ function renderShop(box) {
     }
     return btn;
   };
+
+  /* Волна 4: сезонная коллекция — витрина определяется календарём */
+  const season = seasonOn(new Date());
+  const seasonDef = SEASON_DEFS[season];
+  const bundle = seasonalBundleFor(season);
+  const seasonalBox = el('div', 'seasonal-box');
+  const seasonalHead = el('div', 'seasonal-head');
+  seasonalHead.innerHTML = '<span class="seasonal-title bm-text-outline">' + t('shop.seasonal') + '</span>' +
+    '<span class="seasonal-sub">' + t('shop.seasonalSub', { icon: seasonDef.icon, season: seasonDef.name[App.player.lang] }) + '</span>';
+  seasonalBox.appendChild(seasonalHead);
+  const seasonalGrid = el('div', 'seasonal-grid');
+  const seasonItems = [
+    { kind: 'skin', id: bundle.skin.id, name: bundle.skin.name[App.player.lang], preview: bundle.skin.glyphs ? bundle.skin.glyphs.slice(0, 2).join('') : '🎨', price: bundle.skin.price },
+    ...bundle.avatars.map((a) => ({ kind: 'avatar', id: a.id, name: a.emoji, preview: a.emoji, price: a.price })),
+    { kind: 'frame', id: bundle.frame.id, name: bundle.frame.name[App.player.lang], preview: '🖼️', price: bundle.frame.price },
+    { kind: 'nameStyle', id: bundle.nameStyle.id, name: bundle.nameStyle.name[App.player.lang], preview: 'Aa', price: bundle.nameStyle.price },
+    { kind: 'tileEffect', id: bundle.effect.id, name: bundle.effect.name[App.player.lang], preview: bundle.effect.visual, price: bundle.effect.price },
+  ];
+  for (const it of seasonItems) {
+    const card = el('div', 'seasonal-card');
+    const ic = el('div', 'seasonal-ico', it.preview);
+    const mid = el('div', 'seasonal-mid');
+    mid.innerHTML = '<div class="seasonal-name">' + it.name + '</div>';
+    mid.appendChild(equipBtn(it.kind, it.id, it.price));
+    card.appendChild(ic);
+    card.appendChild(mid);
+    seasonalGrid.appendChild(card);
+  }
+  seasonalBox.appendChild(seasonalGrid);
+  wrap.appendChild(seasonalBox);
 
   if (App.shopTab === 'boosters') {
     for (const b of BOOSTERS) {
