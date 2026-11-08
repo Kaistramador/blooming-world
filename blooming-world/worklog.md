@@ -15,7 +15,18 @@
 - Локальный снимок: коммит в собственном git-репо проекта.
 - Приёмка: `git ls-files` — .env/секреты не индексируются (`.gitignore` покрывает); rsync 2.4+ есть; сеть до api.github.com — 200.
 
-**Следующим сессиям:** после первого пуша — проверка на github.com, что папка `blooming-world/` содержит весь проект и STATE.md; дальше пуш в конце каждой сессии без напоминаний.
+**Завершение Task 3 — 08.11.2026 (сессия «продолжай по STATE.md», токен выдан игроком в чате):**
+
+- Игрок дал PAT и имя репо «blooming world» → цель: `Kaistramador/blooming-world` (fine-grained PAT, владелец Kaistramador — проверено через API `/user`).
+- Обнаружено: параллельная сессия уже опубликовала standalone-игру в этом репо (коммит 9f3c4a7: `index.html` в корне + README + `web-app/`) — в корень репо ничего не пишем, standalone не тронут.
+- `.env` заполнен: `GITHUB_TOKEN` (из чата), `GITHUB_REPO=Kaistramador/blooming-world`, `GITHUB_TARGET_FOLDER=blooming-world`.
+- Первый пуш выполнен: `9f3c4a7..2d6fb08` — зеркало проекта в папке `blooming-world/` (STATE.md, worklog.md, ROADMAP.md, src/, scripts/, prisma/, public/, конфиги). Проверка по чек-листу: корень репо не тронут (index.html на месте), папка `blooming-world/` содержит весь проект и STATE.md, секрет-гвард — 0 находок.
+- Скрипт доработан: fetch внутри цикла теперь тоже с `http.extraheader` (иначе fetch приватного репо падал бы без токена); в `sync-exclude.txt` добавлены `blooming-world-repo/` (локальный клон целевого репо — защита от рекурсии в зеркале) и `.zscripts/`.
+- Lint-гигиена: `.github-sync/` добавлен в ignores eslint (зеркало внутри проекта линтовалось дважды), в `scripts/standalone/*.js` добавлен inline-disable для `no-require-imports` (Node-харнесс порта из прошлой сессии); `node scripts/standalone/run-tests.js` — ALL TESTS PASSED.
+- Ограничение токена: у PAT нет прав `pages=write`/`administration=write` и `workflow` — включить GitHub Pages через API или запушить Actions-workflow нельзя (403/remote rejected). Решение: игрок включает Pages вручную (3 клика: Settings → Pages → Deploy from a branch → main → / (root) → Save) — это без Cloudflare; после включения сайт https://kaistramador.github.io/blooming-world/ отдаст standalone `index.html` из корня.
+- Приёмка §5.7: `bun run lint` — 0, `bunx tsc --noEmit` — 0 (после фильтра examples/skills), standalone smoke — PASSED, пуш верифицирован через API.
+
+**Следующим сессиям:** пуш-протокол работает — в конце КАЖДОЙ сессии `bash scripts/sync-github.sh "Task N: суть"`; после включения игроком Pages — проверить, что сайт открывается и standalone сохраняет прогресс под ключом `blooming-world-save-v1`; не писать в корень репо (там живёт standalone и его README).
 
 ---
 

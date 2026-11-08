@@ -1,4 +1,5 @@
 /* Node runner: concatenates data.js + engine.js + test body into one scope. */
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('fs');
 const path = require('path');
 const dir = __dirname;

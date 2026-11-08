@@ -1,5 +1,6 @@
 /* Smoke test for the standalone JS engine port (node).
  * Mirrors scripts/test-engine.ts scenarios. */
+/* eslint-disable @typescript-eslint/no-require-imports */
 require("./parts/data.js");
 require("./parts/engine.js");
 
