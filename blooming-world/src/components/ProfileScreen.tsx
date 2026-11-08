@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { usePlayer, useT } from '@/lib/store';
 import { PlayerAvatar, PlayerName } from './game/PlayerBadge';
+import { analyticsCount, analyticsSummary, exportEventsJson } from '@/lib/game/analytics';
 import { sfx } from '@/lib/game/sound';
 import type { Lang } from '@/lib/i18n';
 
@@ -25,6 +26,7 @@ export function ProfileScreen() {
   const player = usePlayer();
   const [nameDraft, setNameDraft] = useState(player.name);
   const [saved, setSaved] = useState(false);
+  const [exported, setExported] = useState(false);
 
   const stat = (label: string, value: string | number, icon: string) => (
     <div key={label} className="flex items-center gap-2.5 rounded-2xl bg-white/90 p-3 shadow">
@@ -58,6 +60,7 @@ export function ProfileScreen() {
           <div className="text-xs font-semibold text-slate-500">
             {t('map.level')} {player.maxUnlocked()} · ⭐ {player.totalStars()} · 🪙{' '}
             {player.coins.toLocaleString('ru-RU')}
+            {player.streak >= 2 && <> · 🔥 ×{Math.min(5, player.streak)}</>}
           </div>
         </div>
       </div>
@@ -100,6 +103,39 @@ export function ProfileScreen() {
         {stat(t('profile.stat.bestCascade'), `x${player.stats.bestCascade}`, '🔥')}
         {stat(t('profile.stat.totalScore'), player.stats.totalScore.toLocaleString('ru-RU'), '💫')}
         {stat(t('profile.stat.moves'), player.stats.movesMade, '🎯')}
+        {stat(t('profile.stat.streak'), player.stats.bestStreak, '⚡')}
+      </div>
+
+      {/* analytics (Волна 2) */}
+      <div className="mb-3 text-xs font-black uppercase tracking-wider text-white/80 bm-text-outline">
+        {t('profile.analytics')}
+      </div>
+      <div className="mb-4 rounded-3xl bg-white/90 p-4 shadow">
+        <div className="mb-2 text-xs font-semibold text-slate-500">
+          {t('profile.analyticsInfo', { n: analyticsCount(), s: analyticsSummary().sessions })}
+        </div>
+        <Button
+          className="w-full rounded-xl bg-slate-700 font-bold text-white hover:bg-slate-600"
+          onClick={() => {
+            const ok = exportEventsJson({
+              player: {
+                level: player.maxUnlocked(),
+                stars: player.totalStars(),
+                coins: player.coins,
+                streak: player.streak,
+                bestStreak: player.stats.bestStreak,
+                wins: player.stats.wins,
+              },
+            });
+            if (ok) {
+              sfx.coin();
+              setExported(true);
+              setTimeout(() => setExported(false), 1500);
+            }
+          }}
+        >
+          {exported ? `✓ ${t('profile.exportDone')}` : `⬇️ ${t('profile.export')}`}
+        </Button>
       </div>
 
       {/* settings */}

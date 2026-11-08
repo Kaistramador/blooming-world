@@ -27,7 +27,8 @@ import {
   shuffleBoard,
 } from '@/lib/game/engine';
 import type { Board, Frame, LevelConfig, MoveResult } from '@/lib/game/types';
-import { usePlayer, useT } from '@/lib/store';
+import { usePlayer, useT, STREAK_MAX_MULT } from '@/lib/store';
+import { logEvent, logSessionStart } from '@/lib/game/analytics';
 import { sfx } from '@/lib/game/sound';
 
 interface Particle {
@@ -147,8 +148,9 @@ export function GameScreen({ level, onExit, onLevelChange }: GameScreenProps) {
   const [toast, setToast] = useState<string | null>(null);
   const [activeBooster, setActiveBooster] = useState<BoosterId | null>(null);
   const [buyBoosterId, setBuyBoosterId] = useState<BoosterId | null>(null);
-  const [winInfo, setWinInfo] = useState<{ stars: number; reward: number; firstClear: boolean; newStars: boolean; bonus: number } | null>(null);
+  const [winInfo, setWinInfo] = useState<{ stars: number; reward: number; firstClear: boolean; newStars: boolean; bonus: number; streak: number; mult: number } | null>(null);
   const [loseOpen, setLoseOpen] = useState(false);
+  const [lostStreak, setLostStreak] = useState(0);
   const [plus5Used, setPlus5Used] = useState(0);
   const [attempt, setAttempt] = useState(0);
 
@@ -185,6 +187,9 @@ export function GameScreen({ level, onExit, onLevelChange }: GameScreenProps) {
     setCombos([]);
     setShocks([]);
     setBoardShake(false);
+    setLostStreak(0);
+    logSessionStart();
+    logEvent('level_start', { level, attempt });
   }, [level, attempt]);
 
   /* ---------- helpers ---------- */
@@ -357,9 +362,13 @@ export function GameScreen({ level, onExit, onLevelChange }: GameScreenProps) {
         setTimeout(() => sfx.star(1), 400);
         const info = player.recordWin(cfg.level, stars, finalScore, res.maxCascade, movesUsed);
         setScore(finalScore);
-        setWinInfo({ stars, reward: info.reward, firstClear: info.firstClear, newStars: info.newStars, bonus });
+        setWinInfo({ stars, reward: info.reward, firstClear: info.firstClear, newStars: info.newStars, bonus, streak: info.streak, mult: info.mult });
+        logEvent('level_win', { level: cfg.level, stars, score: finalScore, movesUsed, streak: info.streak, mult: info.mult, reward: info.reward });
       } else if (movesLeft <= 0) {
         sfx.lose();
+        setLostStreak(player.streak);
+        player.recordLoss();
+        logEvent('level_lose', { level: cfg.level, score: sc, movesUsed, moves: cfg.moves });
         setLoseOpen(true);
       }
     },
@@ -897,7 +906,32 @@ export function GameScreen({ level, onExit, onLevelChange }: GameScreenProps) {
             </div>
             <div className="mt-1 flex items-center gap-2 rounded-full bg-amber-400/90 px-4 py-1.5 font-black text-amber-950">
               🪙 +{winInfo?.reward}
+              {winInfo && winInfo.mult > 1 && <span className="rounded-full bg-amber-950/25 px-1.5 text-xs">×{winInfo.mult}</span>}
             </div>
+            {winInfo && (
+              <div className="mt-1.5 flex flex-col items-center gap-1">
+                <div className="flex items-center gap-1.5 rounded-full bg-orange-600/90 px-3 py-1 text-xs font-black text-white">
+                  🔥 {t('streak.title')}: {winInfo.streak}
+                </div>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: STREAK_MAX_MULT - 1 }, (_, i) => i + 2).map((m) => (
+                    <span
+                      key={m}
+                      className={`rounded-full px-1.5 py-0.5 text-[10px] font-black ${
+                        winInfo.mult >= m ? 'bg-white text-orange-600' : 'bg-black/25 text-white/60'
+                      }`}
+                    >
+                      ×{m}
+                    </span>
+                  ))}
+                </div>
+                <div className="text-xs font-bold text-emerald-100">
+                  {winInfo.mult >= STREAK_MAX_MULT
+                    ? t('streak.max')
+                    : t('streak.next', { m: winInfo.mult + 1, n: winInfo.mult + 1 - winInfo.streak })}
+                </div>
+              </div>
+            )}
             {winInfo?.firstClear && (
               <div className="text-xs font-bold text-emerald-100">{t('game.firstWin')}</div>
             )}
@@ -948,6 +982,11 @@ export function GameScreen({ level, onExit, onLevelChange }: GameScreenProps) {
           <DialogHeader className="items-center">
             <DialogTitle className="text-center text-xl font-black">{t('game.lose')}</DialogTitle>
             <DialogDescription className="sr-only">{t('game.lose')}</DialogDescription>
+            {lostStreak >= 2 && (
+              <div className="mt-1 rounded-full bg-rose-500/80 px-3 py-1 text-xs font-bold text-white">
+                💔 {t('streak.lost')}
+              </div>
+            )}
           </DialogHeader>
           <div className="flex flex-col gap-2">
             {plus5Used < 2 && (

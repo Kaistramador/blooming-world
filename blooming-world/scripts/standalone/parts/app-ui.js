@@ -188,7 +188,7 @@ const Game = {
   cfg: null, board: null, moves: 0, score: 0,
   progress: { colors: [0, 0, 0, 0, 0, 0], items: 0, stones: 0 },
   busy: false, selected: null, activeBooster: null, buyBoosterId: null,
-  winInfo: null, loseOpen: false, plus5Used: 0, attempt: 0,
+  winInfo: null, loseOpen: false, plus5Used: 0, attempt: 0, lostStreak: 0,
   rng: () => 0, playId: 0, snapshot: null, shakeIdx: null,
   clearing: new Set(), born: new Set(), spawned: new Set(), stonesHit: new Set(),
 
@@ -210,6 +210,9 @@ const Game = {
     this.snapshot = null;
     this.shakeIdx = null;
     this.clearing = new Set(); this.born = new Set(); this.spawned = new Set(); this.stonesHit = new Set();
+    this.lostStreak = 0;
+    logSessionStart();
+    logEvent('level_start', { level: lv, attempt: this.attempt });
     this.buildDom(box);
     this.rebuildBoard();
     this.updateHud();
@@ -586,11 +589,15 @@ const Game = {
       setTimeout(() => sfx.star(1), 400);
       const info = store.recordWin(this.cfg.level, stars, finalScore, res.maxCascade, movesUsed);
       this.score = finalScore;
-      this.winInfo = { stars, reward: info.reward, firstClear: info.firstClear, newStars: info.newStars, bonus };
+      this.winInfo = { stars, reward: info.reward, firstClear: info.firstClear, newStars: info.newStars, bonus, streak: info.streak, mult: info.mult };
+      logEvent('level_win', { level: this.cfg.level, stars: stars, score: finalScore, movesUsed: movesUsed, streak: info.streak, mult: info.mult, reward: info.reward });
       this.updateHud();
       this.renderModals();
     } else if (movesLeft <= 0) {
       sfx.lose();
+      this.lostStreak = App.player.streak || 0;
+      store.recordLoss();
+      logEvent('level_lose', { level: this.cfg.level, score: sc, movesUsed: movesUsed, moves: this.cfg.moves });
       this.loseOpen = true;
       this.renderModals();
     }
@@ -775,8 +782,33 @@ const Game = {
         (this.winInfo.bonus > 0 ? '<div style="color:#fde68a">+' + this.winInfo.bonus + ' ⚡</div>' : '');
       modal.appendChild(scoreLine);
       const reward = el('div', 'reward-pill');
-      reward.textContent = '🪙 +' + this.winInfo.reward;
+      reward.textContent = '🪙 +' + this.winInfo.reward + (this.winInfo.mult > 1 ? '  ×' + this.winInfo.mult : '');
       modal.appendChild(reward);
+      /* Волна 2: серия побед */
+      const streakBox = el('div');
+      streakBox.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;margin-top:6px;';
+      const streakPill = el('div');
+      streakPill.style.cssText = 'background:rgba(234,88,12,.92);color:#fff;border-radius:999px;padding:3px 12px;font-size:12px;font-weight:900;';
+      streakPill.textContent = '🔥 ' + t('streak.title') + ': ' + this.winInfo.streak;
+      streakBox.appendChild(streakPill);
+      const chips = el('div');
+      chips.style.cssText = 'display:flex;gap:4px;';
+      for (let m = 2; m <= STREAK_MAX_MULT; m++) {
+        const c = el('span');
+        const on = this.winInfo.mult >= m;
+        c.style.cssText = 'border-radius:999px;padding:1px 6px;font-size:10px;font-weight:900;' +
+          (on ? 'background:#fff;color:#ea580c;' : 'background:rgba(0,0,0,.25);color:rgba(255,255,255,.6);');
+        c.textContent = '×' + m;
+        chips.appendChild(c);
+      }
+      streakBox.appendChild(chips);
+      const nextHint = el('div');
+      nextHint.style.cssText = 'font-size:12px;font-weight:700;color:#d1fae5;';
+      nextHint.textContent = this.winInfo.mult >= STREAK_MAX_MULT
+        ? t('streak.max')
+        : t('streak.next', { m: this.winInfo.mult + 1, n: this.winInfo.mult + 1 - this.winInfo.streak });
+      streakBox.appendChild(nextHint);
+      modal.appendChild(streakBox);
       if (this.winInfo.firstClear) {
         const l = el('div', 'sub');
         l.style.cssText = 'font-weight:700;color:#d1fae5;';
@@ -822,6 +854,12 @@ const Game = {
       const over = el('div', 'modal-overlay');
       const modal = el('div', 'modal lose');
       modal.innerHTML = '<h2>' + t('game.lose') + '</h2>';
+      if (this.lostStreak >= 2) {
+        const sl = el('div');
+        sl.style.cssText = 'background:rgba(244,63,94,.8);color:#fff;border-radius:999px;padding:3px 12px;font-size:12px;font-weight:700;margin:2px auto 0;display:inline-block;';
+        sl.textContent = '💔 ' + t('streak.lost');
+        modal.appendChild(sl);
+      }
       const col = el('div', 'col');
       if (this.plus5Used < 2) {
         const p5 = el('button', 'btn btn-amber');
@@ -1166,7 +1204,7 @@ function renderRanks(box) {
  * ============================================================ */
 function renderProfile(box) {
   const wrap = el('div', 'panel-wrap');
-  const t = (k) => store.t(k);
+  const t = (k, v) => store.t(k, v);
   const lang = App.player.lang;
 
   const head = el('div', 'profile-head');
@@ -1184,7 +1222,8 @@ function renderProfile(box) {
   nameBox.appendChild(nameTxt);
   const sub = el('div');
   sub.style.cssText = 'font-size:12px;opacity:.75;';
-  sub.textContent = t('ranks.level') + ' ' + Math.max(0, store.maxUnlocked() - 1) + ' · ⭐ ' + store.totalStars();
+  sub.textContent = t('ranks.level') + ' ' + Math.max(0, store.maxUnlocked() - 1) + ' · ⭐ ' + store.totalStars() +
+    ((App.player.streak || 0) >= 2 ? ' · 🔥 ×' + Math.min(5, App.player.streak) : '');
   nameBox.appendChild(sub);
   head.appendChild(nameBox);
   wrap.appendChild(head);
@@ -1232,6 +1271,7 @@ function renderProfile(box) {
     ['x' + Math.max(0, App.player.stats.bestCascade), t('profile.stat.bestCascade')],
     [fmt(App.player.stats.totalScore), t('profile.stat.totalScore')],
     [fmt(App.player.stats.movesMade), t('profile.stat.moves')],
+    [String(Math.max(0, App.player.stats.bestStreak || 0)), t('profile.stat.streak')],
   ];
   for (const [v, k] of statsData) {
     const card = el('div', 'stat-card');
@@ -1239,6 +1279,38 @@ function renderProfile(box) {
     grid.appendChild(card);
   }
   wrap.appendChild(grid);
+
+  /* Волна 2: аналитика + экспорт JSON */
+  const anTitle = el('div');
+  anTitle.style.cssText = 'font-size:13px;font-weight:900;opacity:.85;margin:14px 0 4px;';
+  anTitle.textContent = t('profile.analytics');
+  wrap.appendChild(anTitle);
+  const anCard = el('div', 'card');
+  anCard.style.cssText = 'padding:12px;';
+  const sum = analyticsSummary();
+  const anInfo = el('div');
+  anInfo.style.cssText = 'font-size:12px;opacity:.75;margin-bottom:8px;';
+  anInfo.textContent = t('profile.analyticsInfo', { n: sum.total, s: sum.sessions });
+  anCard.appendChild(anInfo);
+  const exportBtn = el('button', 'btn');
+  exportBtn.type = 'button';
+  exportBtn.style.cssText = 'background:#334155;color:#fff;width:100%;';
+  exportBtn.textContent = '⬇️ ' + t('profile.export');
+  exportBtn.onclick = () => {
+    const ok = exportEventsJson({
+      player: {
+        level: store.maxUnlocked(), stars: store.totalStars(), coins: App.player.coins,
+        streak: App.player.streak || 0, bestStreak: App.player.stats.bestStreak || 0, wins: App.player.stats.wins,
+      },
+    });
+    if (ok) {
+      sfx.coin();
+      exportBtn.textContent = '✓ ' + t('profile.exportDone');
+      setTimeout(() => { exportBtn.textContent = '⬇️ ' + t('profile.export'); }, 1500);
+    }
+  };
+  anCard.appendChild(exportBtn);
+  wrap.appendChild(anCard);
 
   // equipped
   const eqTitle = el('div');
@@ -1324,6 +1396,7 @@ function renderProfile(box) {
 App.player = loadState();
 setSoundEnabled(App.player.sound);
 App.bots = generateBots();
+logSessionStart();
 document.addEventListener('DOMContentLoaded', () => {
   renderApp();
 });

@@ -36,6 +36,18 @@ export interface PlayerStats {
   bestCascade: number;
   totalScore: number;
   movesMade: number;
+  bestStreak: number;
+}
+
+/**
+ * Волна 2: множитель награды за серию побед (win-streak).
+ * Серия = число побед подряд; множитель = min(5, серия), но не меньше 1.
+ * Поражение обнуляет серию (клон механики top-игр жанра, +50% D1).
+ */
+export const STREAK_MAX_MULT = 5;
+
+export function streakMult(streak: number): number {
+  return Math.max(1, Math.min(STREAK_MAX_MULT, streak));
 }
 
 interface PlayerState {
@@ -49,13 +61,16 @@ interface PlayerState {
   owned: Owned;
   equipped: Equipped;
   stats: PlayerStats;
+  /** текущая серия побед подряд (обнуляется поражением) */
+  streak: number;
   // actions
   setLang: (l: Lang) => void;
   setSound: (v: boolean) => void;
   setName: (n: string) => void;
   addCoins: (n: number) => void;
   spendCoins: (n: number) => boolean;
-  recordWin: (level: number, stars: number, score: number, maxCascade: number, movesUsed: number) => { firstClear: boolean; newStars: boolean; reward: number };
+  recordWin: (level: number, stars: number, score: number, maxCascade: number, movesUsed: number) => { firstClear: boolean; newStars: boolean; reward: number; base: number; streak: number; mult: number };
+  recordLoss: () => void;
   addBooster: (id: BoosterId, n: number) => void;
   useBooster: (id: BoosterId) => boolean;
   buyBooster: (id: BoosterId) => boolean;
@@ -101,7 +116,8 @@ export const usePlayer = create<PlayerState>()(
         avatarEffect: '',
         nameEffect: '',
       },
-      stats: { wins: 0, bestCascade: 0, totalScore: 0, movesMade: 0 },
+      stats: { wins: 0, bestCascade: 0, totalScore: 0, movesMade: 0, bestStreak: 0 },
+      streak: 0,
 
       setLang: (l) => set({ lang: l }),
       setSound: (v) => {
@@ -121,24 +137,30 @@ export const usePlayer = create<PlayerState>()(
         const firstClear = !(level in s.stars);
         const newStars = stars > prevStars;
         const chapter = chapterOfLevel(level);
-        const reward = firstClear
+        const base = firstClear
           ? 30 + stars * 10 + chapter * 5
           : 10 + stars * 5;
+        const streak = s.streak + 1;
+        const mult = streakMult(streak);
+        const reward = base * mult;
         const nextStars = { ...s.stars, [level]: Math.max(prevStars, stars) };
         const nextScores = { ...s.scores, [level]: Math.max(s.scores[level] ?? 0, score) };
         set({
           stars: nextStars,
           scores: nextScores,
           coins: s.coins + reward,
+          streak,
           stats: {
             wins: s.stats.wins + 1,
             bestCascade: Math.max(s.stats.bestCascade, maxCascade),
             totalScore: s.stats.totalScore + score,
             movesMade: s.stats.movesMade + movesUsed,
+            bestStreak: Math.max(s.stats.bestStreak, streak),
           },
         });
-        return { firstClear, newStars, reward };
+        return { firstClear, newStars, reward, base, streak, mult };
       },
+      recordLoss: () => set((s) => (s.streak === 0 ? s : { streak: 0 })),
       addBooster: (id, n) =>
         set((s) => ({ boosters: { ...s.boosters, [id]: (s.boosters[id] ?? 0) + n } })),
       useBooster: (id) => {
@@ -200,7 +222,8 @@ export const usePlayer = create<PlayerState>()(
             avatarEffect: '',
             nameEffect: '',
           },
-          stats: { wins: 0, bestCascade: 0, totalScore: 0, movesMade: 0 },
+          stats: { wins: 0, bestCascade: 0, totalScore: 0, movesMade: 0, bestStreak: 0 },
+          streak: 0,
         }),
     }),
     {

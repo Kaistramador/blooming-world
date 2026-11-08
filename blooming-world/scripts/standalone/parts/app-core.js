@@ -52,6 +52,9 @@ const sfx = {
 /* ---------------- player store (zustand-compatible save) ---------------- */
 const SAVE_KEY = 'blooming-world-save-v1';
 const DEFAULT_BOOSTERS = { hammer: 1, bomb: 0, cross: 0, shuffle: 1, undo: 0, moves5: 0 };
+/* Волна 2: множитель награды за серию побед (поражение обнуляет) */
+const STREAK_MAX_MULT = 5;
+function streakMult(streak) { return Math.max(1, Math.min(STREAK_MAX_MULT, streak || 0)); }
 function defaultState() {
   return {
     name: '', lang: 'ru', sound: true, coins: 300, stars: {}, scores: {},
@@ -61,7 +64,8 @@ function defaultState() {
       frames: ['fr-none'], nameStyles: ['ns-basic'], effects: [],
     },
     equipped: { skin: 'classic', avatar: 'av-seed', frame: 'fr-none', nameStyle: 'ns-basic', tileEffect: '', avatarEffect: '', nameEffect: '' },
-    stats: { wins: 0, bestCascade: 0, totalScore: 0, movesMade: 0 },
+    stats: { wins: 0, bestCascade: 0, totalScore: 0, movesMade: 0, bestStreak: 0 },
+    streak: 0,
   };
 }
 function normalizeState(s) {
@@ -107,17 +111,23 @@ const store = {
     const firstClear = !(level in s.stars);
     const newStars = stars > prevStars;
     const chapter = chapterOfLevel(level);
-    const reward = firstClear ? 30 + stars * 10 + chapter * 5 : 10 + stars * 5;
+    const base = firstClear ? 30 + stars * 10 + chapter * 5 : 10 + stars * 5;
+    const streak = (s.streak || 0) + 1;
+    const mult = streakMult(streak);
+    const reward = base * mult;
     s.stars[level] = Math.max(prevStars, stars);
     s.scores[level] = Math.max(s.scores[level] || 0, score);
     s.coins += reward;
+    s.streak = streak;
     s.stats.wins += 1;
-    s.stats.bestCascade = Math.max(s.stats.bestCascade, maxCascade);
+    s.stats.bestCascade = Math.max(s.stats.bestCascade || 0, maxCascade);
     s.stats.totalScore += score;
     s.stats.movesMade += movesUsed;
+    s.stats.bestStreak = Math.max(s.stats.bestStreak || 0, streak);
     saveState();
-    return { firstClear, newStars, reward };
+    return { firstClear, newStars, reward, base, streak, mult };
   },
+  recordLoss() { if (App.player.streak) { App.player.streak = 0; saveState(); } },
   addBooster(id, n) { App.player.boosters[id] = (App.player.boosters[id] || 0) + n; saveState(); },
   useBooster(id) {
     const s = App.player;
@@ -159,6 +169,73 @@ const store = {
     saveState();
   },
 };
+
+/* ---------------- лёгкая аналитика (Волна 2) ----------------
+ * Кольцо событий в localStorage, без внешних сервисов (§5.6).
+ * Выгрузка JSON — из профиля. Ключ ≠ сейв (§5.4).
+ * ============================================================ */
+const ANALYTICS_KEY = 'blooming-world-analytics-v1';
+const ANALYTICS_CAP = 500;
+let sessionLogged = false;
+function analyticsRead() {
+  try {
+    const raw = localStorage.getItem(ANALYTICS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((x) => x && typeof x === 'object' && typeof x.e === 'string');
+  } catch (e) { return []; }
+}
+function analyticsWrite(events) {
+  try { localStorage.setItem(ANALYTICS_KEY, JSON.stringify(events.slice(-ANALYTICS_CAP))); }
+  catch (e) { /* storage недоступен */ }
+}
+function logEvent(e, props) {
+  try {
+    const events = analyticsRead();
+    const ev = Object.assign({ t: new Date().toISOString(), e: e }, props || {});
+    events.push(ev);
+    analyticsWrite(events);
+  } catch (err) { /* noop */ }
+}
+function logSessionStart() {
+  if (sessionLogged) return;
+  sessionLogged = true;
+  logEvent('session_start');
+}
+function analyticsCount() { return analyticsRead().length; }
+function analyticsSummary() {
+  const events = analyticsRead();
+  const days = events.map((x) => String(x.t).slice(0, 10)).sort();
+  return {
+    total: events.length,
+    sessions: events.filter((x) => x.e === 'session_start').length,
+    wins: events.filter((x) => x.e === 'level_win').length,
+    losses: events.filter((x) => x.e === 'level_lose').length,
+    starts: events.filter((x) => x.e === 'level_start').length,
+    firstDay: days[0] || null,
+    lastDay: days[days.length - 1] || null,
+  };
+}
+function exportEventsJson(extra) {
+  try {
+    const payload = Object.assign({
+      game: 'Blooming World',
+      exportedAt: new Date().toISOString(),
+      summary: analyticsSummary(),
+    }, extra || {}, { events: analyticsRead() });
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'blooming-world-stats-' + new Date().toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    return true;
+  } catch (e) { return false; }
+}
 
 /* ---------------- tiny dom helpers ---------------- */
 function el(tag, cls, text) {

@@ -361,6 +361,8 @@ const I18N_RU = {
   'game.starReward': 'Награда', 'game.newStars': 'Новый рекорд звёзд!', 'game.firstWin': 'Первое прохождение!',
   'game.stoneGoal': 'Разбей камни', 'game.itemGoal': 'Собери бутоны',
   'game.collectGoal': 'Собери камни', 'game.scoreGoal': 'Набери очки',
+  'streak.title': 'Серия побед', 'streak.next': 'До ×{m} — ещё {n}',
+  'streak.max': 'Максимальный множитель!', 'streak.lost': 'Серия побед сброшена',
   'shop.title': 'Магазин', 'shop.coins': 'Монеты',
   'shop.tab.boosters': 'Бусты', 'shop.tab.bank': 'Банк', 'shop.tab.skins': 'Скины',
   'shop.tab.avatars': 'Аватары', 'shop.tab.frames': 'Рамки', 'shop.tab.names': 'Имя', 'shop.tab.effects': 'Эффекты',
@@ -376,6 +378,9 @@ const I18N_RU = {
   'profile.save': 'Сохранить', 'profile.saved': 'Сохранено!', 'profile.stats': 'Статистика',
   'profile.stat.wins': 'Побед', 'profile.stat.levels': 'Уровней пройдено', 'profile.stat.stars': 'Звёзд собрано',
   'profile.stat.bestCascade': 'Лучшее комбо', 'profile.stat.totalScore': 'Всего очков', 'profile.stat.moves': 'Ходов сделано',
+  'profile.stat.streak': 'Лучшая серия',
+  'profile.analytics': 'Аналитика', 'profile.analyticsInfo': '{n} событий · сессий: {s}',
+  'profile.export': 'Выгрузить статистику (JSON)', 'profile.exportDone': 'Файл выгружен!',
   'profile.equipped': 'Экипировка',
   'settings.title': 'Настройки', 'settings.language': 'Язык', 'settings.sound': 'Звук',
   'settings.on': 'Вкл', 'settings.off': 'Выкл',
@@ -408,6 +413,8 @@ const I18N_EN = {
   'game.starReward': 'Reward', 'game.newStars': 'New star record!', 'game.firstWin': 'First clear!',
   'game.stoneGoal': 'Break the stones', 'game.itemGoal': 'Collect the buds',
   'game.collectGoal': 'Collect gems', 'game.scoreGoal': 'Score points',
+  'streak.title': 'Win streak', 'streak.next': '{n} more to ×{m}',
+  'streak.max': 'Maximum multiplier!', 'streak.lost': 'Win streak reset',
   'shop.title': 'Shop', 'shop.coins': 'Coins',
   'shop.tab.boosters': 'Boosters', 'shop.tab.bank': 'Bank', 'shop.tab.skins': 'Skins',
   'shop.tab.avatars': 'Avatars', 'shop.tab.frames': 'Frames', 'shop.tab.names': 'Name', 'shop.tab.effects': 'Effects',
@@ -423,6 +430,9 @@ const I18N_EN = {
   'profile.save': 'Save', 'profile.saved': 'Saved!', 'profile.stats': 'Statistics',
   'profile.stat.wins': 'Wins', 'profile.stat.levels': 'Levels cleared', 'profile.stat.stars': 'Stars earned',
   'profile.stat.bestCascade': 'Best combo', 'profile.stat.totalScore': 'Total score', 'profile.stat.moves': 'Moves made',
+  'profile.stat.streak': 'Best streak',
+  'profile.analytics': 'Analytics', 'profile.analyticsInfo': '{n} events · sessions: {s}',
+  'profile.export': 'Export statistics (JSON)', 'profile.exportDone': 'File exported!',
   'profile.equipped': 'Equipment',
   'settings.title': 'Settings', 'settings.language': 'Language', 'settings.sound': 'Sound',
   'settings.on': 'On', 'settings.off': 'Off',
@@ -1622,6 +1632,9 @@ const sfx = {
 /* ---------------- player store (zustand-compatible save) ---------------- */
 const SAVE_KEY = 'blooming-world-save-v1';
 const DEFAULT_BOOSTERS = { hammer: 1, bomb: 0, cross: 0, shuffle: 1, undo: 0, moves5: 0 };
+/* Волна 2: множитель награды за серию побед (поражение обнуляет) */
+const STREAK_MAX_MULT = 5;
+function streakMult(streak) { return Math.max(1, Math.min(STREAK_MAX_MULT, streak || 0)); }
 function defaultState() {
   return {
     name: '', lang: 'ru', sound: true, coins: 300, stars: {}, scores: {},
@@ -1631,7 +1644,8 @@ function defaultState() {
       frames: ['fr-none'], nameStyles: ['ns-basic'], effects: [],
     },
     equipped: { skin: 'classic', avatar: 'av-seed', frame: 'fr-none', nameStyle: 'ns-basic', tileEffect: '', avatarEffect: '', nameEffect: '' },
-    stats: { wins: 0, bestCascade: 0, totalScore: 0, movesMade: 0 },
+    stats: { wins: 0, bestCascade: 0, totalScore: 0, movesMade: 0, bestStreak: 0 },
+    streak: 0,
   };
 }
 function normalizeState(s) {
@@ -1677,17 +1691,23 @@ const store = {
     const firstClear = !(level in s.stars);
     const newStars = stars > prevStars;
     const chapter = chapterOfLevel(level);
-    const reward = firstClear ? 30 + stars * 10 + chapter * 5 : 10 + stars * 5;
+    const base = firstClear ? 30 + stars * 10 + chapter * 5 : 10 + stars * 5;
+    const streak = (s.streak || 0) + 1;
+    const mult = streakMult(streak);
+    const reward = base * mult;
     s.stars[level] = Math.max(prevStars, stars);
     s.scores[level] = Math.max(s.scores[level] || 0, score);
     s.coins += reward;
+    s.streak = streak;
     s.stats.wins += 1;
-    s.stats.bestCascade = Math.max(s.stats.bestCascade, maxCascade);
+    s.stats.bestCascade = Math.max(s.stats.bestCascade || 0, maxCascade);
     s.stats.totalScore += score;
     s.stats.movesMade += movesUsed;
+    s.stats.bestStreak = Math.max(s.stats.bestStreak || 0, streak);
     saveState();
-    return { firstClear, newStars, reward };
+    return { firstClear, newStars, reward, base, streak, mult };
   },
+  recordLoss() { if (App.player.streak) { App.player.streak = 0; saveState(); } },
   addBooster(id, n) { App.player.boosters[id] = (App.player.boosters[id] || 0) + n; saveState(); },
   useBooster(id) {
     const s = App.player;
@@ -1729,6 +1749,73 @@ const store = {
     saveState();
   },
 };
+
+/* ---------------- лёгкая аналитика (Волна 2) ----------------
+ * Кольцо событий в localStorage, без внешних сервисов (§5.6).
+ * Выгрузка JSON — из профиля. Ключ ≠ сейв (§5.4).
+ * ============================================================ */
+const ANALYTICS_KEY = 'blooming-world-analytics-v1';
+const ANALYTICS_CAP = 500;
+let sessionLogged = false;
+function analyticsRead() {
+  try {
+    const raw = localStorage.getItem(ANALYTICS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((x) => x && typeof x === 'object' && typeof x.e === 'string');
+  } catch (e) { return []; }
+}
+function analyticsWrite(events) {
+  try { localStorage.setItem(ANALYTICS_KEY, JSON.stringify(events.slice(-ANALYTICS_CAP))); }
+  catch (e) { /* storage недоступен */ }
+}
+function logEvent(e, props) {
+  try {
+    const events = analyticsRead();
+    const ev = Object.assign({ t: new Date().toISOString(), e: e }, props || {});
+    events.push(ev);
+    analyticsWrite(events);
+  } catch (err) { /* noop */ }
+}
+function logSessionStart() {
+  if (sessionLogged) return;
+  sessionLogged = true;
+  logEvent('session_start');
+}
+function analyticsCount() { return analyticsRead().length; }
+function analyticsSummary() {
+  const events = analyticsRead();
+  const days = events.map((x) => String(x.t).slice(0, 10)).sort();
+  return {
+    total: events.length,
+    sessions: events.filter((x) => x.e === 'session_start').length,
+    wins: events.filter((x) => x.e === 'level_win').length,
+    losses: events.filter((x) => x.e === 'level_lose').length,
+    starts: events.filter((x) => x.e === 'level_start').length,
+    firstDay: days[0] || null,
+    lastDay: days[days.length - 1] || null,
+  };
+}
+function exportEventsJson(extra) {
+  try {
+    const payload = Object.assign({
+      game: 'Blooming World',
+      exportedAt: new Date().toISOString(),
+      summary: analyticsSummary(),
+    }, extra || {}, { events: analyticsRead() });
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'blooming-world-stats-' + new Date().toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    return true;
+  } catch (e) { return false; }
+}
 
 /* ---------------- tiny dom helpers ---------------- */
 function el(tag, cls, text) {
@@ -2118,7 +2205,7 @@ const Game = {
   cfg: null, board: null, moves: 0, score: 0,
   progress: { colors: [0, 0, 0, 0, 0, 0], items: 0, stones: 0 },
   busy: false, selected: null, activeBooster: null, buyBoosterId: null,
-  winInfo: null, loseOpen: false, plus5Used: 0, attempt: 0,
+  winInfo: null, loseOpen: false, plus5Used: 0, attempt: 0, lostStreak: 0,
   rng: () => 0, playId: 0, snapshot: null, shakeIdx: null,
   clearing: new Set(), born: new Set(), spawned: new Set(), stonesHit: new Set(),
 
@@ -2140,6 +2227,9 @@ const Game = {
     this.snapshot = null;
     this.shakeIdx = null;
     this.clearing = new Set(); this.born = new Set(); this.spawned = new Set(); this.stonesHit = new Set();
+    this.lostStreak = 0;
+    logSessionStart();
+    logEvent('level_start', { level: lv, attempt: this.attempt });
     this.buildDom(box);
     this.rebuildBoard();
     this.updateHud();
@@ -2516,11 +2606,15 @@ const Game = {
       setTimeout(() => sfx.star(1), 400);
       const info = store.recordWin(this.cfg.level, stars, finalScore, res.maxCascade, movesUsed);
       this.score = finalScore;
-      this.winInfo = { stars, reward: info.reward, firstClear: info.firstClear, newStars: info.newStars, bonus };
+      this.winInfo = { stars, reward: info.reward, firstClear: info.firstClear, newStars: info.newStars, bonus, streak: info.streak, mult: info.mult };
+      logEvent('level_win', { level: this.cfg.level, stars: stars, score: finalScore, movesUsed: movesUsed, streak: info.streak, mult: info.mult, reward: info.reward });
       this.updateHud();
       this.renderModals();
     } else if (movesLeft <= 0) {
       sfx.lose();
+      this.lostStreak = App.player.streak || 0;
+      store.recordLoss();
+      logEvent('level_lose', { level: this.cfg.level, score: sc, movesUsed: movesUsed, moves: this.cfg.moves });
       this.loseOpen = true;
       this.renderModals();
     }
@@ -2705,8 +2799,33 @@ const Game = {
         (this.winInfo.bonus > 0 ? '<div style="color:#fde68a">+' + this.winInfo.bonus + ' ⚡</div>' : '');
       modal.appendChild(scoreLine);
       const reward = el('div', 'reward-pill');
-      reward.textContent = '🪙 +' + this.winInfo.reward;
+      reward.textContent = '🪙 +' + this.winInfo.reward + (this.winInfo.mult > 1 ? '  ×' + this.winInfo.mult : '');
       modal.appendChild(reward);
+      /* Волна 2: серия побед */
+      const streakBox = el('div');
+      streakBox.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;margin-top:6px;';
+      const streakPill = el('div');
+      streakPill.style.cssText = 'background:rgba(234,88,12,.92);color:#fff;border-radius:999px;padding:3px 12px;font-size:12px;font-weight:900;';
+      streakPill.textContent = '🔥 ' + t('streak.title') + ': ' + this.winInfo.streak;
+      streakBox.appendChild(streakPill);
+      const chips = el('div');
+      chips.style.cssText = 'display:flex;gap:4px;';
+      for (let m = 2; m <= STREAK_MAX_MULT; m++) {
+        const c = el('span');
+        const on = this.winInfo.mult >= m;
+        c.style.cssText = 'border-radius:999px;padding:1px 6px;font-size:10px;font-weight:900;' +
+          (on ? 'background:#fff;color:#ea580c;' : 'background:rgba(0,0,0,.25);color:rgba(255,255,255,.6);');
+        c.textContent = '×' + m;
+        chips.appendChild(c);
+      }
+      streakBox.appendChild(chips);
+      const nextHint = el('div');
+      nextHint.style.cssText = 'font-size:12px;font-weight:700;color:#d1fae5;';
+      nextHint.textContent = this.winInfo.mult >= STREAK_MAX_MULT
+        ? t('streak.max')
+        : t('streak.next', { m: this.winInfo.mult + 1, n: this.winInfo.mult + 1 - this.winInfo.streak });
+      streakBox.appendChild(nextHint);
+      modal.appendChild(streakBox);
       if (this.winInfo.firstClear) {
         const l = el('div', 'sub');
         l.style.cssText = 'font-weight:700;color:#d1fae5;';
@@ -2752,6 +2871,12 @@ const Game = {
       const over = el('div', 'modal-overlay');
       const modal = el('div', 'modal lose');
       modal.innerHTML = '<h2>' + t('game.lose') + '</h2>';
+      if (this.lostStreak >= 2) {
+        const sl = el('div');
+        sl.style.cssText = 'background:rgba(244,63,94,.8);color:#fff;border-radius:999px;padding:3px 12px;font-size:12px;font-weight:700;margin:2px auto 0;display:inline-block;';
+        sl.textContent = '💔 ' + t('streak.lost');
+        modal.appendChild(sl);
+      }
       const col = el('div', 'col');
       if (this.plus5Used < 2) {
         const p5 = el('button', 'btn btn-amber');
@@ -3096,7 +3221,7 @@ function renderRanks(box) {
  * ============================================================ */
 function renderProfile(box) {
   const wrap = el('div', 'panel-wrap');
-  const t = (k) => store.t(k);
+  const t = (k, v) => store.t(k, v);
   const lang = App.player.lang;
 
   const head = el('div', 'profile-head');
@@ -3114,7 +3239,8 @@ function renderProfile(box) {
   nameBox.appendChild(nameTxt);
   const sub = el('div');
   sub.style.cssText = 'font-size:12px;opacity:.75;';
-  sub.textContent = t('ranks.level') + ' ' + Math.max(0, store.maxUnlocked() - 1) + ' · ⭐ ' + store.totalStars();
+  sub.textContent = t('ranks.level') + ' ' + Math.max(0, store.maxUnlocked() - 1) + ' · ⭐ ' + store.totalStars() +
+    ((App.player.streak || 0) >= 2 ? ' · 🔥 ×' + Math.min(5, App.player.streak) : '');
   nameBox.appendChild(sub);
   head.appendChild(nameBox);
   wrap.appendChild(head);
@@ -3162,6 +3288,7 @@ function renderProfile(box) {
     ['x' + Math.max(0, App.player.stats.bestCascade), t('profile.stat.bestCascade')],
     [fmt(App.player.stats.totalScore), t('profile.stat.totalScore')],
     [fmt(App.player.stats.movesMade), t('profile.stat.moves')],
+    [String(Math.max(0, App.player.stats.bestStreak || 0)), t('profile.stat.streak')],
   ];
   for (const [v, k] of statsData) {
     const card = el('div', 'stat-card');
@@ -3169,6 +3296,38 @@ function renderProfile(box) {
     grid.appendChild(card);
   }
   wrap.appendChild(grid);
+
+  /* Волна 2: аналитика + экспорт JSON */
+  const anTitle = el('div');
+  anTitle.style.cssText = 'font-size:13px;font-weight:900;opacity:.85;margin:14px 0 4px;';
+  anTitle.textContent = t('profile.analytics');
+  wrap.appendChild(anTitle);
+  const anCard = el('div', 'card');
+  anCard.style.cssText = 'padding:12px;';
+  const sum = analyticsSummary();
+  const anInfo = el('div');
+  anInfo.style.cssText = 'font-size:12px;opacity:.75;margin-bottom:8px;';
+  anInfo.textContent = t('profile.analyticsInfo', { n: sum.total, s: sum.sessions });
+  anCard.appendChild(anInfo);
+  const exportBtn = el('button', 'btn');
+  exportBtn.type = 'button';
+  exportBtn.style.cssText = 'background:#334155;color:#fff;width:100%;';
+  exportBtn.textContent = '⬇️ ' + t('profile.export');
+  exportBtn.onclick = () => {
+    const ok = exportEventsJson({
+      player: {
+        level: store.maxUnlocked(), stars: store.totalStars(), coins: App.player.coins,
+        streak: App.player.streak || 0, bestStreak: App.player.stats.bestStreak || 0, wins: App.player.stats.wins,
+      },
+    });
+    if (ok) {
+      sfx.coin();
+      exportBtn.textContent = '✓ ' + t('profile.exportDone');
+      setTimeout(() => { exportBtn.textContent = '⬇️ ' + t('profile.export'); }, 1500);
+    }
+  };
+  anCard.appendChild(exportBtn);
+  wrap.appendChild(anCard);
 
   // equipped
   const eqTitle = el('div');
@@ -3254,6 +3413,7 @@ function renderProfile(box) {
 App.player = loadState();
 setSoundEnabled(App.player.sound);
 App.bots = generateBots();
+logSessionStart();
 document.addEventListener('DOMContentLoaded', () => {
   renderApp();
 });

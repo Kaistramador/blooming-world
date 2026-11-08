@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { GameScreen } from '@/components/game/GameScreen';
 import { MapScreen } from '@/components/MapScreen';
 import { ShopScreen } from '@/components/ShopScreen';
@@ -10,6 +10,7 @@ import { BloomingBackground } from '@/components/game/BloomingBackground';
 import { chapterTheme } from '@/lib/game/themes';
 import { CHAPTER_SIZE } from '@/lib/game/levels';
 import { usePlayer } from '@/lib/store';
+import { logSessionStart } from '@/lib/game/analytics';
 import { sfx } from '@/lib/game/sound';
 import { translate } from '@/lib/i18n';
 
@@ -31,6 +32,10 @@ export default function Home() {
   );
   const [screen, setScreen] = useState<Screen>('map');
   const [playingLevel, setPlayingLevel] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (hydrated) logSessionStart();
+  }, [hydrated]);
 
   const t = (key: string) => translate(player.lang, key);
 
