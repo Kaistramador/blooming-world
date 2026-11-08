@@ -182,7 +182,7 @@ input { font-family: inherit; }
 /* ---------- bottom nav ---------- */
 .bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; border-top: 1px solid rgba(255,255,255,.2); background: rgba(0,0,0,.45); backdrop-filter: blur(8px); padding-bottom: env(safe-area-inset-bottom); }
 .bottom-nav .row { max-width: 512px; margin: 0 auto; display: flex; justify-content: space-around; padding: 6px 8px; }
-.nav-btn { display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 44px; min-width: 64px; border-radius: 16px; padding: 6px 12px; font-size: 10px; font-weight: 700; color: rgba(255,255,255,.75); }
+.nav-btn { display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 44px; min-width: 52px; flex: 1; border-radius: 16px; padding: 6px 6px; font-size: 10px; font-weight: 700; color: rgba(255,255,255,.75); }
 .nav-btn.active { background: rgba(255,255,255,.95); color: #1e293b; box-shadow: 0 3px 10px rgba(0,0,0,.3); }
 .nav-btn .ico { font-size: 18px; line-height: 1; }
 
@@ -308,6 +308,41 @@ input { font-family: inherit; }
   .board-box { padding: 7px; }
 }
 
+/* ---------- Волна 3: сад (метаигра) ---------- */
+.gd-scene { position: relative; width: 100%; aspect-ratio: 10 / 13; overflow: hidden; border-radius: 24px; border: 2px solid rgba(255,255,255,.25); box-shadow: 0 10px 34px rgba(0,0,0,.35); }
+.gd-sky { position: absolute; inset: 0; }
+.gd-sun { position: absolute; top: 4%; right: 8%; width: 14%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, #fff7c0 30%, #ffd83d 70%, rgba(255,216,61,0) 75%); filter: drop-shadow(0 0 18px rgba(255,216,61,.8)); animation: gd-sun-pulse 5s ease-in-out infinite; }
+@keyframes gd-sun-pulse { 0%, 100% { transform: scale(1); opacity: .95; } 50% { transform: scale(1.07); opacity: 1; } }
+.gd-cloud { position: absolute; width: 16%; height: 7%; border-radius: 999px; background: rgba(255,255,255,.85); box-shadow: 24px -8px 0 -4px rgba(255,255,255,.85), -22px -4px 0 -6px rgba(255,255,255,.75); animation: gd-cloud-drift linear infinite; }
+@keyframes gd-cloud-drift { from { transform: translateX(-30%); } to { transform: translateX(760%); } }
+.gd-hill { position: absolute; border-radius: 50% 50% 0 0; filter: blur(1px); }
+.gd-band { position: absolute; left: 0; right: 0; }
+.gd-band-label { position: absolute; left: 8px; z-index: 5; font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.92); background: rgba(0,0,0,.32); border: 1px solid rgba(255,255,255,.3); border-radius: 999px; padding: 2px 9px; text-shadow: 0 1px 2px rgba(0,0,0,.5); backdrop-filter: blur(2px); }
+.gd-slot { position: absolute; z-index: 6; transform: translate(-50%, -50%); }
+.gd-obj { display: flex; flex-direction: column; align-items: center; gap: 1px; background: none; border: none; padding: 0; animation: bm-star-pop .5s cubic-bezier(.3,1.5,.5,1) backwards; }
+.gd-obj-emoji { line-height: 1; filter: drop-shadow(0 3px 4px rgba(0,0,0,.35)); animation: gd-sway 3.6s ease-in-out infinite; transform-origin: 50% 100%; }
+@keyframes gd-sway { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+.gd-obj-name { font-size: 8.5px; font-weight: 800; color: #fff; background: rgba(0,0,0,.34); border-radius: 999px; padding: 0 6px; line-height: 15px; text-shadow: 0 1px 2px rgba(0,0,0,.5); white-space: nowrap; max-width: 92px; overflow: hidden; text-overflow: ellipsis; }
+.gd-empty { width: 44px; height: 44px; border-radius: 50%; border: 2.5px dashed rgba(255,255,255,.65); background: rgba(255,255,255,.12); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,.85); font-size: 18px; box-shadow: inset 0 2px 8px rgba(0,0,0,.25); }
+.gd-empty-can { border-color: rgba(255,235,140,.95); background: rgba(255,225,120,.2); animation: gd-glow-pulse 1.8s ease-in-out infinite; }
+@keyframes gd-glow-pulse { 0%, 100% { box-shadow: 0 0 8px rgba(255,216,61,.4), inset 0 2px 8px rgba(0,0,0,.2); } 50% { box-shadow: 0 0 20px rgba(255,216,61,.8), inset 0 2px 8px rgba(0,0,0,.2); } }
+.gd-empty-slot { position: relative; }
+.gd-cost { position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%); font-size: 9px; font-weight: 900; white-space: nowrap; background: rgba(0,0,0,.5); color: #ffd83d; border-radius: 999px; padding: 0 6px; line-height: 15px; border: 1px solid rgba(255,255,255,.25); }
+.gd-bloom-bar { height: 10px; border-radius: 999px; background: rgba(0,0,0,.35); overflow: hidden; border: 1px solid rgba(255,255,255,.3); }
+.gd-bloom-fill { height: 100%; border-radius: 999px; transition: width .6s cubic-bezier(.3,1.3,.5,1); background: linear-gradient(90deg,#2ea56d,#7dd866 60%,#ffd83d); box-shadow: 0 0 10px rgba(125,216,102,.7); }
+.gd-petal { position: absolute; z-index: 4; pointer-events: none; animation: gd-petal-float ease-in-out infinite; opacity: .85; }
+@keyframes gd-petal-float { 0%, 100% { transform: translateY(0) rotate(-8deg); } 50% { transform: translateY(-10px) rotate(8deg); } }
+
+/* ---------- Волна 3: копилка ---------- */
+.piggy-pill { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 5px 11px; font-size: 13px; font-weight: 900; background: rgba(244,114,182,.92); color: #fff; box-shadow: 0 4px 14px rgba(0,0,0,.3); border: 1.5px solid rgba(255,255,255,.4); }
+.piggy-pill-ready { background: linear-gradient(135deg,#ffb300,#ff5ab0); animation: piggy-wiggle 1.1s ease-in-out infinite; cursor: pointer; }
+@keyframes piggy-wiggle { 0%, 100% { transform: rotate(-2.5deg) scale(1); } 50% { transform: rotate(2.5deg) scale(1.06); } }
+.piggy-meter { display: flex; gap: 3px; }
+.piggy-meter span { width: 10px; height: 10px; border-radius: 50%; background: rgba(0,0,0,.3); box-shadow: inset 0 1px 2px rgba(0,0,0,.4); }
+.piggy-meter span.on { background: #ffd83d; box-shadow: 0 0 6px rgba(255,216,61,.8); }
+.piggy-big { font-size: 48px; line-height: 1; margin: 6px 0; }
+.stars-avail { background: rgba(255,255,255,.92) !important; color: #065f46 !important; }
+
 </style>
 </head>
 <body>
@@ -363,6 +398,19 @@ const I18N_RU = {
   'game.collectGoal': 'Собери камни', 'game.scoreGoal': 'Набери очки',
   'streak.title': 'Серия побед', 'streak.next': 'До ×{m} — ещё {n}',
   'streak.max': 'Максимальный множитель!', 'streak.lost': 'Серия побед сброшена',
+  'nav.garden': 'Сад',
+  'garden.title': 'Сад', 'garden.subtitle': 'Восстанови сад за звёзды',
+  'garden.lockedTitle': 'Сад пока спит', 'garden.lockedHint': 'Пройди главу 1 — и сад начнёт расцветать',
+  'garden.zone0': 'У входа', 'garden.zone1': 'Сад', 'garden.zone2': 'Парк',
+  'garden.zoneLocked': 'Откроется после главы {n}',
+  'garden.restore': 'Восстановить · ⭐{n}', 'garden.restoredCount': '{n} из {m} восстановлено',
+  'garden.bloom': 'Расцвет', 'garden.done': 'Сад полностью расцвёл!',
+  'garden.needStars': 'Не хватает звёзд', 'garden.coinsBack': 'Награда: 🪙 +{n}',
+  'garden.confirmTitle': 'Восстановить «{name}»?', 'garden.cancel': 'Позже',
+  'piggy.title': 'Копилка', 'piggy.full': 'Копилка полна!', 'piggy.open': 'Открыть копилку',
+  'piggy.collect': 'Забрать 🪙 {n}', 'piggy.progress': 'Побед до вскрытия: {n}',
+  'piggy.deposit': '🐷 +{n} в копилку ({w}/{m})', 'piggy.ready': 'Копилка готова к вскрытию!',
+  'piggy.hint': 'Каждая победа кладёт монеты в копилку',
   'shop.title': 'Магазин', 'shop.coins': 'Монеты',
   'shop.tab.boosters': 'Бусты', 'shop.tab.bank': 'Банк', 'shop.tab.skins': 'Скины',
   'shop.tab.avatars': 'Аватары', 'shop.tab.frames': 'Рамки', 'shop.tab.names': 'Имя', 'shop.tab.effects': 'Эффекты',
@@ -415,6 +463,19 @@ const I18N_EN = {
   'game.collectGoal': 'Collect gems', 'game.scoreGoal': 'Score points',
   'streak.title': 'Win streak', 'streak.next': '{n} more to ×{m}',
   'streak.max': 'Maximum multiplier!', 'streak.lost': 'Win streak reset',
+  'nav.garden': 'Garden',
+  'garden.title': 'Garden', 'garden.subtitle': 'Restore the garden with stars',
+  'garden.lockedTitle': 'The garden is still asleep', 'garden.lockedHint': 'Clear chapter 1 — and the garden will start to bloom',
+  'garden.zone0': 'Entrance', 'garden.zone1': 'Garden', 'garden.zone2': 'Park',
+  'garden.zoneLocked': 'Opens after chapter {n}',
+  'garden.restore': 'Restore · ⭐{n}', 'garden.restoredCount': '{n} of {m} restored',
+  'garden.bloom': 'Bloom', 'garden.done': 'The garden is in full bloom!',
+  'garden.needStars': 'Not enough stars', 'garden.coinsBack': 'Reward: 🪙 +{n}',
+  'garden.confirmTitle': 'Restore “{name}”?', 'garden.cancel': 'Later',
+  'piggy.title': 'Piggy bank', 'piggy.full': 'Piggy bank is full!', 'piggy.open': 'Open piggy bank',
+  'piggy.collect': 'Collect 🪙 {n}', 'piggy.progress': 'Wins until opening: {n}',
+  'piggy.deposit': '🐷 +{n} to the piggy bank ({w}/{m})', 'piggy.ready': 'Piggy bank is ready to open!',
+  'piggy.hint': 'Every win drops coins into the piggy bank',
   'shop.title': 'Shop', 'shop.coins': 'Coins',
   'shop.tab.boosters': 'Boosters', 'shop.tab.bank': 'Bank', 'shop.tab.skins': 'Skins',
   'shop.tab.avatars': 'Avatars', 'shop.tab.frames': 'Frames', 'shop.tab.names': 'Name', 'shop.tab.effects': 'Effects',
@@ -783,6 +844,53 @@ function generateBots(count) {
   }
   return bots.sort((x, y) => y.level - x.level || y.stars - x.stars);
 }
+
+/* ---------------- Волна 3: сад + копилка ----------------
+ * Звёзды ТРАТЯТСЯ на объекты сада (available = earned - spent);
+ * рейтинг и профиль считают заработанные. Копилка: взнос за
+ * победу, вскрытие каждые PIGGY_WINS_TARGET побед, бесплатно.
+ * ============================================================ */
+const GARDEN_ZONE_CHAPTER = { 0: 1, 1: 3, 2: 6 };
+function gardenZoneUnlockLevel(zone) { return GARDEN_ZONE_CHAPTER[zone] * CHAPTER_SIZE; }
+function gardenCoinsBack(cost) { return 10 + cost * 2; }
+const PIGGY_WINS_TARGET = 5;
+function piggyDeposit(level) { return 10 + Math.min(Math.max(level, 1), 30) * 2; }
+const GARDEN_OBJECTS = [
+  { id: 'g-grass',     name: { ru: 'Газон',            en: 'Lawn' },            emoji: '🌿', cost: 2,  zone: 0, x: 12, y: 28, size: 1.0 },
+  { id: 'g-path',      name: { ru: 'Тропинка',         en: 'Garden path' },     emoji: '🛣️', cost: 2,  zone: 0, x: 35, y: 25, size: 1.05 },
+  { id: 'g-daisy',     name: { ru: 'Ромашки',          en: 'Daisies' },         emoji: '🌼', cost: 3,  zone: 0, x: 58, y: 28, size: 0.9 },
+  { id: 'g-bush',      name: { ru: 'Кустарник',        en: 'Bush' },            emoji: '🪴', cost: 3,  zone: 0, x: 81, y: 26, size: 1.05 },
+  { id: 'g-pot',       name: { ru: 'Кашпо',            en: 'Planter' },         emoji: '🏺', cost: 4,  zone: 0, x: 12, y: 11, size: 0.95 },
+  { id: 'g-tulip',     name: { ru: 'Тюльпаны',         en: 'Tulips' },          emoji: '🌷', cost: 5,  zone: 0, x: 35, y: 9,  size: 0.95 },
+  { id: 'g-lamp',      name: { ru: 'Фонарь',           en: 'Lantern' },         emoji: '🏮', cost: 5,  zone: 0, x: 58, y: 11, size: 1.0 },
+  { id: 'g-mushroom',  name: { ru: 'Грибочки',         en: 'Mushrooms' },       emoji: '🍄', cost: 6,  zone: 0, x: 81, y: 10, size: 0.9 },
+  { id: 'g-flowerbed', name: { ru: 'Клумба',           en: 'Flowerbed' },       emoji: '💐', cost: 5,  zone: 1, x: 10, y: 59, size: 1.0 },
+  { id: 'g-apple',     name: { ru: 'Яблоня',           en: 'Apple tree' },      emoji: '🌳', cost: 6,  zone: 1, x: 29, y: 55, size: 1.35 },
+  { id: 'g-birdhouse', name: { ru: 'Скворечник',       en: 'Birdhouse' },       emoji: '🐦', cost: 7,  zone: 1, x: 49, y: 59, size: 0.95 },
+  { id: 'g-bench',     name: { ru: 'Скамейка',         en: 'Bench' },           emoji: '🪑', cost: 7,  zone: 1, x: 69, y: 57, size: 1.05 },
+  { id: 'g-bee',       name: { ru: 'Улей',             en: 'Beehive' },         emoji: '🐝', cost: 8,  zone: 1, x: 89, y: 59, size: 0.95 },
+  { id: 'g-greenhouse',name: { ru: 'Теплица',          en: 'Greenhouse' },      emoji: '🏡', cost: 8,  zone: 1, x: 76, y: 40, size: 1.3 },
+  { id: 'g-sprinkler', name: { ru: 'Поливалка',        en: 'Sprinkler' },       emoji: '💦', cost: 9,  zone: 1, x: 16, y: 50, size: 0.9 },
+  { id: 'g-swing',     name: { ru: 'Качели',           en: 'Swing set' },       emoji: '🛝', cost: 9,  zone: 1, x: 38, y: 47, size: 1.2 },
+  { id: 'g-hedge',     name: { ru: 'Живая изгородь',   en: 'Hedge' },           emoji: '🌲', cost: 9,  zone: 1, x: 60, y: 49, size: 1.2 },
+  { id: 'g-pond',      name: { ru: 'Пруд с лилиями',   en: 'Lily pond' },       emoji: '🪷', cost: 10, zone: 1, x: 82, y: 48, size: 1.1 },
+  { id: 'g-berries',   name: { ru: 'Ягодные кусты',    en: 'Berry bushes' },    emoji: '🫐', cost: 10, zone: 1, x: 26, y: 37, size: 0.95 },
+  { id: 'g-sunflower', name: { ru: 'Подсолнухи',       en: 'Sunflowers' },      emoji: '🌻', cost: 10, zone: 1, x: 52, y: 36, size: 1.0 },
+  { id: 'g-arbor',     name: { ru: 'Виноградная арка', en: 'Grape arbor' },     emoji: '🍇', cost: 8,  zone: 1, x: 8,  y: 39, size: 1.0 },
+  { id: 'g-statue',    name: { ru: 'Статуя',           en: 'Statue' },          emoji: '🗿', cost: 6,  zone: 2, x: 12, y: 91, size: 1.0 },
+  { id: 'g-clock',     name: { ru: 'Солнечные часы',   en: 'Sundial' },         emoji: '🕗', cost: 7,  zone: 2, x: 33, y: 89, size: 1.0 },
+  { id: 'g-maze',      name: { ru: 'Лабиринт',         en: 'Hedge maze' },      emoji: '🌀', cost: 7,  zone: 2, x: 54, y: 91, size: 1.0 },
+  { id: 'g-rose',      name: { ru: 'Розарий',          en: 'Rose garden' },     emoji: '🌹', cost: 8,  zone: 2, x: 75, y: 89, size: 0.95 },
+  { id: 'g-sakura',    name: { ru: 'Сакура',           en: 'Sakura tree' },     emoji: '🌸', cost: 8,  zone: 2, x: 92, y: 91, size: 1.1 },
+  { id: 'g-swans',     name: { ru: 'Лебединое озеро',  en: 'Swan lake' },       emoji: '🦢', cost: 9,  zone: 2, x: 12, y: 81, size: 1.05 },
+  { id: 'g-peacock',   name: { ru: 'Павлин',           en: 'Peacock' },         emoji: '🦚', cost: 10, zone: 2, x: 35, y: 79, size: 1.05 },
+  { id: 'g-gazebo',    name: { ru: 'Беседка',          en: 'Gazebo' },          emoji: '🛖', cost: 11, zone: 2, x: 58, y: 81, size: 1.25 },
+  { id: 'g-balloon',   name: { ru: 'Воздушный шар',    en: 'Hot-air balloon' }, emoji: '🎈', cost: 12, zone: 2, x: 81, y: 79, size: 1.15 },
+  { id: 'g-arch',      name: { ru: 'Мраморная арка',   en: 'Marble arch' },     emoji: '🏛️', cost: 13, zone: 2, x: 14, y: 70, size: 1.2 },
+  { id: 'g-carousel',  name: { ru: 'Карусель',         en: 'Carousel' },        emoji: '🎠', cost: 14, zone: 2, x: 40, y: 68, size: 1.3 },
+  { id: 'g-stage',     name: { ru: 'Летняя сцена',     en: 'Summer stage' },    emoji: '🎪', cost: 14, zone: 2, x: 65, y: 70, size: 1.3 },
+  { id: 'g-fountain',  name: { ru: 'Фонтан',           en: 'Fountain' },        emoji: '⛲', cost: 16, zone: 2, x: 88, y: 70, size: 1.3 },
+];
 
 /* ============ engine.js ============ */
 /* ============================================================
@@ -1646,6 +1754,10 @@ function defaultState() {
     equipped: { skin: 'classic', avatar: 'av-seed', frame: 'fr-none', nameStyle: 'ns-basic', tileEffect: '', avatarEffect: '', nameEffect: '' },
     stats: { wins: 0, bestCascade: 0, totalScore: 0, movesMade: 0, bestStreak: 0 },
     streak: 0,
+    /* Волна 3: сад + копилка (аддитивно, §5.4) */
+    starsSpent: 0,
+    garden: { restored: [] },
+    piggy: { coins: 0, wins: 0 },
   };
 }
 function normalizeState(s) {
@@ -1657,6 +1769,13 @@ function normalizeState(s) {
   out.owned = Object.assign({}, d.owned, s && s.owned ? s.owned : {});
   out.equipped = Object.assign({}, d.equipped, s && s.equipped ? s.equipped : {});
   out.stats = Object.assign({}, d.stats, s && s.stats ? s.stats : {});
+  /* Волна 3: аддитивная миграция сад/копилка */
+  out.starsSpent = typeof (s && s.starsSpent) === 'number' ? s.starsSpent : 0;
+  out.garden = { restored: Array.isArray(s && s.garden && s.garden.restored) ? s.garden.restored.slice() : [] };
+  out.piggy = {
+    coins: s && s.piggy && typeof s.piggy.coins === 'number' ? s.piggy.coins : 0,
+    wins: s && s.piggy && typeof s.piggy.wins === 'number' ? s.piggy.wins : 0,
+  };
   out.lang = out.lang === 'en' ? 'en' : 'ru';
   return out;
 }
@@ -1704,8 +1823,14 @@ const store = {
     s.stats.totalScore += score;
     s.stats.movesMade += movesUsed;
     s.stats.bestStreak = Math.max(s.stats.bestStreak || 0, streak);
+    /* Волна 3: взнос победы в копилку */
+    const deposit = piggyDeposit(level);
+    const piggyWins = (s.piggy.wins || 0) + 1;
+    const piggyCoins = (s.piggy.coins || 0) + deposit;
+    s.piggy.coins = piggyCoins;
+    s.piggy.wins = piggyWins % PIGGY_WINS_TARGET;
     saveState();
-    return { firstClear, newStars, reward, base, streak, mult };
+    return { firstClear, newStars, reward, base, streak, mult, piggy: { deposit, coins: piggyCoins, wins: piggyWins, ready: piggyWins >= PIGGY_WINS_TARGET } };
   },
   recordLoss() { if (App.player.streak) { App.player.streak = 0; saveState(); } },
   addBooster(id, n) { App.player.boosters[id] = (App.player.boosters[id] || 0) + n; saveState(); },
@@ -1740,6 +1865,31 @@ const store = {
   totalStars() {
     const vals = Object.values(App.player.stars);
     return vals.reduce((a, b) => a + b, 0);
+  },
+  /* Волна 3: звёзды, доступные на траты в саду */
+  starsAvailable() {
+    return Math.max(0, this.totalStars() - (App.player.starsSpent || 0));
+  },
+  restoreGarden(id) {
+    const s = App.player;
+    const def = GARDEN_OBJECTS.find((o) => o.id === id);
+    if (!def || s.garden.restored.includes(id)) return false;
+    if (this.starsAvailable() < def.cost) return false;
+    s.starsSpent += def.cost;
+    s.coins += gardenCoinsBack(def.cost);
+    s.garden.restored.push(id);
+    saveState();
+    return true;
+  },
+  openPiggy() {
+    const s = App.player;
+    if (!s.piggy.coins) return 0;
+    const got = s.piggy.coins;
+    s.coins += got;
+    s.piggy.coins = 0;
+    s.piggy.wins = 0;
+    saveState();
+    return got;
   },
   resetAll() {
     const keepLang = App.player.lang;
@@ -2021,13 +2171,16 @@ function buildBackground(bg, seed, asRoot, eraId) {
  * ============================================================ */
 
 const App = {
-  screen: 'map',        // map | shop | ranks | profile
+  screen: 'map',        // map | garden | shop | ranks | profile
   level: null,          // playing level number or null
   player: null,
   bots: null,
   shopTab: 'boosters',
   ranksQuery: '',
   savedFlash: false,
+  /* Волна 3: копилка */
+  piggyDialog: null,    // null | 'status' | 'result'
+  piggyGot: 0,
 };
 
 function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
@@ -2045,6 +2198,7 @@ function renderApp() {
     Game.mount(screenBox);
   } else {
     if (App.screen === 'map') renderMap(screenBox);
+    else if (App.screen === 'garden') renderGarden(screenBox);
     else if (App.screen === 'shop') renderShop(screenBox);
     else if (App.screen === 'ranks') renderRanks(screenBox);
     else renderProfile(screenBox);
@@ -2058,6 +2212,7 @@ function buildNav() {
   const row = el('div', 'row');
   const items = [
     { key: 'map', icon: '🗺️', label: store.t('nav.map') },
+    { key: 'garden', icon: '🌸', label: store.t('nav.garden') },
     { key: 'shop', icon: '🛍️', label: store.t('nav.shop') },
     { key: 'ranks', icon: '🏆', label: store.t('nav.ranks') },
     { key: 'profile', icon: '👤', label: store.t('nav.profile') },
@@ -2077,6 +2232,102 @@ function coinPill() {
   const d = el('span', 'coin-pill');
   d.innerHTML = '🪙 ' + fmt(App.player.coins);
   return d;
+}
+
+/* Волна 3: пилюля копилки (карта) */
+function piggyPill() {
+  const t = (k, v) => store.t(k, v);
+  const ready = App.player.piggy.wins >= PIGGY_WINS_TARGET;
+  const d = el('button', 'piggy-pill' + (ready ? ' piggy-pill-ready' : ''));
+  d.type = 'button';
+  d.setAttribute('aria-label', t('piggy.title'));
+  const meter = el('span', 'piggy-meter');
+  for (let i = 0; i < PIGGY_WINS_TARGET; i++) {
+    const dot = el('span', i < App.player.piggy.wins ? 'on' : '');
+    meter.appendChild(dot);
+  }
+  d.innerHTML = '🐷 ' + fmt(App.player.piggy.coins) + ' ';
+  d.appendChild(meter);
+  d.onclick = () => {
+    sfx.click();
+    if (ready) {
+      openPiggyFlow();
+    } else {
+      App.piggyDialog = 'status';
+      renderPiggyDialog();
+    }
+  };
+  return d;
+}
+
+function openPiggyFlow() {
+  const got = store.openPiggy();
+  if (got > 0) {
+    sfx.coin();
+    setTimeout(() => sfx.star(3), 200);
+    logEvent('piggy_open', { coins: got });
+    App.piggyGot = got;
+    App.piggyDialog = 'result';
+  } else {
+    App.piggyDialog = 'status';
+  }
+  renderPiggyDialog();
+}
+
+function renderPiggyDialog() {
+  const old = document.getElementById('bm-piggy-modal');
+  if (old) old.remove();
+  if (!App.piggyDialog) return;
+  const t = (k, v) => store.t(k, v);
+  const over = el('div', 'modal-overlay');
+  over.id = 'bm-piggy-modal';
+  over.style.zIndex = '90';
+  const modal = el('div', 'modal win');
+  if (App.piggyDialog === 'status') {
+    modal.innerHTML = '<h2>🐷 ' + t('piggy.title') + '</h2>';
+    const pig = el('div', 'piggy-big', '🐷');
+    modal.appendChild(pig);
+    const coins = el('div', 'reward-pill');
+    coins.textContent = '🪙 ' + fmt(App.player.piggy.coins);
+    modal.appendChild(coins);
+    const meter = el('div', 'piggy-meter');
+    meter.style.cssText = 'justify-content:center;margin:8px 0;';
+    for (let i = 0; i < PIGGY_WINS_TARGET; i++) {
+      meter.appendChild(el('span', i < App.player.piggy.wins ? 'on' : ''));
+    }
+    modal.appendChild(meter);
+    const info = el('div', 'sub');
+    info.style.cssText = 'font-weight:700;color:#fbcfe8;';
+    info.textContent = App.player.piggy.wins >= PIGGY_WINS_TARGET ? t('piggy.ready') : t('piggy.progress', { n: PIGGY_WINS_TARGET - App.player.piggy.wins });
+    modal.appendChild(info);
+    const hint = el('div', 'sub');
+    hint.style.cssText = 'font-size:11px;opacity:.8;';
+    hint.textContent = t('piggy.hint');
+    modal.appendChild(hint);
+    const col = el('div', 'col');
+    const closeBtn = el('button', 'btn btn-ghost');
+    closeBtn.type = 'button';
+    closeBtn.textContent = t('common.close');
+    closeBtn.onclick = () => { App.piggyDialog = null; renderPiggyDialog(); };
+    col.appendChild(closeBtn);
+    modal.appendChild(col);
+  } else {
+    modal.innerHTML = '<h2>🎉 ' + t('piggy.full') + '</h2>';
+    const pig = el('div', 'piggy-big', '🪙');
+    modal.appendChild(pig);
+    const got = el('div', 'reward-pill');
+    got.textContent = '+' + fmt(App.piggyGot);
+    modal.appendChild(got);
+    const col = el('div', 'col');
+    const okBtn = el('button', 'btn btn-white');
+    okBtn.type = 'button';
+    okBtn.textContent = t('common.ok');
+    okBtn.onclick = () => { App.piggyDialog = null; App.piggyGot = 0; renderPiggyDialog(); renderApp(); };
+    col.appendChild(okBtn);
+    modal.appendChild(col);
+  }
+  over.appendChild(modal);
+  document.body.appendChild(over);
 }
 
 let toastTimer = null;
@@ -2123,9 +2374,13 @@ function renderMap(box) {
 
   const head = el('div', 'map-head');
   head.innerHTML = '<div><h1 class="bm-text-outline">' + t('app.title') + '</h1><p class="bm-text-outline">' + t('app.subtitle') + '</p></div>';
-  const starsPill = el('span', 'coin-pill');
-  starsPill.innerHTML = '⭐ ' + store.totalStars();
+  /* Волна 3: пилюля звёзд показывает ДОСТУПНЫЕ на сад звёзды */
+  const starsAvail = store.starsAvailable();
+  const starsTotal = store.totalStars();
+  const starsPill = el('span', 'coin-pill' + (starsAvail < starsTotal ? ' stars-avail' : ''));
+  starsPill.innerHTML = '⭐ ' + starsAvail;
   head.appendChild(starsPill);
+  head.appendChild(piggyPill());
   wrap.appendChild(head);
 
   const maxUnlocked = store.maxUnlocked();
@@ -2196,6 +2451,231 @@ function renderMap(box) {
   wrap.appendChild(soon);
 
   box.appendChild(wrap);
+}
+
+/* ============================================================
+ * GARDEN SCREEN (Волна 3)
+ * ============================================================ */
+const GARDEN_BANDS = [
+  { zone: 0, top: 0, height: 33, ground: 'linear-gradient(180deg,#7fb86b,#5d9a4e)', groundDim: 'linear-gradient(180deg,#8b9377,#6f7a60)' },
+  { zone: 1, top: 33, height: 34, ground: 'linear-gradient(180deg,#63a94f,#3f8a3c)', groundDim: 'linear-gradient(180deg,#7d8a68,#5c6e4e)' },
+  { zone: 2, top: 67, height: 33, ground: 'linear-gradient(180deg,#4f9c46,#32743a)', groundDim: 'linear-gradient(180deg,#6f8560,#4c6247)' },
+];
+const GARDEN_ZONE_KEYS = ['garden.zone0', 'garden.zone1', 'garden.zone2'];
+
+function renderGarden(box) {
+  const wrap = el('div', 'map-wrap');
+  const t = (k, v) => store.t(k, v);
+  const lang = App.player.lang;
+  const maxUnlocked = store.maxUnlocked();
+  const gardenOpen = maxUnlocked > 10;
+  const restoredSet = new Set(App.player.garden.restored);
+  const starsAvail = store.starsAvailable();
+  const bloom = restoredSet.size / GARDEN_OBJECTS.length;
+
+  /* ---------- закрытый сад ---------- */
+  const head = el('div', 'map-head');
+  const backBtn = el('button', 'btn btn-ghost');
+  backBtn.type = 'button';
+  backBtn.style.cssText = 'padding:8px 14px;';
+  backBtn.textContent = '← ' + t('game.exit');
+  backBtn.onclick = () => { sfx.click(); App.screen = 'map'; renderApp(); };
+  head.appendChild(backBtn);
+  wrap.appendChild(head);
+
+  if (!gardenOpen) {
+    const lock = el('div', 'card');
+    lock.style.cssText = 'margin-top:28px;padding:32px 20px;text-align:center;';
+    lock.innerHTML =
+      '<div style="font-size:52px;line-height:1">🌱</div>' +
+      '<h2 class="bm-text-outline" style="margin-top:10px;font-size:20px;">' + t('garden.lockedTitle') + '</h2>' +
+      '<p class="bm-text-outline" style="font-size:13px;opacity:.9;margin-top:4px;">' + t('garden.lockedHint') + '</p>' +
+      '<div style="display:inline-block;margin-top:10px;background:rgba(255,255,255,.2);border-radius:999px;padding:3px 12px;font-size:12px;font-weight:700;">' +
+      t('map.chapter') + ' 1 · ' + Math.min(10, maxUnlocked - 1) + '/10</div>';
+    wrap.appendChild(lock);
+    box.appendChild(wrap);
+    return;
+  }
+
+  const zoneUnlocked = (zone) => maxUnlocked > gardenZoneUnlockLevel(zone);
+
+  /* ---------- шапка: заголовок + счётчики ---------- */
+  const titleBox = el('div');
+  titleBox.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:-44px;padding-top:0;';
+  const tb = el('div');
+  tb.style.cssText = 'text-align:center;flex:1;';
+  tb.innerHTML = '<div class="bm-text-outline" style="font-size:18px;font-weight:900;">🌸 ' + t('garden.title') + '</div>' +
+    '<div class="bm-text-outline" style="font-size:10px;opacity:.85;">' + t('garden.subtitle') + '</div>';
+  titleBox.appendChild(tb);
+  const pillBox = el('div');
+  pillBox.style.cssText = 'display:flex;flex-direction:column;gap:4px;align-items:flex-end;';
+  const stPill = el('span', 'coin-pill' + (starsAvail < store.totalStars() ? ' stars-avail' : ''));
+  stPill.style.fontSize = '12px';
+  stPill.innerHTML = '⭐ ' + starsAvail;
+  pillBox.appendChild(stPill);
+  const coinP = el('span', 'coin-pill');
+  coinP.style.fontSize = '12px';
+  coinP.innerHTML = '🪙 ' + fmt(App.player.coins);
+  pillBox.appendChild(coinP);
+  titleBox.appendChild(pillBox);
+  wrap.appendChild(titleBox);
+
+  /* ---------- прогресс расцвета ---------- */
+  const prog = el('div', 'card');
+  prog.style.cssText = 'margin-top:10px;padding:10px 12px;';
+  const progRow = el('div');
+  progRow.style.cssText = 'display:flex;justify-content:space-between;font-size:11px;font-weight:700;';
+  progRow.innerHTML = '<span>🌸 ' + t('garden.bloom') + '</span><span>' +
+    t('garden.restoredCount', { n: restoredSet.size, m: GARDEN_OBJECTS.length }) + '</span>';
+  prog.appendChild(progRow);
+  const bar = el('div', 'gd-bloom-bar');
+  bar.style.marginTop = '6px';
+  const fill = el('div', 'gd-bloom-fill');
+  fill.style.width = Math.round(bloom * 100) + '%';
+  bar.appendChild(fill);
+  prog.appendChild(bar);
+  wrap.appendChild(prog);
+
+  /* ---------- сцена ---------- */
+  const scene = el('div', 'gd-scene');
+  scene.style.marginTop = '10px';
+  const sky = el('div', 'gd-sky');
+  sky.style.background = 'linear-gradient(180deg, rgba(96,125,139,' + (0.42 * (1 - bloom)).toFixed(2) + ') 0%, rgba(255,255,255,0) 45%)';
+  scene.appendChild(sky);
+  if (bloom > 0.25) scene.appendChild(el('div', 'gd-sun'));
+  for (let i = 0; i < 3; i++) {
+    const c = el('div', 'gd-cloud');
+    c.style.top = (4 + i * 7) + '%';
+    c.style.animationDuration = (70 + i * 25) + 's';
+    c.style.animationDelay = (-i * 22) + 's';
+    c.style.opacity = String(0.5 + bloom * 0.45);
+    scene.appendChild(c);
+  }
+  const hillL = el('div', 'gd-hill');
+  hillL.style.cssText = 'left:-18%;top:20%;width:70%;height:18%;background:rgba(96,150,90,' + (0.5 + bloom * 0.25).toFixed(2) + ')';
+  scene.appendChild(hillL);
+  const hillR = el('div', 'gd-hill');
+  hillR.style.cssText = 'right:-22%;top:24%;width:75%;height:16%;background:rgba(76,132,80,' + (0.45 + bloom * 0.25).toFixed(2) + ')';
+  scene.appendChild(hillR);
+
+  for (const band of GARDEN_BANDS) {
+    const open = zoneUnlocked(band.zone);
+    const bd = el('div', 'gd-band');
+    bd.style.cssText = 'top:' + band.top + '%;height:' + band.height + '%;background:' + (open ? band.ground : band.groundDim) + ';opacity:' + (open ? 1 : 0.75) + ';';
+    const label = el('div', 'gd-band-label');
+    label.style.top = '6px';
+    label.innerHTML = '🌄 ' + t(GARDEN_ZONE_KEYS[band.zone]) + (!open ? ' 🔒 ' + t('garden.zoneLocked', { n: GARDEN_ZONE_CHAPTER[band.zone] + 1 }) : '');
+    bd.appendChild(label);
+    scene.appendChild(bd);
+  }
+
+  /* ambient petals by bloom */
+  const petalCount = Math.floor(bloom * 10);
+  const PETALS = ['🌸', '✨', '🦋'];
+  for (let i = 0; i < petalCount; i++) {
+    const p = el('span', 'gd-petal', PETALS[i % 3]);
+    p.style.left = (((i * 37) % 92) + 3) + '%';
+    p.style.top = (18 + ((i * 53) % 70)) + '%';
+    p.style.fontSize = (10 + (i % 3) * 4) + 'px';
+    p.style.animationDuration = (3 + (i % 4)) + 's';
+    p.style.animationDelay = (-i * 0.7) + 's';
+    scene.appendChild(p);
+  }
+
+  /* objects */
+  let flashTimer = null;
+  const flash = (msg) => {
+    let fl = document.getElementById('bm-gd-flash');
+    if (!fl) {
+      fl = el('div');
+      fl.id = 'bm-gd-flash';
+      fl.style.cssText = 'position:fixed;left:50%;top:64px;transform:translateX(-50%);z-index:60;';
+      fl.innerHTML = '<div class="toast-box bm-toast-in" style="background:rgba(0,0,0,.8);border-radius:999px;padding:8px 16px;font-size:13px;font-weight:700;color:#fff;"></div>';
+      document.body.appendChild(fl);
+    }
+    fl.firstChild.textContent = msg;
+    if (flashTimer) clearTimeout(flashTimer);
+    flashTimer = setTimeout(() => { fl.remove(); }, 1600);
+  };
+
+  for (const obj of GARDEN_OBJECTS) {
+    const isRestored = restoredSet.has(obj.id);
+    const open = zoneUnlocked(obj.zone);
+    const canAfford = starsAvail >= obj.cost;
+    const slot = el('div', 'gd-slot');
+    slot.style.cssText = 'left:' + obj.x + '%;top:' + obj.y + '%;';
+    if (isRestored) {
+      const objBtn = el('button', 'gd-obj');
+      objBtn.type = 'button';
+      objBtn.setAttribute('aria-label', obj.name[lang]);
+      objBtn.innerHTML = '<span class="gd-obj-emoji" style="font-size:' + Math.round(26 * obj.size) + 'px;animation-delay:' + ((obj.x % 7) * 0.4) + 's">' + obj.emoji + '</span>' +
+        '<span class="gd-obj-name">' + obj.name[lang] + '</span>';
+      objBtn.onclick = () => { sfx.click(); flash('🌳 ' + obj.name[lang]); };
+      slot.appendChild(objBtn);
+    } else {
+      const emptyBtn = el('button', 'gd-obj gd-empty-slot' + (open ? '' : ' dim'));
+      emptyBtn.type = 'button';
+      emptyBtn.style.opacity = open ? '1' : '0.7';
+      emptyBtn.setAttribute('aria-label', obj.name[lang] + ' — ' + t('garden.restore', { n: obj.cost }));
+      emptyBtn.innerHTML = '<span class="gd-empty' + (open && canAfford ? ' gd-empty-can' : '') + '">' + (open ? '➕' : '🔒') + '</span>' +
+        '<span class="gd-cost">⭐' + obj.cost + '</span>';
+      emptyBtn.onclick = () => {
+        if (!open) { sfx.click(); flash(t('garden.zoneLocked', { n: GARDEN_ZONE_CHAPTER[obj.zone] + 1 })); return; }
+        renderGardenConfirm(obj, flash, () => { renderApp(); });
+      };
+      slot.appendChild(emptyBtn);
+    }
+    scene.appendChild(slot);
+  }
+  wrap.appendChild(scene);
+
+  if (bloom >= 1) {
+    const done = el('div');
+    done.style.cssText = 'margin-top:10px;border-radius:18px;background:rgba(251,191,36,.9);padding:9px;text-align:center;font-size:14px;font-weight:900;color:#451a03;';
+    done.textContent = '🌈 ' + t('garden.done');
+    wrap.appendChild(done);
+  }
+
+  box.appendChild(wrap);
+}
+
+/* подтверждение восстановления объекта сада */
+function renderGardenConfirm(obj, flash, onRestored) {
+  const t = (k, v) => store.t(k, v);
+  const lang = App.player.lang;
+  const over = el('div', 'modal-overlay');
+  over.style.zIndex = '90';
+  const modal = el('div', 'modal light');
+  modal.innerHTML = '<h2><span style="font-size:28px">' + obj.emoji + '</span> ' +
+    t('garden.confirmTitle', { name: obj.name[lang] }) + '</h2>' +
+    '<div class="sub" style="opacity:.8">' + t('garden.restore', { n: obj.cost }) + ' · ' +
+    t('garden.coinsBack', { n: gardenCoinsBack(obj.cost) }) + '</div>';
+  const col = el('div', 'col');
+  const yes = el('button', 'btn btn-primary');
+  yes.type = 'button';
+  yes.textContent = '🌱 ' + t('garden.restore', { n: obj.cost });
+  yes.onclick = () => {
+    if (store.restoreGarden(obj.id)) {
+      sfx.coin();
+      setTimeout(() => sfx.star(2), 180);
+      logEvent('garden_restore', { id: obj.id, cost: obj.cost });
+      flash(t('garden.coinsBack', { n: gardenCoinsBack(obj.cost) }));
+    } else {
+      flash(t('garden.needStars'));
+    }
+    over.remove();
+    onRestored();
+  };
+  col.appendChild(yes);
+  const no = el('button', 'btn');
+  no.type = 'button';
+  no.style.cssText = 'background:#e2e8f0;color:#334155;';
+  no.textContent = t('garden.cancel');
+  no.onclick = () => over.remove();
+  col.appendChild(no);
+  modal.appendChild(col);
+  over.appendChild(modal);
+  document.body.appendChild(over);
 }
 
 /* ============================================================
@@ -2606,7 +3086,7 @@ const Game = {
       setTimeout(() => sfx.star(1), 400);
       const info = store.recordWin(this.cfg.level, stars, finalScore, res.maxCascade, movesUsed);
       this.score = finalScore;
-      this.winInfo = { stars, reward: info.reward, firstClear: info.firstClear, newStars: info.newStars, bonus, streak: info.streak, mult: info.mult };
+      this.winInfo = { stars, reward: info.reward, firstClear: info.firstClear, newStars: info.newStars, bonus, streak: info.streak, mult: info.mult, piggy: info.piggy };
       logEvent('level_win', { level: this.cfg.level, stars: stars, score: finalScore, movesUsed: movesUsed, streak: info.streak, mult: info.mult, reward: info.reward });
       this.updateHud();
       this.renderModals();
@@ -2826,6 +3306,22 @@ const Game = {
         : t('streak.next', { m: this.winInfo.mult + 1, n: this.winInfo.mult + 1 - this.winInfo.streak });
       streakBox.appendChild(nextHint);
       modal.appendChild(streakBox);
+      /* Волна 3: копилка в модали победы */
+      const pig = this.winInfo.piggy;
+      const pigPill = el('div');
+      pigPill.style.cssText = 'border-radius:999px;padding:3px 12px;font-size:12px;font-weight:900;color:#fff;margin-top:4px;display:inline-block;' +
+        (pig.ready ? 'background:#db2777;' : 'background:rgba(251,113,133,.8);');
+      pigPill.textContent = t('piggy.deposit', { n: pig.deposit, w: Math.min(pig.wins, PIGGY_WINS_TARGET), m: PIGGY_WINS_TARGET });
+      const pigWrap = el('div');
+      pigWrap.style.cssText = 'text-align:center;';
+      pigWrap.appendChild(pigPill);
+      if (pig.ready) {
+        const pigReady = el('div');
+        pigReady.style.cssText = 'font-size:11px;font-weight:900;color:#fde68a;margin-top:2px;';
+        pigReady.textContent = '🐷 ' + t('piggy.ready');
+        pigWrap.appendChild(pigReady);
+      }
+      modal.appendChild(pigWrap);
       if (this.winInfo.firstClear) {
         const l = el('div', 'sub');
         l.style.cssText = 'font-weight:700;color:#d1fae5;';
