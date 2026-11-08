@@ -581,6 +581,8 @@ const Game = {
     this.lostStreak = 0;
     logSessionStart();
     logEvent('level_start', { level: lv, attempt: this.attempt });
+    /* Волна 5: GameplayAPI.start — площадка знает, что игрок в геймплее */
+    platformGameplayStart();
     this.buildDom(box);
     this.rebuildBoard();
     this.updateHud();
@@ -960,6 +962,9 @@ const Game = {
       this.winInfo = { stars, reward: info.reward, firstClear: info.firstClear, newStars: info.newStars, bonus, streak: info.streak, mult: info.mult, piggy: info.piggy, event: info.event };
       logEvent('level_win', { level: this.cfg.level, stars: stars, score: finalScore, movesUsed: movesUsed, streak: info.streak, mult: info.mult, reward: info.reward, daily: info.event.daily ? 1 : 0, weekend: info.event.weekend || '', cascade: info.event.cascadeCoins });
       if (info.event.daily) logEvent('daily_win', { level: this.cfg.level, reward: info.reward });
+      /* Волна 5: конец геймплея + лучший уровень в лидерборд площадки */
+      platformGameplayStop();
+      submitScoreToLeaderboard(this.cfg.level);
       this.updateHud();
       this.renderModals();
     } else if (movesLeft <= 0) {
@@ -967,6 +972,8 @@ const Game = {
       this.lostStreak = App.player.streak || 0;
       store.recordLoss();
       logEvent('level_lose', { level: this.cfg.level, score: sc, movesUsed: movesUsed, moves: this.cfg.moves });
+      /* Волна 5: конец геймплея для площадки (модаль поражения) */
+      platformGameplayStop();
       this.loseOpen = true;
       this.renderModals();
     }
@@ -1745,6 +1752,23 @@ function renderProfile(box) {
   anCard.appendChild(exportBtn);
   wrap.appendChild(anCard);
 
+  /* Волна 5: кнопка установки PWA (когда браузер поймал beforeinstallprompt) */
+  if (pwaInstallAvailable() && !pwaIsStandalone()) {
+    const pwaCard = el('div', 'card');
+    pwaCard.style.cssText = 'padding:12px;';
+    const installBtn = el('button', 'btn btn-primary');
+    installBtn.type = 'button';
+    installBtn.style.cssText = 'width:100%;';
+    installBtn.textContent = '📲 ' + t('profile.install');
+    installBtn.onclick = async () => {
+      sfx.click();
+      const ok = await promptInstall();
+      if (ok) { installBtn.textContent = '✓ ' + t('profile.installDone'); }
+    };
+    pwaCard.appendChild(installBtn);
+    wrap.appendChild(pwaCard);
+  }
+
   // equipped
   const eqTitle = el('div');
   eqTitle.style.cssText = 'font-size:13px;font-weight:900;opacity:.85;margin:14px 0 0;';
@@ -1830,6 +1854,13 @@ App.player = loadState();
 setSoundEnabled(App.player.sound);
 App.bots = generateBots();
 logSessionStart();
+/* Волна 5: площадка (Yandex SDK — тихий фолбэк в веб) + PWA-слушатели */
+initPwa();
+void initPlatform();
+/* появление/исчезновение приглашения установки — перерисовать профиль */
+pwaSubscribe(() => {
+  if (App.level === null && App.screen === 'profile') renderApp();
+});
 document.addEventListener('DOMContentLoaded', () => {
   renderApp();
 });

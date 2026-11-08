@@ -31,6 +31,11 @@ import { usePlayer, useT, STREAK_MAX_MULT } from '@/lib/store';
 import type { PiggyInfo, EventInfo } from '@/lib/store';
 import { PIGGY_WINS_TARGET } from '@/lib/game/garden';
 import { logEvent, logSessionStart } from '@/lib/game/analytics';
+import {
+  platformGameplayStart,
+  platformGameplayStop,
+  submitScoreToLeaderboard,
+} from '@/lib/game/platform';
 import { sfx } from '@/lib/game/sound';
 
 interface Particle {
@@ -194,7 +199,14 @@ export function GameScreen({ level, daily = false, onExit, onLevelChange }: Game
     setLostStreak(0);
     logSessionStart();
     logEvent('level_start', { level, attempt });
+    /* Волна 5: GameplayAPI.start — площадка знает, что игрок в геймплее */
+    platformGameplayStart();
   }, [level, attempt]);
+
+  /* Волна 5: выход с экрана уровня — GameplayAPI.stop */
+  useEffect(() => {
+    return () => platformGameplayStop();
+  }, []);
 
   /* ---------- helpers ---------- */
   const showToast = useCallback((msg: string) => {
@@ -369,11 +381,16 @@ export function GameScreen({ level, daily = false, onExit, onLevelChange }: Game
         setWinInfo({ stars, reward: info.reward, firstClear: info.firstClear, newStars: info.newStars, bonus, streak: info.streak, mult: info.mult, piggy: info.piggy, event: info.event });
         logEvent('level_win', { level: cfg.level, stars, score: finalScore, movesUsed, streak: info.streak, mult: info.mult, reward: info.reward, piggy: info.piggy.deposit, daily: info.event.daily ? 1 : 0, weekend: info.event.weekend ?? '', cascade: info.event.cascadeCoins });
         if (info.event.daily) logEvent('daily_win', { level: cfg.level, reward: info.reward });
+        /* Волна 5: конец геймплея для площадки + лучший уровень в лидерборд */
+        platformGameplayStop();
+        submitScoreToLeaderboard(cfg.level);
       } else if (movesLeft <= 0) {
         sfx.lose();
         setLostStreak(player.streak);
         player.recordLoss();
         logEvent('level_lose', { level: cfg.level, score: sc, movesUsed, moves: cfg.moves });
+        /* Волна 5: конец геймплея для площадки (модаль поражения) */
+        platformGameplayStop();
         setLoseOpen(true);
       }
     },

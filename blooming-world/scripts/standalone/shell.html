@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>Цветущий мир — Blooming World</title>
 <meta name="description" content="Match-3 игра «Цветущий мир»: 100 уровней в 10 эрах графики. Автономная версия — один HTML-файл.">
+<!-- Волна 5: PWA (манифест + тема + мета для iOS); пути относительные — работает в сабпапке -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a4a38">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Цветущий мир">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
 /*__CSS__*/
 </style>
@@ -13,6 +21,20 @@
 <div id="app"></div>
 <script>
 /*__JS__*/
+</script>
+<!-- Волна 5: регистрация service worker (только http/https; в file:// тихо пропускается) -->
+<script>
+(function () {
+  try {
+    if ('serviceWorker' in navigator) {
+      var proto = location.protocol;
+      var local = ['localhost', '127.0.0.1', '0.0.0.0'].indexOf(location.hostname) !== -1;
+      if (proto === 'https:' || (proto === 'http:' && local)) {
+        navigator.serviceWorker.register('sw.js').catch(function () {});
+      }
+    }
+  } catch (e) { /* no-op */ }
+})();
 </script>
 </body>
 </html>

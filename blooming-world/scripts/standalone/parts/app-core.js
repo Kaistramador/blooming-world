@@ -356,6 +356,140 @@ function exportEventsJson(extra) {
   } catch (e) { return false; }
 }
 
+/* ---------------- Волна 5: платформы (Yandex Games SDK) ----------------
+ * Абстракция площадки: веб (по умолчанию) или Yandex Games SDK v2
+ * (LoadingAPI / GameplayAPI / лидерборды). Любая ошибка = тихий
+ * фолбэк в веб. Загрузчик SDK инъекцируется для тестов.
+ * ============================================================ */
+const LEADERBOARD_ID = 'levels';
+const SDK_TIMEOUT_MS = 4000;
+/* Относительный путь — официальный способ: на хостинге Яндекса /sdk.js
+ * всегда существует; на чужих хостах — мгновенный 404 → тихий фолбэк
+ * в веб (CDN-заглушка вне фрейма Яндекса всё равно не даёт API). */
+let SDK_CANDIDATES = ['/sdk.js'];
+let sdkLoaderOverride = null;
+let platformYsdk = null;
+let platformInitPromise = null;
+let gameplayActive = false;
+let lastSubmittedLevel = 0;
+
+function setSdkCandidates(list) { SDK_CANDIDATES = list.slice(); }
+function setSdkLoader(loader) { sdkLoaderOverride = loader; }
+function resetPlatformForTests() {
+  platformInitPromise = null;
+  platformYsdk = null;
+  gameplayActive = false;
+  lastSubmittedLevel = 0;
+  sdkLoaderOverride = null;
+  SDK_CANDIDATES = ['/sdk.js'];
+}
+function loadSdkScript(src) {
+  if (sdkLoaderOverride) return sdkLoaderOverride(src);
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    let done = false;
+    const timer = setTimeout(() => {
+      if (!done) { done = true; reject(new Error('sdk timeout: ' + src)); }
+    }, SDK_TIMEOUT_MS);
+    script.src = src;
+    script.onload = () => { if (!done) { done = true; clearTimeout(timer); resolve(); } };
+    script.onerror = () => { if (!done) { done = true; clearTimeout(timer); reject(new Error('sdk load error: ' + src)); } };
+    document.head.appendChild(script);
+  });
+}
+async function loadFirstAvailableSdk() {
+  for (const src of SDK_CANDIDATES) {
+    try {
+      await loadSdkScript(src);
+      if (window.YaGames) return window.YaGames;
+    } catch (e) { /* следующий кандидат */ }
+  }
+  return null;
+}
+/* Инициализация площадки (идемпотентно, никогда не бросает). */
+function initPlatform() {
+  if (platformInitPromise) return platformInitPromise;
+  platformInitPromise = (async () => {
+    if (typeof window === 'undefined') return 'web';
+    try {
+      if (window.ysdk) platformYsdk = window.ysdk;
+      else if (window.YaGames) platformYsdk = await window.YaGames.init();
+      else {
+        const ya = await loadFirstAvailableSdk();
+        if (ya) platformYsdk = await ya.init();
+      }
+    } catch (e) { platformYsdk = null; }
+    if (platformYsdk) {
+      try { if (platformYsdk.features && platformYsdk.features.LoadingAPI) platformYsdk.features.LoadingAPI.ready(); } catch (e) {}
+      return 'yandex';
+    }
+    return 'web';
+  })();
+  return platformInitPromise;
+}
+function currentPlatform() { return platformYsdk ? 'yandex' : 'web'; }
+function platformGameplayStart() {
+  if (!platformYsdk || gameplayActive) return;
+  gameplayActive = true;
+  try { if (platformYsdk.features && platformYsdk.features.GameplayAPI) platformYsdk.features.GameplayAPI.start(); } catch (e) {}
+}
+function platformGameplayStop() {
+  if (!platformYsdk || !gameplayActive) return;
+  gameplayActive = false;
+  try { if (platformYsdk.features && platformYsdk.features.GameplayAPI) platformYsdk.features.GameplayAPI.stop(); } catch (e) {}
+}
+/* Лучший уровень в лидерборд площадки (сабмиты меньшего уровня отбрасываются локально). */
+function submitScoreToLeaderboard(level) {
+  if (!platformYsdk || !isFinite(level)) return;
+  if (level <= lastSubmittedLevel) return;
+  lastSubmittedLevel = level;
+  try {
+    if (platformYsdk.leaderboards && platformYsdk.leaderboards.setLeaderboardScore) {
+      const res = platformYsdk.leaderboards.setLeaderboardScore(LEADERBOARD_ID, level);
+      if (res && typeof res.catch === 'function') res.catch(() => {});
+    }
+  } catch (e) { /* noop */ }
+}
+
+/* ---------------- Волна 5: PWA (установка на домашний экран) ----------------
+ * beforeinstallprompt перехватывается; кнопка в профиле — только когда
+ * приглашение доступно и игра не запущена как установленная.
+ * ============================================================ */
+let pwaDeferredPrompt = null;
+const pwaListeners = [];
+function pwaEmit() { for (const fn of pwaListeners) fn(); }
+function pwaInstallAvailable() { return pwaDeferredPrompt !== null; }
+function pwaIsStandalone() {
+  if (typeof window === 'undefined') return false;
+  return !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+}
+function pwaSubscribe(fn) { pwaListeners.push(fn); return () => { const i = pwaListeners.indexOf(fn); if (i >= 0) pwaListeners.splice(i, 1); }; }
+function initPwa() {
+  if (typeof window === 'undefined') return;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    pwaDeferredPrompt = e;
+    pwaEmit();
+  });
+  window.addEventListener('appinstalled', () => {
+    pwaDeferredPrompt = null;
+    pwaEmit();
+    logEvent('pwa_install');
+  });
+}
+async function promptInstall() {
+  if (!pwaDeferredPrompt) return false;
+  const ev = pwaDeferredPrompt;
+  pwaDeferredPrompt = null;
+  pwaEmit();
+  try {
+    await ev.prompt();
+    const choice = await ev.userChoice;
+    logEvent('pwa_install_prompt', { outcome: choice.outcome });
+    return choice.outcome === 'accepted';
+  } catch (e) { return false; }
+}
+
 /* ---------------- tiny dom helpers ---------------- */
 function el(tag, cls, text) {
   const n = document.createElement(tag);

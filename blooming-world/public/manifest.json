@@ -1,0 +1,35 @@
+{
+  "name": "Цветущий мир — Blooming World",
+  "short_name": "Цветущий мир",
+  "description": "Три-в-ряд с эволюцией графики: от каменного века до золотого сада. 100 уровней, бусты, скины, глобальный рейтинг.",
+  "id": "blooming-world",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "lang": "ru",
+  "dir": "ltr",
+  "categories": ["games", "entertainment"],
+  "theme_color": "#1a4a38",
+  "background_color": "#1a4a38",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

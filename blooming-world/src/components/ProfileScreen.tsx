@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -18,6 +18,7 @@ import {
 import { usePlayer, useT } from '@/lib/store';
 import { PlayerAvatar, PlayerName } from './game/PlayerBadge';
 import { analyticsCount, analyticsSummary, exportEventsJson } from '@/lib/game/analytics';
+import { installAvailable, isStandalone, promptInstall, subscribePwa } from '@/lib/game/pwa';
 import { sfx } from '@/lib/game/sound';
 import type { Lang } from '@/lib/i18n';
 
@@ -27,6 +28,15 @@ export function ProfileScreen() {
   const [nameDraft, setNameDraft] = useState(player.name);
   const [saved, setSaved] = useState(false);
   const [exported, setExported] = useState(false);
+  /* Волна 5: кнопка установки PWA (видна, когда браузер поймал beforeinstallprompt) */
+  const [installable, setInstallable] = useState(false);
+  const [installRequested, setInstallRequested] = useState(false);
+
+  useEffect(() => {
+    const sync = () => setInstallable(installAvailable() && !isStandalone());
+    sync();
+    return subscribePwa(sync);
+  }, []);
 
   const stat = (label: string, value: string | number, icon: string) => (
     <div key={label} className="flex items-center gap-2.5 rounded-2xl bg-white/90 p-3 shadow">
@@ -137,6 +147,25 @@ export function ProfileScreen() {
           {exported ? `✓ ${t('profile.exportDone')}` : `⬇️ ${t('profile.export')}`}
         </Button>
       </div>
+
+      {/* PWA install (Волна 5) */}
+      {installable && (
+        <div className="mb-4 rounded-3xl bg-white/90 p-4 shadow">
+          <Button
+            className="w-full rounded-xl bg-emerald-600 font-bold text-white hover:bg-emerald-500"
+            onClick={async () => {
+              sfx.click();
+              const ok = await promptInstall();
+              if (ok) {
+                setInstallRequested(true);
+                setTimeout(() => setInstallRequested(false), 1500);
+              }
+            }}
+          >
+            {installRequested ? `✓ ${t('profile.installDone')}` : `📲 ${t('profile.install')}`}
+          </Button>
+        </div>
+      )}
 
       {/* settings */}
       <div className="mb-3 text-xs font-black uppercase tracking-wider text-white/80 bm-text-outline">

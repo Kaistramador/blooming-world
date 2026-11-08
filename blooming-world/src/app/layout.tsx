@@ -14,6 +14,20 @@ export const metadata: Metadata = {
   description:
     "Три-в-ряд с эволюцией графики: от каменного века до золотого сада. 100 уровней, бусты, скины, глобальный рейтинг.",
   keywords: ["match-3", "три в ряд", "пазл", "игра", "casual", "puzzle"],
+  /* Волна 5: PWA — манифест, иконки, установка на домашний экран */
+  manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+  },
+  appleWebApp: {
+    capable: true,
+    title: "Цветущий мир",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export const viewport: Viewport = {

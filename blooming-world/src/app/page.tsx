@@ -12,6 +12,8 @@ import { chapterTheme } from '@/lib/game/themes';
 import { CHAPTER_SIZE } from '@/lib/game/levels';
 import { usePlayer } from '@/lib/store';
 import { logSessionStart } from '@/lib/game/analytics';
+import { initPlatform } from '@/lib/game/platform';
+import { initPwa } from '@/lib/game/pwa';
 import { sfx } from '@/lib/game/sound';
 import { translate } from '@/lib/i18n';
 
@@ -40,6 +42,12 @@ export default function Home() {
   useEffect(() => {
     if (hydrated) logSessionStart();
   }, [hydrated]);
+
+  /* Волна 5: площадка (Yandex SDK — тихий фолбэк в веб) + PWA (SW, установка) */
+  useEffect(() => {
+    initPwa();
+    void initPlatform();
+  }, []);
 
   const t = (key: string) => translate(player.lang, key);
 

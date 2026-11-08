@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>Цветущий мир — Blooming World</title>
 <meta name="description" content="Match-3 игра «Цветущий мир»: 100 уровней в 10 эрах графики. Автономная версия — один HTML-файл.">
+<!-- Волна 5: PWA (манифест + тема + мета для iOS); пути относительные — работает в сабпапке -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a4a38">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Цветущий мир">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
 /* ============================================================
  * Blooming World — standalone single-file edition styles
@@ -469,6 +477,7 @@ const I18N_RU = {
   'profile.analytics': 'Аналитика', 'profile.analyticsInfo': '{n} событий · сессий: {s}',
   'profile.export': 'Выгрузить статистику (JSON)', 'profile.exportDone': 'Файл выгружен!',
   'profile.equipped': 'Экипировка',
+  'profile.install': 'Установить приложение', 'profile.installDone': 'Игра установлена!',
   'settings.title': 'Настройки', 'settings.language': 'Язык', 'settings.sound': 'Звук',
   'settings.on': 'Вкл', 'settings.off': 'Выкл',
   'settings.reset': 'Сбросить прогресс',
@@ -540,6 +549,7 @@ const I18N_EN = {
   'profile.analytics': 'Analytics', 'profile.analyticsInfo': '{n} events · sessions: {s}',
   'profile.export': 'Export statistics (JSON)', 'profile.exportDone': 'File exported!',
   'profile.equipped': 'Equipment',
+  'profile.install': 'Install app', 'profile.installDone': 'Game installed!',
   'settings.title': 'Settings', 'settings.language': 'Language', 'settings.sound': 'Sound',
   'settings.on': 'On', 'settings.off': 'Off',
   'settings.reset': 'Reset progress',
@@ -2134,6 +2144,140 @@ function exportEventsJson(extra) {
   } catch (e) { return false; }
 }
 
+/* ---------------- Волна 5: платформы (Yandex Games SDK) ----------------
+ * Абстракция площадки: веб (по умолчанию) или Yandex Games SDK v2
+ * (LoadingAPI / GameplayAPI / лидерборды). Любая ошибка = тихий
+ * фолбэк в веб. Загрузчик SDK инъекцируется для тестов.
+ * ============================================================ */
+const LEADERBOARD_ID = 'levels';
+const SDK_TIMEOUT_MS = 4000;
+/* Относительный путь — официальный способ: на хостинге Яндекса /sdk.js
+ * всегда существует; на чужих хостах — мгновенный 404 → тихий фолбэк
+ * в веб (CDN-заглушка вне фрейма Яндекса всё равно не даёт API). */
+let SDK_CANDIDATES = ['/sdk.js'];
+let sdkLoaderOverride = null;
+let platformYsdk = null;
+let platformInitPromise = null;
+let gameplayActive = false;
+let lastSubmittedLevel = 0;
+
+function setSdkCandidates(list) { SDK_CANDIDATES = list.slice(); }
+function setSdkLoader(loader) { sdkLoaderOverride = loader; }
+function resetPlatformForTests() {
+  platformInitPromise = null;
+  platformYsdk = null;
+  gameplayActive = false;
+  lastSubmittedLevel = 0;
+  sdkLoaderOverride = null;
+  SDK_CANDIDATES = ['/sdk.js'];
+}
+function loadSdkScript(src) {
+  if (sdkLoaderOverride) return sdkLoaderOverride(src);
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    let done = false;
+    const timer = setTimeout(() => {
+      if (!done) { done = true; reject(new Error('sdk timeout: ' + src)); }
+    }, SDK_TIMEOUT_MS);
+    script.src = src;
+    script.onload = () => { if (!done) { done = true; clearTimeout(timer); resolve(); } };
+    script.onerror = () => { if (!done) { done = true; clearTimeout(timer); reject(new Error('sdk load error: ' + src)); } };
+    document.head.appendChild(script);
+  });
+}
+async function loadFirstAvailableSdk() {
+  for (const src of SDK_CANDIDATES) {
+    try {
+      await loadSdkScript(src);
+      if (window.YaGames) return window.YaGames;
+    } catch (e) { /* следующий кандидат */ }
+  }
+  return null;
+}
+/* Инициализация площадки (идемпотентно, никогда не бросает). */
+function initPlatform() {
+  if (platformInitPromise) return platformInitPromise;
+  platformInitPromise = (async () => {
+    if (typeof window === 'undefined') return 'web';
+    try {
+      if (window.ysdk) platformYsdk = window.ysdk;
+      else if (window.YaGames) platformYsdk = await window.YaGames.init();
+      else {
+        const ya = await loadFirstAvailableSdk();
+        if (ya) platformYsdk = await ya.init();
+      }
+    } catch (e) { platformYsdk = null; }
+    if (platformYsdk) {
+      try { if (platformYsdk.features && platformYsdk.features.LoadingAPI) platformYsdk.features.LoadingAPI.ready(); } catch (e) {}
+      return 'yandex';
+    }
+    return 'web';
+  })();
+  return platformInitPromise;
+}
+function currentPlatform() { return platformYsdk ? 'yandex' : 'web'; }
+function platformGameplayStart() {
+  if (!platformYsdk || gameplayActive) return;
+  gameplayActive = true;
+  try { if (platformYsdk.features && platformYsdk.features.GameplayAPI) platformYsdk.features.GameplayAPI.start(); } catch (e) {}
+}
+function platformGameplayStop() {
+  if (!platformYsdk || !gameplayActive) return;
+  gameplayActive = false;
+  try { if (platformYsdk.features && platformYsdk.features.GameplayAPI) platformYsdk.features.GameplayAPI.stop(); } catch (e) {}
+}
+/* Лучший уровень в лидерборд площадки (сабмиты меньшего уровня отбрасываются локально). */
+function submitScoreToLeaderboard(level) {
+  if (!platformYsdk || !isFinite(level)) return;
+  if (level <= lastSubmittedLevel) return;
+  lastSubmittedLevel = level;
+  try {
+    if (platformYsdk.leaderboards && platformYsdk.leaderboards.setLeaderboardScore) {
+      const res = platformYsdk.leaderboards.setLeaderboardScore(LEADERBOARD_ID, level);
+      if (res && typeof res.catch === 'function') res.catch(() => {});
+    }
+  } catch (e) { /* noop */ }
+}
+
+/* ---------------- Волна 5: PWA (установка на домашний экран) ----------------
+ * beforeinstallprompt перехватывается; кнопка в профиле — только когда
+ * приглашение доступно и игра не запущена как установленная.
+ * ============================================================ */
+let pwaDeferredPrompt = null;
+const pwaListeners = [];
+function pwaEmit() { for (const fn of pwaListeners) fn(); }
+function pwaInstallAvailable() { return pwaDeferredPrompt !== null; }
+function pwaIsStandalone() {
+  if (typeof window === 'undefined') return false;
+  return !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+}
+function pwaSubscribe(fn) { pwaListeners.push(fn); return () => { const i = pwaListeners.indexOf(fn); if (i >= 0) pwaListeners.splice(i, 1); }; }
+function initPwa() {
+  if (typeof window === 'undefined') return;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    pwaDeferredPrompt = e;
+    pwaEmit();
+  });
+  window.addEventListener('appinstalled', () => {
+    pwaDeferredPrompt = null;
+    pwaEmit();
+    logEvent('pwa_install');
+  });
+}
+async function promptInstall() {
+  if (!pwaDeferredPrompt) return false;
+  const ev = pwaDeferredPrompt;
+  pwaDeferredPrompt = null;
+  pwaEmit();
+  try {
+    await ev.prompt();
+    const choice = await ev.userChoice;
+    logEvent('pwa_install_prompt', { outcome: choice.outcome });
+    return choice.outcome === 'accepted';
+  } catch (e) { return false; }
+}
+
 /* ---------------- tiny dom helpers ---------------- */
 function el(tag, cls, text) {
   const n = document.createElement(tag);
@@ -2915,6 +3059,8 @@ const Game = {
     this.lostStreak = 0;
     logSessionStart();
     logEvent('level_start', { level: lv, attempt: this.attempt });
+    /* Волна 5: GameplayAPI.start — площадка знает, что игрок в геймплее */
+    platformGameplayStart();
     this.buildDom(box);
     this.rebuildBoard();
     this.updateHud();
@@ -3294,6 +3440,9 @@ const Game = {
       this.winInfo = { stars, reward: info.reward, firstClear: info.firstClear, newStars: info.newStars, bonus, streak: info.streak, mult: info.mult, piggy: info.piggy, event: info.event };
       logEvent('level_win', { level: this.cfg.level, stars: stars, score: finalScore, movesUsed: movesUsed, streak: info.streak, mult: info.mult, reward: info.reward, daily: info.event.daily ? 1 : 0, weekend: info.event.weekend || '', cascade: info.event.cascadeCoins });
       if (info.event.daily) logEvent('daily_win', { level: this.cfg.level, reward: info.reward });
+      /* Волна 5: конец геймплея + лучший уровень в лидерборд площадки */
+      platformGameplayStop();
+      submitScoreToLeaderboard(this.cfg.level);
       this.updateHud();
       this.renderModals();
     } else if (movesLeft <= 0) {
@@ -3301,6 +3450,8 @@ const Game = {
       this.lostStreak = App.player.streak || 0;
       store.recordLoss();
       logEvent('level_lose', { level: this.cfg.level, score: sc, movesUsed: movesUsed, moves: this.cfg.moves });
+      /* Волна 5: конец геймплея для площадки (модаль поражения) */
+      platformGameplayStop();
       this.loseOpen = true;
       this.renderModals();
     }
@@ -4079,6 +4230,23 @@ function renderProfile(box) {
   anCard.appendChild(exportBtn);
   wrap.appendChild(anCard);
 
+  /* Волна 5: кнопка установки PWA (когда браузер поймал beforeinstallprompt) */
+  if (pwaInstallAvailable() && !pwaIsStandalone()) {
+    const pwaCard = el('div', 'card');
+    pwaCard.style.cssText = 'padding:12px;';
+    const installBtn = el('button', 'btn btn-primary');
+    installBtn.type = 'button';
+    installBtn.style.cssText = 'width:100%;';
+    installBtn.textContent = '📲 ' + t('profile.install');
+    installBtn.onclick = async () => {
+      sfx.click();
+      const ok = await promptInstall();
+      if (ok) { installBtn.textContent = '✓ ' + t('profile.installDone'); }
+    };
+    pwaCard.appendChild(installBtn);
+    wrap.appendChild(pwaCard);
+  }
+
   // equipped
   const eqTitle = el('div');
   eqTitle.style.cssText = 'font-size:13px;font-weight:900;opacity:.85;margin:14px 0 0;';
@@ -4164,11 +4332,32 @@ App.player = loadState();
 setSoundEnabled(App.player.sound);
 App.bots = generateBots();
 logSessionStart();
+/* Волна 5: площадка (Yandex SDK — тихий фолбэк в веб) + PWA-слушатели */
+initPwa();
+void initPlatform();
+/* появление/исчезновение приглашения установки — перерисовать профиль */
+pwaSubscribe(() => {
+  if (App.level === null && App.screen === 'profile') renderApp();
+});
 document.addEventListener('DOMContentLoaded', () => {
   renderApp();
 });
 if (document.readyState !== 'loading') renderApp();
 
+</script>
+<!-- Волна 5: регистрация service worker (только http/https; в file:// тихо пропускается) -->
+<script>
+(function () {
+  try {
+    if ('serviceWorker' in navigator) {
+      var proto = location.protocol;
+      var local = ['localhost', '127.0.0.1', '0.0.0.0'].indexOf(location.hostname) !== -1;
+      if (proto === 'https:' || (proto === 'http:' && local)) {
+        navigator.serviceWorker.register('sw.js').catch(function () {});
+      }
+    }
+  } catch (e) { /* no-op */ }
+})();
 </script>
 </body>
 </html>
