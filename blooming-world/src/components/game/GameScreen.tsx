@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -48,6 +48,18 @@ interface FloatText {
   text: string;
 }
 
+interface ComboPop {
+  key: number;
+  text: string;
+  color: string;
+}
+
+interface Shockwave {
+  key: number;
+  x: number;
+  y: number;
+}
+
 interface Snapshot {
   board: Board;
   moves: number;
@@ -64,6 +76,47 @@ interface GoalProgress {
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+const CONFETTI_COLORS = ['#c74134', '#f6e04b', '#2ea56d', '#3d9be0', '#b06fc9', '#ef8f2a'];
+
+/** petal confetti burst over the win modal (auto-cleans) */
+function WinConfetti() {
+  const pieces = useMemo(
+    () =>
+      Array.from({ length: 28 }, (_, i) => ({
+        left: Math.random() * 100,
+        delay: Math.random() * 1.2,
+        dur: 2.2 + Math.random() * 1.8,
+        color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+        size: 8 + Math.random() * 8,
+      })),
+    [],
+  );
+  const [alive, setAlive] = useState(true);
+  useEffect(() => {
+    const id = setTimeout(() => setAlive(false), 4400);
+    return () => clearTimeout(id);
+  }, []);
+  if (!alive) return null;
+  return (
+    <>
+      {pieces.map((p, i) => (
+        <span
+          key={i}
+          className="bm-confetti"
+          style={{
+            left: `${p.left}%`,
+            width: p.size,
+            height: p.size,
+            background: p.color,
+            animationDelay: `${p.delay}s`,
+            animationDuration: `${p.dur}s`,
+          }}
+        />
+      ))}
+    </>
+  );
+}
 
 interface GameScreenProps {
   level: number;
@@ -88,6 +141,9 @@ export function GameScreen({ level, onExit, onLevelChange }: GameScreenProps) {
   const [stonesHit, setStonesHit] = useState<Set<number>>(new Set());
   const [particles, setParticles] = useState<Particle[]>([]);
   const [floats, setFloats] = useState<FloatText[]>([]);
+  const [combos, setCombos] = useState<ComboPop[]>([]);
+  const [shocks, setShocks] = useState<Shockwave[]>([]);
+  const [boardShake, setBoardShake] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [activeBooster, setActiveBooster] = useState<BoosterId | null>(null);
   const [buyBoosterId, setBuyBoosterId] = useState<BoosterId | null>(null);
@@ -126,6 +182,9 @@ export function GameScreen({ level, onExit, onLevelChange }: GameScreenProps) {
     snapshotRef.current = null;
     setParticles([]);
     setFloats([]);
+    setCombos([]);
+    setShocks([]);
+    setBoardShake(false);
   }, [level, attempt]);
 
   /* ---------- helpers ---------- */
@@ -178,6 +237,36 @@ export function GameScreen({ level, onExit, onLevelChange }: GameScreenProps) {
     setTimeout(() => setFloats((fs) => fs.filter((v) => v.key !== f.key)), 900);
   }, []);
 
+  /* big combo praise popup with the era accent color */
+  const spawnCombo = useCallback(
+    (cascade: number, accent: string) => {
+      const praise = cascade >= 5 ? t('game.combo5') : cascade >= 4 ? t('game.combo4') : cascade === 3 ? t('game.combo3') : t('game.combo2');
+      keyCounter.current += 1;
+      const c: ComboPop = { key: keyCounter.current, text: `×${cascade}! ${praise}`, color: accent };
+      setCombos((cs) => [...cs.slice(-2), c]);
+      setTimeout(() => setCombos((cs) => cs.filter((v) => v.key !== c.key)), 1100);
+    },
+    [t],
+  );
+
+  /* expanding shockwave rings + board shake */
+  const spawnShocks = useCallback(
+    (idxs: number, w: number, h: number) => {
+      const cellPos = (idx: number) => ({ x: (((idx % w) + 0.5) * 100) / w, y: ((Math.floor(idx / w) + 0.5) * 100) / h });
+      keyCounter.current += 1;
+      const pos = cellPos(idxs);
+      const s: Shockwave = { key: keyCounter.current, x: pos.x, y: pos.y };
+      setShocks((ss) => [...ss.slice(-4), s]);
+      setTimeout(() => setShocks((ss) => ss.filter((v) => v.key !== s.key)), 600);
+    },
+    [],
+  );
+
+  const pulseBoard = useCallback(() => {
+    setBoardShake(true);
+    setTimeout(() => setBoardShake(false), 450);
+  }, []);
+
   /* ---------- goal helpers ---------- */
   const goalMet = useCallback(
     (c: LevelConfig, p: GoalProgress, sc: number) =>
@@ -219,9 +308,17 @@ export function GameScreen({ level, onExit, onLevelChange }: GameScreenProps) {
           spawnParticles(frame);
           sfx.match(frame.cascade);
         }
-        if (frame.stonesHit.length > 0) sfx.boom();
+        if (frame.stonesHit.length > 0) {
+          sfx.boom();
+          for (const idx of frame.stonesHit.slice(0, 3)) spawnShocks(idx, frame.board.w, frame.board.h);
+          pulseBoard();
+        }
         if (frame.collectedIds.length > 0) sfx.coin();
-        if (frame.cascade >= 2) spawnFloat(50, 46, `x${frame.cascade}!`);
+        if (frame.cascade >= 2) {
+          spawnCombo(frame.cascade, theme.uiAccent);
+          spawnFloat(50, 46, `x${frame.cascade}!`);
+        }
+        if (frame.cascade >= 3) pulseBoard();
         await sleep(frame.clearingIds.length > 0 ? 250 : 300);
         if (playIdRef.current !== playId) return;
         setClearing(new Set());
@@ -238,7 +335,7 @@ export function GameScreen({ level, onExit, onLevelChange }: GameScreenProps) {
       if (res.shuffled) showToast(t('game.shuffled'));
       setBusy(false);
     },
-    [showToast, spawnFloat, spawnParticles, t],
+    [showToast, spawnFloat, spawnParticles, spawnCombo, spawnShocks, pulseBoard, theme, t],
   );
 
   /* ---------- end-of-move resolution ---------- */
@@ -639,7 +736,8 @@ export function GameScreen({ level, onExit, onLevelChange }: GameScreenProps) {
         {/* board */}
         <div className="mt-3 flex justify-center">
           <div
-            className={`relative w-full rounded-3xl p-2.5 ${theme.bg.dark ? 'bg-black/35' : 'bg-white/15'} backdrop-blur-[2px]`}
+            key={`${cfg.level}-${attempt}`}
+            className={`bm-board-in relative w-full rounded-3xl p-2.5 ${theme.bg.dark ? 'bg-black/35' : 'bg-white/15'} backdrop-blur-[2px]`}
             style={{
               maxWidth: 480,
               boxShadow: bgDark
@@ -649,7 +747,7 @@ export function GameScreen({ level, onExit, onLevelChange }: GameScreenProps) {
             }}
           >
             <div
-              className={`relative ${theme.tile.pattern === 'pixel' ? 'bm-checker-light' : ''}`}
+              className={`relative ${boardShake ? 'bm-board-shake' : ''} ${theme.tile.pattern === 'pixel' ? 'bm-checker-light' : ''}`}
               style={{ aspectRatio: `${board.w} / ${board.h}` }}
             >
               {board.cells.map((_, i) => renderCell(i))}
@@ -679,6 +777,35 @@ export function GameScreen({ level, onExit, onLevelChange }: GameScreenProps) {
                   style={{ left: `${f.x}%`, top: `${f.y}%`, textShadow: '0 1px 3px rgba(0,0,0,.6)' }}
                 >
                   {f.text}
+                </span>
+              ))}
+              {/* shockwave rings */}
+              {shocks.map((s) => (
+                <span
+                  key={`sh-${s.key}`}
+                  className="bm-shockwave"
+                  style={{
+                    left: `${s.x}%`,
+                    top: `${s.y}%`,
+                    width: '34%',
+                    aspectRatio: '1',
+                    marginLeft: '-17%',
+                    marginTop: '-17%',
+                  }}
+                />
+              ))}
+              {/* combo praise popups */}
+              {combos.map((c) => (
+                <span
+                  key={`cb-${c.key}`}
+                  className="pointer-events-none absolute left-1/2 top-[36%] z-30 -translate-x-1/2"
+                >
+                  <span
+                    className="bm-combo-pop block whitespace-nowrap text-[26px] font-black"
+                    style={{ color: c.color }}
+                  >
+                    {c.text}
+                  </span>
                 </span>
               ))}
             </div>
@@ -747,6 +874,7 @@ export function GameScreen({ level, onExit, onLevelChange }: GameScreenProps) {
       {/* win modal */}
       <Dialog open={!!winInfo} onOpenChange={(o) => !o && setWinInfo(null)}>
         <DialogContent className="max-w-xs rounded-3xl border-0 bg-gradient-to-b from-emerald-500 to-teal-600 text-white">
+          <WinConfetti />
           <DialogHeader className="items-center">
             <DialogTitle className="text-center text-2xl font-black">{t('game.win')}</DialogTitle>
             <DialogDescription className="sr-only">{t('game.win')}</DialogDescription>

@@ -318,6 +318,61 @@
 }
 .bm-toast-in { animation: bm-toast-in 0.25s ease-out; }
 
+/* ---------- juice: wave-1 graphics ---------- */
+/* big combo praise popup */
+@keyframes bm-combo-pop {
+  0% { transform: scale(0.2) rotate(-8deg); opacity: 0; }
+  35% { transform: scale(1.18) rotate(3deg); opacity: 1; }
+  55% { transform: scale(1) rotate(0deg); }
+  80% { transform: scale(1.02); opacity: 1; }
+  100% { transform: scale(0.9) translateY(-14%); opacity: 0; }
+}
+.bm-combo-pop {
+  animation: bm-combo-pop 1.05s cubic-bezier(.25,.9,.35,1.2) forwards;
+  text-shadow: 0 2px 0 rgba(0,0,0,.28), 0 4px 16px rgba(0,0,0,.45);
+  will-change: transform, opacity;
+}
+/* board shake on bombs / stones */
+@keyframes bm-board-shake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  20% { transform: translate(-1.2%, 0.6%) rotate(-0.6deg); }
+  40% { transform: translate(1.2%, -0.5%) rotate(0.5deg); }
+  60% { transform: translate(-1%, 0.4%) rotate(-0.4deg); }
+  80% { transform: translate(0.8%, -0.3%) rotate(0.3deg); }
+}
+.bm-board-shake { animation: bm-board-shake 0.42s ease-in-out; }
+/* expanding shockwave ring */
+@keyframes bm-shockwave {
+  0% { transform: scale(0.25); opacity: 0.95; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+.bm-shockwave {
+  position: absolute; pointer-events: none; z-index: 25;
+  border-radius: 50%;
+  border: 3px solid rgba(255,255,255,.9);
+  box-shadow: 0 0 14px 4px rgba(255,255,255,.45), inset 0 0 10px rgba(255,255,255,.35);
+  animation: bm-shockwave 0.55s ease-out forwards;
+  will-change: transform, opacity;
+}
+/* board intro */
+@keyframes bm-board-in {
+  0% { transform: scale(0.92) translateY(10px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+.bm-board-in { animation: bm-board-in 0.4s cubic-bezier(.3,1.3,.5,1); }
+/* win confetti (petal-shaped pieces) */
+@keyframes bm-confetti-fall {
+  0% { transform: translateY(-10vh) rotate(0deg); opacity: 0; }
+  8% { opacity: 1; }
+  100% { transform: translateY(78vh) rotate(420deg); opacity: 0; }
+}
+.bm-confetti {
+  position: fixed; top: 0; z-index: 80; pointer-events: none;
+  width: 12px; height: 12px; border-radius: 60% 0 60% 0;
+  animation: bm-confetti-fall linear forwards;
+  will-change: transform, opacity;
+}
+
 .bm-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
 .bm-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.25); border-radius: 3px; }
 .bm-scroll::-webkit-scrollbar-track { background: transparent; }

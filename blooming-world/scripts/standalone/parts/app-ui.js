@@ -20,7 +20,7 @@ function renderApp() {
   const root = document.getElementById('app');
   root.innerHTML = '';
   const theme = chapterTheme(Math.floor((store.maxUnlocked() - 1) / CHAPTER_SIZE));
-  root.appendChild(buildBackground(theme.bg, 99, true));
+  root.appendChild(buildBackground(theme.bg, 99, true, theme.id));
 
   const screenBox = el('div', 'screen');
   root.appendChild(screenBox);
@@ -77,6 +77,26 @@ function showToast(msg) {
   toastTimer = setTimeout(() => { wrap.innerHTML = ''; }, 1800);
 }
 
+/* petal confetti burst over the win modal (Волна 1 juice) */
+const CONFETTI_COLORS = ['#c74134', '#f6e04b', '#2ea56d', '#3d9be0', '#b06fc9', '#ef8f2a'];
+let lastConfettiAt = 0;
+function spawnWinConfetti() {
+  const now = Date.now();
+  if (now - lastConfettiAt < 2500) return; // no double burst
+  lastConfettiAt = now;
+  for (let i = 0; i < 28; i++) {
+    const p = el('span', 'bm-confetti');
+    p.style.left = (Math.random() * 100) + '%';
+    p.style.width = (8 + Math.random() * 8) + 'px';
+    p.style.height = p.style.width;
+    p.style.background = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
+    p.style.animationDelay = (Math.random() * 1.2) + 's';
+    p.style.animationDuration = (2.2 + Math.random() * 1.8) + 's';
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 4500);
+  }
+}
+
 /* ============================================================
  * MAP SCREEN
  * ============================================================ */
@@ -105,7 +125,7 @@ function renderMap(box) {
     const unlocked = ch.id <= currentChapter;
     const theme = chapterTheme(ch.id);
     const card = el('div', 'chapter-card' + (unlocked ? '' : ' locked'));
-    card.appendChild(buildBackground(theme.bg, ch.id + 11));
+    card.appendChild(buildBackground(theme.bg, ch.id + 11, false, ch.id));
     const inner = el('div', 'chapter-inner');
 
     const topRow = el('div');
@@ -249,7 +269,7 @@ const Game = {
 
     // board
     const boardOuter = el('div', 'board-outer');
-    const boardBox = el('div', 'board-box');
+    const boardBox = el('div', 'board-box bm-board-in');
     boardBox.style.background = theme.bg.dark ? 'rgba(0,0,0,.35)' : 'rgba(255,255,255,.15)';
     boardBox.style.backdropFilter = 'blur(2px)';
     boardBox.style.boxShadow = theme.bg.dark
@@ -466,6 +486,40 @@ const Game = {
     setTimeout(() => f.remove(), 950);
   },
 
+  /* big combo praise popup (era accent color) */
+  spawnCombo(cascade) {
+    const t = (k) => store.t(k);
+    const praise = cascade >= 5 ? t('game.combo5') : cascade >= 4 ? t('game.combo4') : cascade === 3 ? t('game.combo3') : t('game.combo2');
+    const wrap = el('span', 'bm-combo-wrap');
+    const pop = el('span', 'bm-combo-pop', '×' + cascade + '! ' + praise);
+    pop.style.color = this.theme().uiAccent;
+    wrap.appendChild(pop);
+    this.boardInner.appendChild(wrap);
+    setTimeout(() => wrap.remove(), 1100);
+  },
+
+  /* expanding shockwave ring at a cell */
+  spawnShock(idx, w, h) {
+    const s = el('span', 'bm-shockwave');
+    s.style.left = (((idx % w) + 0.5) / w * 100) + '%';
+    s.style.top = ((Math.floor(idx / w) + 0.5) / h * 100) + '%';
+    s.style.width = '34%';
+    s.style.aspectRatio = '1';
+    s.style.marginLeft = '-17%';
+    s.style.marginTop = '-17%';
+    this.boardInner.appendChild(s);
+    setTimeout(() => s.remove(), 600);
+  },
+
+  pulseBoard() {
+    const inner = this.boardInner;
+    if (!inner) return;
+    inner.classList.remove('bm-board-shake');
+    void inner.offsetWidth; // restart animation
+    inner.classList.add('bm-board-shake');
+    setTimeout(() => inner.classList.remove('bm-board-shake'), 450);
+  },
+
   async playFrames(res) {
     const playId = ++this.playId;
     this.busy = true;
@@ -491,11 +545,17 @@ const Game = {
         this.updateHud();
       }
       if (frame.clearingIds.length > 0) { this.spawnParticles(frame); sfx.match(frame.cascade); }
-      if (frame.stonesHit.length > 0) sfx.boom();
+      if (frame.stonesHit.length > 0) {
+        sfx.boom();
+        for (const idx of frame.stonesHit.slice(0, 3)) this.spawnShock(idx, frame.board.w, frame.board.h);
+        this.pulseBoard();
+      }
       if (frame.collectedIds.length > 0) sfx.coin();
       if (frame.cascade >= 2) {
+        this.spawnCombo(frame.cascade);
         this.spawnFloat(50, 46, 'x' + frame.cascade + '!');
       }
+      if (frame.cascade >= 3) this.pulseBoard();
       this.rebuildBoard();
       await sleep(frame.clearingIds.length > 0 ? 250 : 300);
       if (playId !== this.playId) return;
@@ -699,6 +759,7 @@ const Game = {
     const t = (k, v) => store.t(k, v);
 
     if (this.winInfo) {
+      spawnWinConfetti();
       const over = el('div', 'modal-overlay');
       const modal = el('div', 'modal win');
       modal.innerHTML = '<h2>' + t('game.win') + '</h2>';

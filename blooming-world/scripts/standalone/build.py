@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Build the standalone single-file Blooming World game.
 
-Inlines parts/style.css, parts/data.js, parts/engine.js,
-parts/app-core.js, parts/app-ui.js into shell.html and writes
+Inlines parts/assets.js (era photos), style.css, data.js, engine.js,
+app-core.js, app-ui.js into shell.html and writes
 the result to download/blooming-world/index.html.
 """
 from pathlib import Path
@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parent
 PARTS = ROOT / "parts"
 OUT = Path("/home/z/my-project/download/blooming-world/index.html")
 
-JS_ORDER = ["data.js", "engine.js", "app-core.js", "app-ui.js"]
+JS_ORDER = ["assets.js", "data.js", "engine.js", "app-core.js", "app-ui.js"]
 
 
 def main() -> None:

@@ -28,6 +28,7 @@ export interface EraTileStyle {
 }
 
 export interface EraBackground {
+  photo: string;         // авторская AI-сцена эры (webp); пусто = чистый css-фон
   sky: string;           // css gradient
   ground: string;        // css gradient
   hillFar: string;
@@ -145,6 +146,7 @@ export const CHAPTERS: ChapterTheme[] = [
       glow: false, glass: false, shine: false, wobble: false, pattern: 'none',
     },
     bg: {
+      photo: '/eras/era-0.webp',
       sky: 'linear-gradient(180deg,#9b978e 0%,#b5b0a6 60%,#8d8779 100%)',
       ground: 'linear-gradient(180deg,#8d8271 0%,#6e6657 100%)',
       hillFar: '#a19a8c', hillNear: '#847c6c', dark: false,
@@ -165,6 +167,7 @@ export const CHAPTERS: ChapterTheme[] = [
       glow: false, glass: false, shine: false, wobble: false, pattern: 'pixel',
     },
     bg: {
+      photo: '/eras/era-1.webp',
       sky: 'linear-gradient(180deg,#8fb8c9 0%,#b5d6c9 60%,#8fb894 100%)',
       ground: 'linear-gradient(180deg,#7aa86a 0%,#568a4c 100%)',
       hillFar: '#9bc98e', hillNear: '#6fae62', dark: false,
@@ -185,6 +188,7 @@ export const CHAPTERS: ChapterTheme[] = [
       glow: false, glass: false, shine: false, wobble: false, pattern: 'none',
     },
     bg: {
+      photo: '/eras/era-2.webp',
       sky: 'linear-gradient(180deg,#7ec3e8 0%,#a8dff0 55%,#cfe8c9 100%)',
       ground: 'linear-gradient(180deg,#7ab86a 0%,#4c8a44 100%)',
       hillFar: '#93cc85', hillNear: '#63a855', dark: false,
@@ -205,6 +209,7 @@ export const CHAPTERS: ChapterTheme[] = [
       glow: false, glass: false, shine: false, wobble: false, pattern: 'none',
     },
     bg: {
+      photo: '/eras/era-3.webp',
       sky: 'linear-gradient(180deg,#6fc0f0 0%,#9fd8f5 50%,#d4ecc0 100%)',
       ground: 'linear-gradient(180deg,#82c46e 0%,#4c9440 100%)',
       hillFar: '#9cd48a', hillNear: '#68b458', dark: false,
@@ -225,6 +230,7 @@ export const CHAPTERS: ChapterTheme[] = [
       glow: false, glass: false, shine: false, wobble: true, pattern: 'none',
     },
     bg: {
+      photo: '/eras/era-4.webp',
       sky: 'linear-gradient(180deg,#87d0f5 0%,#bce6fa 50%,#dff2cf 100%)',
       ground: 'linear-gradient(180deg,#8cc978 0%,#57a04a 100%)',
       hillFar: '#a5dc92', hillNear: '#74bc62', dark: false,
@@ -245,6 +251,7 @@ export const CHAPTERS: ChapterTheme[] = [
       glow: false, glass: false, shine: false, wobble: true, pattern: 'none',
     },
     bg: {
+      photo: '/eras/era-5.webp',
       sky: 'linear-gradient(180deg,#9adcf8 0%,#c8ecfa 45%,#e8f6d8 100%)',
       ground: 'linear-gradient(180deg,#95d482 0%,#5ea84e 100%)',
       hillFar: '#b0e09c', hillNear: '#80c86c', dark: false,
@@ -265,6 +272,7 @@ export const CHAPTERS: ChapterTheme[] = [
       glow: true, glass: false, shine: false, wobble: true, pattern: 'none',
     },
     bg: {
+      photo: '/eras/era-6.webp',
       sky: 'linear-gradient(180deg,#1a1030 0%,#31195c 55%,#183248 100%)',
       ground: 'linear-gradient(180deg,#1e4a3a 0%,#12332a 100%)',
       hillFar: '#24405c', hillNear: '#1a2f46', dark: true,
@@ -285,6 +293,7 @@ export const CHAPTERS: ChapterTheme[] = [
       glow: false, glass: true, shine: false, wobble: true, pattern: 'none',
     },
     bg: {
+      photo: '/eras/era-7.webp',
       sky: 'linear-gradient(180deg,#3a2a6a 0%,#8a5aa8 45%,#e88a5a 100%)',
       ground: 'linear-gradient(180deg,#5a7a4a 0%,#3a5232 100%)',
       hillFar: '#7a5a98', hillNear: '#553f70', dark: true,
@@ -305,6 +314,7 @@ export const CHAPTERS: ChapterTheme[] = [
       glow: false, glass: false, shine: true, wobble: true, pattern: 'rays',
     },
     bg: {
+      photo: '/eras/era-8.webp',
       sky: 'linear-gradient(180deg,#8ad4ff 0%,#c0e8ff 40%,#ffe0b0 100%)',
       ground: 'linear-gradient(180deg,#9ade84 0%,#64b452 100%)',
       hillFar: '#b5e8a0', hillNear: '#88cc70', dark: false,
@@ -325,6 +335,7 @@ export const CHAPTERS: ChapterTheme[] = [
       glow: true, glass: false, shine: true, wobble: true, pattern: 'rays',
     },
     bg: {
+      photo: '/eras/era-9.webp',
       sky: 'linear-gradient(180deg,#ffca7a 0%,#ffb0c8 45%,#ffe9c0 100%)',
       ground: 'linear-gradient(180deg,#a8e890 0%,#70c05c 100%)',
       hillFar: '#c8f0b0', hillNear: '#98d880', dark: false,

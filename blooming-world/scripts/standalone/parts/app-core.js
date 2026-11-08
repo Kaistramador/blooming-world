@@ -215,6 +215,10 @@ function tileHtml(tile, theme, skin, anim) {
   const fillFilters = st.glow
     ? ['drop-shadow(0 0 0.2em ' + glowColor + ')', 'drop-shadow(0 0 0.42em ' + glowColor + '55)']
     : [];
+  /* premium 3D depth: light on top, shade on bottom (era-strength) */
+  const bodyShadow = (st.gloss || st.gradient)
+    ? 'inset 0 0.05em 0.1em rgba(255,255,255,.45), inset 0 -0.09em 0.16em rgba(0,0,0,.32)'
+    : 'inset 0 0.04em 0.06em rgba(255,255,255,.24), inset 0 -0.05em 0.09em rgba(0,0,0,.2)';
 
   let cls = 'tile-root';
   if (anim === 'pop') cls += ' bm-pop';
@@ -230,11 +234,13 @@ function tileHtml(tile, theme, skin, anim) {
       (rimFilters.length ? 'filter:' + rimFilters.join(', ') + ';' : '') + '"></div>';
   }
   inner += '<div class="tile-body" style="background:' + background + ';' + shape +
+    'box-shadow:' + bodyShadow + ';' +
     (st.glass ? 'backdrop-filter:blur(2px);opacity:.9;' : '') +
     (fillFilters.length ? 'filter:' + fillFilters.join(', ') + ';' : '') + '">';
   if (st.pattern === 'pixel') inner += '<div class="bm-pixel-pattern"></div>';
   if (st.pattern === 'rays') inner += '<div style="position:absolute;inset:0;background:repeating-conic-gradient(from 0deg, rgba(255,255,255,.10) 0deg 8deg, transparent 8deg 16deg)"></div>';
   if (st.gloss) inner += '<div style="position:absolute;left:10%;right:10%;top:6%;height:38%;background:linear-gradient(180deg, rgba(255,255,255,.5), rgba(255,255,255,.06))"></div>';
+  if (st.gloss) inner += '<div style="position:absolute;left:16%;top:12%;width:16%;height:11%;border-radius:50%;background:rgba(255,255,255,.9);filter:blur(1px)"></div>';
   if (st.shine) inner += '<div class="bm-shine-wrap"><div class="bm-shine-bar"></div></div>';
   if (skin.ring && !isRainbow && !isItem) inner += '<div style="position:absolute;inset:0;background:radial-gradient(closest-side, transparent 56%, rgba(255,255,255,.55) 66%, transparent 78%)"></div>';
   inner += '</div>';
@@ -265,7 +271,7 @@ function previewTileHtml(color, skin) {
 
 /* ---------------- blooming background ---------------- */
 function mulberry32Public(seed) { return mulberry32(seed); }
-function buildBackground(bg, seed, asRoot) {
+function buildBackground(bg, seed, asRoot, eraId) {
   const layer = el('div', 'bg-layer' + (asRoot ? ' as-root' : ''));
   const rng = mulberry32Public((seed || 1) * 7919 + 13);
   const rand = (min, max) => min + rng() * (max - min);
@@ -273,6 +279,18 @@ function buildBackground(bg, seed, asRoot) {
   const sky = el('div');
   sky.style.cssText = 'position:absolute;inset:0;background:' + bg.sky;
   layer.appendChild(sky);
+
+  // authored era photo scene (Волна 1)
+  if (typeof ERA_IMGS !== 'undefined' && ERA_IMGS[eraId]) {
+    const photo = el('div', 'bg-photo');
+    photo.style.backgroundImage = 'url(' + ERA_IMGS[eraId] + ')';
+    layer.appendChild(photo);
+  }
+
+  // readability: vignette + HUD scrims
+  layer.appendChild(el('div', 'bg-vignette'));
+  layer.appendChild(el('div', 'bg-scrim-top'));
+  layer.appendChild(el('div', 'bg-scrim-bottom'));
 
   if (bg.dark) {
     // moon + stars instead of sun
@@ -282,7 +300,7 @@ function buildBackground(bg, seed, asRoot) {
     layer.appendChild(el('div', 'bg-sun'));
   }
   if (bg.stars) {
-    for (let i = 0; i < 26; i++) {
+    for (let i = 0; i < 30; i++) {
       const s = el('div', 'bg-star');
       s.style.left = rand(2, 98) + '%';
       s.style.top = rand(2, 55) + '%';
@@ -296,43 +314,10 @@ function buildBackground(bg, seed, asRoot) {
     c.style.transform = 'scale(' + rand(0.6, 1.3) + ')';
     c.style.animationDuration = rand(45, 90) + 's';
     c.style.animationDelay = -rand(0, 60) + 's';
+    if (bg.dark) c.style.opacity = '0.2';
     layer.appendChild(c);
   }
-  const hillFar = el('div', 'bg-hill');
-  hillFar.style.background = bg.hillFar;
-  layer.appendChild(hillFar);
-  const hillNear = el('div', 'bg-hill near');
-  hillNear.style.background = bg.hillNear;
-  layer.appendChild(hillNear);
-  const ground = el('div', 'bg-ground');
-  ground.style.background = bg.ground;
-  layer.appendChild(ground);
-
-  const TREES = ['#2e8a4e', '#3aa25c', '#2f7d46', '#46b36a', '#2e8a4e'];
-  for (let i = 0; i < (bg.trees || 0); i++) {
-    const t = el('div', 'bg-tree');
-    t.style.setProperty('--tree', TREES[i % TREES.length]);
-    t.style.left = rand(2, 92) + '%';
-    t.style.transform += ' scale(' + rand(0.7, 1.15) + ')';
-    t.style.animationDelay = -rand(0, 4) + 's';
-    layer.appendChild(t);
-  }
-  for (let i = 0; i < (bg.bushes || 0); i++) {
-    const b = el('div', 'bg-bush');
-    b.style.setProperty('--bush', i % 2 ? '#3da05a' : '#33914e');
-    b.style.left = rand(1, 90) + '%';
-    b.style.transform = 'scale(' + rand(0.6, 1.2) + ')';
-    layer.appendChild(b);
-  }
   const FLW = ['#ff8ab0', '#ffd166', '#c084fc', '#7dd3fc', '#fda4af', '#fef08a'];
-  for (let i = 0; i < (bg.flowers || 0); i++) {
-    const f = el('div', 'bg-flower');
-    f.style.setProperty('--fl', FLW[i % FLW.length]);
-    f.style.left = rand(1, 95) + '%';
-    f.style.bottom = rand(18.5, 24) + '%';
-    f.style.transform = 'scale(' + rand(0.7, 1.3) + ')';
-    layer.appendChild(f);
-  }
   for (let i = 0; i < (bg.butterflies || 0); i++) {
     const b = el('div', 'bg-butterfly');
     b.style.setProperty('--bf', FLW[i % FLW.length]);

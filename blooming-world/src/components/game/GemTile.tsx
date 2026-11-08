@@ -76,6 +76,13 @@ const GemTileInner = ({ tile, theme, skin, clearing, born, spawned }: GemTilePro
     ? [`drop-shadow(0 0 0.2em ${glowColor})`, `drop-shadow(0 0 0.42em ${glowColor}55)`]
     : [];
 
+  /* premium 3D depth: light on top, shade on bottom — inside the
+     silhouette (era-strength: flat/pixel eras stay subtle) */
+  const bodyShadow =
+    st.gloss || st.gradient
+      ? 'inset 0 0.05em 0.1em rgba(255,255,255,.45), inset 0 -0.09em 0.16em rgba(0,0,0,.32)'
+      : 'inset 0 0.04em 0.06em rgba(255,255,255,.24), inset 0 -0.05em 0.09em rgba(0,0,0,.2)';
+
   const classes = ['relative', 'w-full', 'h-full', 'select-none'];
   if (clearing) classes.push('bm-pop');
   else if (born) classes.push('bm-born');
@@ -111,6 +118,7 @@ const GemTileInner = ({ tile, theme, skin, clearing, born, spawned }: GemTilePro
         style={{
           background,
           ...shape,
+          boxShadow: bodyShadow,
           backdropFilter: st.glass ? 'blur(2px)' : undefined,
           opacity: st.glass ? 0.9 : 1,
           filter: fillFilters.join(', ') || undefined,
@@ -130,6 +138,20 @@ const GemTileInner = ({ tile, theme, skin, clearing, born, spawned }: GemTilePro
           <div
             className="absolute left-[10%] right-[10%] top-[6%] h-[38%]"
             style={{ background: 'linear-gradient(180deg, rgba(255,255,255,.5), rgba(255,255,255,.06))' }}
+          />
+        )}
+        {st.gloss && (
+          <div
+            className="absolute"
+            style={{
+              left: '16%',
+              top: '12%',
+              width: '16%',
+              height: '11%',
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,.9)',
+              filter: 'blur(1px)',
+            }}
           />
         )}
         {st.shine && (

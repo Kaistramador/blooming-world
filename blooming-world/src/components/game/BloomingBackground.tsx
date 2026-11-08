@@ -10,7 +10,12 @@ interface Props {
   className?: string;
 }
 
-/** The blooming world: from barren gray to a fully alive golden garden. */
+/**
+ * The blooming world: an authored AI scene per era + living
+ * animated overlays (clouds, petals, fireflies, sparkles) +
+ * vignette / scrims so HUD and the board stay readable.
+ * Static scenery lives in the photo; motion stays in CSS.
+ */
 export function BloomingBackground({ bg, seed = 7, className }: Props) {
   const rnd = useMemo(() => {
     const r = mulberry32(seed * 131 + 17);
@@ -21,28 +26,12 @@ export function BloomingBackground({ bg, seed = 7, className }: Props) {
         dur: 45 + r() * 50,
         delay: -r() * 60,
       })),
-      stars: Array.from({ length: bg.stars ? 26 : 0 }, () => ({
+      stars: Array.from({ length: bg.stars ? 30 : 0 }, () => ({
         left: r() * 100,
         top: r() * 55,
         size: 1 + r() * 2,
         dur: 1.6 + r() * 2.4,
         delay: r() * 3,
-      })),
-      trees: Array.from({ length: bg.trees }, (_, i) => ({
-        left: 4 + (i + r() * 0.7) * (90 / Math.max(1, bg.trees)),
-        scale: 0.75 + r() * 0.55,
-        dur: 3.4 + r() * 2.4,
-        delay: -r() * 3,
-      })),
-      bushes: Array.from({ length: bg.bushes * 2 }, () => ({
-        left: r() * 96,
-        scale: 0.6 + r() * 0.8,
-      })),
-      flowers: Array.from({ length: bg.flowers }, () => ({
-        left: r() * 97,
-        top: 78 + r() * 18,
-        emoji: ['🌼', '🌸', '🌷', '🌻', '💮'][Math.floor(r() * 5)],
-        scale: 0.6 + r() * 0.8,
       })),
       butterflies: Array.from({ length: bg.butterflies }, () => ({
         left: 10 + r() * 70,
@@ -76,8 +65,37 @@ export function BloomingBackground({ bg, seed = 7, className }: Props) {
 
   return (
     <div className={`pointer-events-none absolute inset-0 overflow-hidden ${className ?? ''}`} aria-hidden>
-      {/* sky */}
+      {/* era sky (fallback / base) */}
       <div className="absolute inset-0" style={{ background: bg.sky }} />
+
+      {/* authored era photo scene */}
+      {bg.photo && (
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `url(${bg.photo})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        />
+      )}
+
+      {/* readability: vignette + HUD scrims */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(120% 90% at 50% 42%, transparent 52%, rgba(0,0,0,.34) 100%)',
+        }}
+      />
+      <div
+        className="absolute inset-x-0 top-0"
+        style={{ height: '26%', background: 'linear-gradient(180deg, rgba(0,0,0,.42), rgba(0,0,0,0))' }}
+      />
+      <div
+        className="absolute inset-x-0 bottom-0"
+        style={{ height: '18%', background: 'linear-gradient(0deg, rgba(0,0,0,.34), rgba(0,0,0,0))' }}
+      />
 
       {/* stars */}
       {rnd.stars.map((s, i) => (
@@ -96,16 +114,15 @@ export function BloomingBackground({ bg, seed = 7, className }: Props) {
 
       {/* sun with rays */}
       {bg.sun && (
-        <div className="absolute" style={{ right: '8%', top: '7%' }}>
+        <div className="absolute" style={{ right: '8%', top: '5%' }}>
           <div
             className="relative rounded-full"
             style={{
-              width: 56,
-              height: 56,
-              background: bg.dark
-                ? 'radial-gradient(circle, #fff8d0, #ffd166 70%)'
-                : 'radial-gradient(circle, #fffbe0, #ffd83d 75%)',
+              width: 52,
+              height: 52,
+              background: 'radial-gradient(circle, #fffbe0, #ffd83d 75%)',
               boxShadow: '0 0 34px 12px rgba(255,216,61,.45)',
+              opacity: 0.92,
             }}
           />
           {bg.rays && (
@@ -113,7 +130,7 @@ export function BloomingBackground({ bg, seed = 7, className }: Props) {
               className="absolute -inset-14 rounded-full"
               style={{
                 background:
-                  'repeating-conic-gradient(from 0deg, rgba(255,216,61,.22) 0deg 7deg, transparent 7deg 18deg)',
+                  'repeating-conic-gradient(from 0deg, rgba(255,216,61,.20) 0deg 7deg, transparent 7deg 18deg)',
                 animation: 'bm-sun-rays 5s ease-in-out infinite',
                 maskImage: 'radial-gradient(circle, transparent 34%, black 70%)',
                 WebkitMaskImage: 'radial-gradient(circle, transparent 34%, black 70%)',
@@ -123,7 +140,7 @@ export function BloomingBackground({ bg, seed = 7, className }: Props) {
         </div>
       )}
 
-      {/* clouds */}
+      {/* drifting clouds */}
       {rnd.clouds.map((c, i) => (
         <div
           key={`cl-${i}`}
@@ -134,97 +151,13 @@ export function BloomingBackground({ bg, seed = 7, className }: Props) {
             animation: `bm-cloud-drift ${c.dur}s linear ${c.delay}s infinite`,
           }}
         >
-          <div style={{ transform: `scale(${c.scale})`, opacity: bg.dark ? 0.25 : 0.9 }}>
+          <div style={{ transform: `scale(${c.scale})`, opacity: bg.dark ? 0.2 : 0.75 }}>
             <div className="relative h-8 w-24 rounded-full bg-white/85">
               <div className="absolute -top-4 left-4 h-10 w-12 rounded-full bg-white/85" />
               <div className="absolute -top-3 left-12 h-9 w-10 rounded-full bg-white/85" />
             </div>
           </div>
         </div>
-      ))}
-
-      {/* far hills */}
-      <div
-        className="absolute left-[-6%] right-[-6%]"
-        style={{
-          top: '62%',
-          height: '26%',
-          background: bg.hillFar,
-          borderRadius: '50% 50% 0 0 / 90% 90% 0 0',
-          opacity: 0.9,
-        }}
-      />
-      {/* near hills */}
-      <div
-        className="absolute left-[-10%] right-[-4%]"
-        style={{
-          top: '72%',
-          height: '24%',
-          background: bg.hillNear,
-          borderRadius: '55% 45% 0 0 / 100% 100% 0 0',
-        }}
-      />
-
-      {/* trees */}
-      {rnd.trees.map((t, i) => (
-        <div
-          key={`tr-${i}`}
-          className="absolute"
-          style={{
-            left: `${t.left}%`,
-            top: '58%',
-            transform: `scale(${t.scale})`,
-            transformOrigin: 'bottom center',
-            animation: `bm-tree-sway ${t.dur}s ease-in-out ${t.delay}s infinite`,
-          }}
-        >
-          <div className="relative">
-            <div className="mx-auto h-8 w-2.5 rounded-sm" style={{ background: '#7a5a3a' }} />
-            <div
-              className="absolute -top-8 left-1/2 -translate-x-1/2 rounded-full"
-              style={{
-                width: 52,
-                height: 46,
-                background: bg.dark
-                  ? 'radial-gradient(circle at 35% 30%, #3ad0ff33, #125878)'
-                  : 'radial-gradient(circle at 35% 30%, #b8f09a, #4c9440)',
-                boxShadow: bg.dark ? '0 0 12px rgba(58,208,255,.4)' : '0 3px 6px rgba(0,0,0,.2)',
-              }}
-            />
-          </div>
-        </div>
-      ))}
-
-      {/* ground */}
-      <div className="absolute inset-x-0 bottom-0" style={{ top: '78%', background: bg.ground }} />
-
-      {/* bushes */}
-      {rnd.bushes.map((b, i) => (
-        <div
-          key={`bu-${i}`}
-          className="absolute"
-          style={{
-            left: `${b.left}%`,
-            top: '76%',
-            transform: `scale(${b.scale})`,
-          }}
-        >
-          <div
-            className="h-5 w-9 rounded-full"
-            style={{ background: bg.dark ? '#1e4a3a' : '#5ea84e' }}
-          />
-        </div>
-      ))}
-
-      {/* flowers */}
-      {rnd.flowers.map((f, i) => (
-        <span
-          key={`fl-${i}`}
-          className="absolute"
-          style={{ left: `${f.left}%`, top: `${f.top}%`, fontSize: 16 * f.scale }}
-        >
-          {f.emoji}
-        </span>
       ))}
 
       {/* butterflies */}
