@@ -1,0 +1,3142 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Цветущий мир — Blooming World</title>
+<meta name="description" content="Match-3 игра «Цветущий мир»: 100 уровней в 10 эрах графики. Автономная версия — один HTML-файл.">
+<style>
+/* ============================================================
+ * Blooming World — standalone single-file edition styles
+ * (port of the Next.js/Tailwind UI + globals.css animations)
+ * ============================================================ */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: ui-rounded, 'Segoe UI', 'Noto Sans', system-ui, -apple-system, sans-serif;
+  background: #14532d;
+  color: #fff;
+  min-height: 100vh;
+  overflow-x: hidden;
+  user-select: none;
+}
+button { font-family: inherit; border: 0; cursor: pointer; background: none; color: inherit; }
+input { font-family: inherit; }
+
+.app { position: relative; min-height: 100vh; overflow: hidden; }
+.screen { position: relative; z-index: 10; }
+
+/* ---------- blooming background ---------- */
+.bg-layer { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.bg-layer.as-root { position: fixed; }
+.bg-ground { position: absolute; left: 0; right: 0; bottom: 0; height: 26%; border-radius: 100% 100% 0 0 / 18% 18% 0 0; }
+.bg-hill { position: absolute; bottom: 20%; width: 130%; height: 30%; border-radius: 100% 100% 0 0 / 60% 60% 0 0; }
+.bg-hill.near { bottom: 22%; }
+.bg-sun { position: absolute; top: 7%; right: 10%; width: 72px; height: 72px; border-radius: 50%;
+  background: radial-gradient(circle, #fff7cf 0%, #ffd94e 55%, rgba(255,200,60,.15) 72%, transparent 76%);
+  animation: bm-sun-rays 5s ease-in-out infinite; }
+.bg-rays { position: absolute; top: 4%; right: 4%; width: 200px; height: 200px;
+  background: repeating-conic-gradient(from 0deg, rgba(255,240,170,.14) 0deg 9deg, transparent 9deg 22deg);
+  border-radius: 50%; filter: blur(1px); animation: bm-sun-rays 6s ease-in-out infinite; }
+.bg-cloud { position: absolute; width: 130px; height: 36px; border-radius: 40px;
+  background: rgba(255,255,255,.8); box-shadow: 0 8px 0 -2px rgba(255,255,255,.65), 22px -12px 0 -4px rgba(255,255,255,.7); opacity: .8;
+  animation: bm-cloud-drift linear infinite; }
+.bg-star { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: #fff;
+  animation: bm-star-twinkle 3s ease-in-out infinite; }
+.bg-tree { position: absolute; bottom: 20%; width: 46px; height: 74px; transform-origin: bottom center;
+  animation: bm-tree-sway 4s ease-in-out infinite; }
+.bg-tree::before { content: ''; position: absolute; left: 50%; bottom: 0; width: 8px; height: 40%; transform: translateX(-50%);
+  background: #6b4a2c; border-radius: 3px; }
+.bg-tree::after { content: ''; position: absolute; left: 50%; bottom: 34%; transform: translateX(-50%);
+  width: 58px; height: 64px; border-radius: 50% 50% 46% 46%; background: var(--tree, #2e8a4e);
+  box-shadow: inset -8px -6px 0 rgba(0,0,0,.12); }
+.bg-bush { position: absolute; bottom: 21%; width: 52px; height: 30px; border-radius: 26px 26px 14px 14px;
+  background: var(--bush, #3da05a); box-shadow: inset -6px -4px 0 rgba(0,0,0,.12); }
+.bg-flower { position: absolute; bottom: 21%; width: 14px; height: 14px; border-radius: 50%;
+  background: var(--fl, #ff8ab0); box-shadow: 0 0 0 3px var(--flc, rgba(255,255,255,.25)), inset 0 -2px 2px rgba(0,0,0,.18); }
+.bg-flower::after { content: ''; position: absolute; left: 50%; top: 50%; width: 5px; height: 5px; border-radius: 50%;
+  transform: translate(-50%,-50%); background: #fff8d8; }
+.bg-butterfly { position: absolute; width: 16px; height: 12px; animation: bm-butterfly 9s ease-in-out infinite; }
+.bg-butterfly::before, .bg-butterfly::after { content: ''; position: absolute; top: 0; width: 8px; height: 12px; border-radius: 60% 60% 40% 40%;
+  background: var(--bf, #ffd166); opacity: .9; }
+.bg-butterfly::before { left: 0; transform: skewY(-12deg); }
+.bg-butterfly::after { right: 0; transform: skewY(12deg); }
+.bg-petal { position: absolute; top: -5vh; width: 12px; height: 12px; border-radius: 60% 0 60% 0;
+  background: var(--pt, #ffb0c8); opacity: .85; animation: bm-petal-fall linear infinite; }
+.bg-firefly { position: absolute; width: 6px; height: 6px; border-radius: 50%;
+  background: radial-gradient(circle, #eaff9a, rgba(180,255,120,.1) 70%);
+  animation: bm-firefly 4.5s ease-in-out infinite; }
+.bg-sparkle { position: absolute; font-size: 12px; color: #fff; opacity: .7; animation: bm-sparkle 3s ease-in-out infinite; }
+.bg-moon { position: absolute; top: 8%; right: 12%; width: 60px; height: 60px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #f4f0ff, #c9c2e8 60%, rgba(150,140,200,.2) 75%, transparent 80%); }
+
+/* ---------- tile animations (ported 1:1) ---------- */
+@keyframes bm-pop { 0% { transform: scale(1); opacity: 1; } 40% { transform: scale(1.25) rotate(6deg); opacity: 1; } 100% { transform: scale(0) rotate(20deg); opacity: 0; } }
+@keyframes bm-fall-in { 0% { transform: translateY(-120%) scale(0.6); opacity: 0.4; } 70% { transform: translateY(0) scale(1.04); opacity: 1; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
+@keyframes bm-born { 0% { transform: scale(0.3) rotate(-30deg); } 60% { transform: scale(1.25) rotate(8deg); } 100% { transform: scale(1) rotate(0); } }
+@keyframes bm-wobble { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4%); } }
+@keyframes bm-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6%); } 75% { transform: translateX(6%); } }
+@keyframes bm-shine { 0% { transform: translateX(-180%) skewX(-18deg); } 100% { transform: translateX(280%) skewX(-18deg); } }
+@keyframes bm-special-pulse { 0%, 100% { filter: brightness(1); transform: scale(1); } 50% { filter: brightness(1.35); transform: scale(1.06); } }
+@keyframes bm-rainbow-spin { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
+@keyframes bm-stone-hit { 0%, 100% { transform: translate(0); } 30% { transform: translate(-4%, 2%); } 60% { transform: translate(4%, -2%); } }
+@keyframes bm-particle { 0% { transform: translate(0, 0) scale(1); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(0.2) rotate(var(--rot)); opacity: 0; } }
+@keyframes bm-star-pop { 0% { transform: scale(0) rotate(-90deg); opacity: 0; } 70% { transform: scale(1.35) rotate(8deg); opacity: 1; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+@keyframes bm-float-up { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-160%); opacity: 0; } }
+@keyframes bm-toast-in { 0% { transform: translateY(-16px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+@keyframes bm-cloud-drift { 0% { transform: translateX(-15vw); } 100% { transform: translateX(115vw); } }
+@keyframes bm-petal-fall { 0% { transform: translate(0, -8vh) rotate(0deg); opacity: 0; } 10% { opacity: 0.9; } 100% { transform: translate(var(--drift, 4vw), 108vh) rotate(320deg); opacity: 0; } }
+@keyframes bm-butterfly { 0% { transform: translate(0, 0) rotate(0deg); } 25% { transform: translate(3vw, -2vh) rotate(8deg); } 50% { transform: translate(6vw, 1vh) rotate(-6deg); } 75% { transform: translate(2vw, 3vh) rotate(5deg); } 100% { transform: translate(0, 0) rotate(0deg); } }
+@keyframes bm-firefly { 0%, 100% { opacity: 0.1; transform: translate(0, 0); } 50% { opacity: 1; transform: translate(1.5vw, -2vh); } }
+@keyframes bm-sparkle { 0%, 100% { opacity: 0; transform: scale(0.4); } 50% { opacity: 1; transform: scale(1.15); } }
+@keyframes bm-sun-rays { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.85; } }
+@keyframes bm-star-twinkle { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+@keyframes bm-tree-sway { 0%, 100% { transform: rotate(-1.6deg); } 50% { transform: rotate(1.6deg); } }
+
+.bm-pop { animation: bm-pop 0.24s ease-in forwards; }
+.bm-fall-in { animation: bm-fall-in 0.26s cubic-bezier(.3,.7,.4,1.1); }
+.bm-born { animation: bm-born 0.3s cubic-bezier(.3,1.4,.5,1); }
+.bm-wobble { animation: bm-wobble 2.4s ease-in-out infinite; }
+.bm-shake { animation: bm-shake 0.28s ease-in-out 2; }
+.bm-stone-hit { animation: bm-stone-hit 0.3s ease-in-out; }
+.bm-special-pulse { animation: bm-special-pulse 1.4s ease-in-out infinite; }
+.bm-rainbow-spin { animation: bm-rainbow-spin 2.5s linear infinite; }
+.bm-particle { position: absolute; pointer-events: none; z-index: 30; animation: bm-particle 0.65s ease-out forwards; will-change: transform, opacity; }
+.bm-star-pop { animation: bm-star-pop 0.45s cubic-bezier(.3,1.5,.5,1) backwards; }
+.bm-float-up { animation: bm-float-up 0.9s ease-out forwards; }
+.bm-toast-in { animation: bm-toast-in 0.25s ease-out; }
+.bm-shine-wrap { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.bm-shine-bar { position: absolute; top: -20%; bottom: -20%; width: 34%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent); animation: bm-shine 2.6s ease-in-out infinite; }
+.bm-pixel-pattern { position: absolute; inset: 0; background-image: repeating-linear-gradient(45deg, rgba(0,0,0,.06) 0 4px, transparent 4px 8px), repeating-linear-gradient(-45deg, rgba(255,255,255,.05) 0 4px, transparent 4px 8px); }
+.bm-checker-light { background-image: linear-gradient(45deg, rgba(255,255,255,.06) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.06) 75%); background-size: 24px 24px; }
+.bm-text-outline { text-shadow: 0 1px 2px rgba(0,0,0,.5), 0 0 6px rgba(0,0,0,.25); }
+
+/* ---------- shared ui ---------- */
+.card { background: rgba(0,0,0,.25); backdrop-filter: blur(4px); border: 2px solid rgba(255,255,255,.22); border-radius: 22px; }
+.btn { border-radius: 999px; padding: 10px 18px; font-weight: 800; font-size: 14px; transition: filter .15s, transform .05s; }
+.btn:active { transform: scale(.97); }
+.btn-primary { background: linear-gradient(90deg, #10b981, #14b8a6); color: #fff; box-shadow: 0 4px 14px rgba(0,0,0,.3); }
+.btn-amber { background: #fbbf24; color: #451a03; box-shadow: 0 4px 12px rgba(0,0,0,.25); }
+.btn-ghost { background: rgba(255,255,255,.25); color: #fff; }
+.btn-white { background: #fff; color: #047857; }
+.btn-dark { background: rgba(0,0,0,.35); color: #fff; }
+.chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 4px 12px; font-size: 12px; font-weight: 700; background: rgba(0,0,0,.32); color: #fff; }
+.chip.done { background: rgba(16,185,129,.9); }
+.coin-pill { display: inline-flex; align-items: center; gap: 4px; background: rgba(251,191,36,.92); color: #451a03; border-radius: 999px; padding: 4px 12px; font-size: 14px; font-weight: 900; box-shadow: 0 2px 8px rgba(0,0,0,.25); }
+
+/* ---------- bottom nav ---------- */
+.bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; border-top: 1px solid rgba(255,255,255,.2); background: rgba(0,0,0,.45); backdrop-filter: blur(8px); padding-bottom: env(safe-area-inset-bottom); }
+.bottom-nav .row { max-width: 512px; margin: 0 auto; display: flex; justify-content: space-around; padding: 6px 8px; }
+.nav-btn { display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 44px; min-width: 64px; border-radius: 16px; padding: 6px 12px; font-size: 10px; font-weight: 700; color: rgba(255,255,255,.75); }
+.nav-btn.active { background: rgba(255,255,255,.95); color: #1e293b; box-shadow: 0 3px 10px rgba(0,0,0,.3); }
+.nav-btn .ico { font-size: 18px; line-height: 1; }
+
+/* ---------- map ---------- */
+.map-wrap { max-width: 512px; margin: 0 auto; padding: 12px 12px 90px; }
+.map-head { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 12px; }
+.map-head h1 { margin: 0; font-size: 24px; font-weight: 900; letter-spacing: -0.02em; }
+.map-head p { margin: 0; font-size: 12px; opacity: .85; }
+.chapter-card { position: relative; overflow: hidden; border-radius: 26px; border: 2px solid rgba(255,255,255,.25); box-shadow: 0 6px 20px rgba(0,0,0,.3); margin-bottom: 12px; }
+.chapter-card.locked { opacity: .7; filter: saturate(0); }
+.chapter-inner { position: relative; z-index: 10; padding: 12px; }
+.chapter-kicker { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; opacity: .85; }
+.chapter-name { font-size: 18px; font-weight: 900; }
+.chapter-tag { font-size: 11px; opacity: .9; }
+.bloomed-pill { background: rgba(255,255,255,.85); color: #047857; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 900; }
+.levels-grid { margin-top: 10px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.level-btn { display: flex; flex-direction: column; align-items: center; border-radius: 16px; padding: 6px 0; font-size: 12px; font-weight: 900; }
+.level-btn.open { background: rgba(255,255,255,.88); color: #334155; }
+.level-btn.open:hover { background: #fff; }
+.level-btn.current { background: #fbbf24; color: #451a03; box-shadow: 0 0 0 2px #fff, 0 4px 12px rgba(0,0,0,.3); }
+.level-btn.locked { background: rgba(0,0,0,.4); color: rgba(255,255,255,.5); cursor: not-allowed; }
+.level-stars { font-size: 9px; line-height: 1.2; color: #f59e0b; }
+
+/* ---------- game ---------- */
+.game-wrap { max-width: 512px; margin: 0 auto; padding: 8px 12px 10px; display: flex; flex-direction: column; min-height: 100vh; }
+.game-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.game-title { font-size: 14px; font-weight: 800; text-align: center; }
+.boss-badge { display: block; font-size: 10px; font-weight: 900; letter-spacing: .18em; color: #fcd34d; }
+.stats-row { margin-top: 8px; display: flex; gap: 8px; }
+.stat-box { flex: 1; border-radius: 16px; background: rgba(0,0,0,.25); backdrop-filter: blur(3px); padding: 5px 12px; }
+.stat-box .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; opacity: .7; }
+.stat-box .val { font-size: 20px; font-weight: 900; line-height: 1.1; }
+.goals-row { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+.board-outer { margin-top: 12px; display: flex; justify-content: center; }
+.board-box { position: relative; width: 100%; max-width: 480px; border-radius: 26px; padding: 10px; border: 2px solid rgba(255,255,255,.22); }
+.board-inner { position: relative; }
+.cell { position: absolute; padding: 3%; }
+.cell button { width: 100%; height: 100%; transition: transform .15s, filter .15s; display: block; padding: 0; }
+.cell button.sel { transform: scale(1.1); filter: brightness(1.2) drop-shadow(0 0 6px rgba(255,255,255,.8)); z-index: 5; position: relative; }
+.cell.void-cell { padding: 0; }
+.void-dot { position: absolute; inset: 8%; border-radius: 15%; background: rgba(0,0,0,.1); }
+.tile-root { position: relative; width: 100%; height: 100%; }
+.tile-rim { position: absolute; }
+.tile-body { position: absolute; inset: 6%; overflow: hidden; }
+.tile-over { position: absolute; inset: 6%; z-index: 10; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.tile-glyph { font-size: 50cqw; line-height: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,.45)); }
+.spec-disc { width: 58%; height: 58%; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(16,12,22,.52); }
+.spec-glyph { font-size: 34cqw; font-weight: 900; color: #fff; text-shadow: 0 0 3px rgba(0,0,0,.8), 0 1px 2px rgba(0,0,0,.55); }
+.stone-wrap { position: relative; width: 100%; height: 100%; }
+.stone-pips { position: absolute; left: 0; right: 0; bottom: 7%; display: flex; justify-content: center; gap: 6%; z-index: 5; }
+.stone-pips span { width: 11%; aspect-ratio: 1; border-radius: 50%; background: rgba(16,20,26,.6); box-shadow: 0 0 0 1px rgba(255,255,255,.4); }
+.hint-line { margin-top: 8px; text-align: center; font-size: 11px; opacity: .78; }
+.boosters-row { margin-top: 6px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.booster-btn { position: relative; display: flex; align-items: center; justify-content: center; border-radius: 16px; padding: 7px 0; font-size: 20px; background: rgba(0,0,0,.32); transition: background .15s; }
+.booster-btn:hover { background: rgba(0,0,0,.45); }
+.booster-btn.active { background: #fbbf24; color: #451a03; box-shadow: 0 0 0 2px #fff; }
+.booster-count { position: absolute; right: -4px; top: -4px; min-width: 18px; border-radius: 999px; padding: 0 4px; font-size: 10px; font-weight: 900; line-height: 18px; color: #fff; }
+.booster-count.has { background: #10b981; }
+.booster-count.zero { background: rgba(244,63,94,.9); }
+.cancel-row { margin-top: 6px; text-align: center; }
+.float-txt { position: absolute; z-index: 20; transform: translateX(-50%); white-space: nowrap; font-size: 14px; font-weight: 900; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.6); pointer-events: none; }
+.toast-wrap { position: fixed; left: 50%; top: 64px; transform: translateX(-50%); z-index: 60; }
+.toast-box { background: rgba(0,0,0,.8); border-radius: 999px; padding: 8px 18px; font-size: 14px; font-weight: 700; box-shadow: 0 6px 18px rgba(0,0,0,.4); }
+
+/* ---------- modals ---------- */
+.modal-overlay { position: fixed; inset: 0; z-index: 70; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.modal { width: 100%; max-width: 330px; border-radius: 26px; padding: 18px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+.modal.win { background: linear-gradient(180deg, #10b981, #0d9488); }
+.modal.lose { background: linear-gradient(180deg, #334155, #0f172a); }
+.modal.light { background: #fff; color: #1e293b; }
+.modal h2 { margin: 0 0 6px; font-size: 22px; font-weight: 900; }
+.modal .stars-row { display: flex; justify-content: center; gap: 8px; font-size: 36px; margin: 8px 0; }
+.modal .stars-row .dim { opacity: .25; filter: grayscale(1); }
+.modal .sub { font-size: 13px; margin: 4px 0; }
+.modal .reward-pill { display: inline-block; background: rgba(251,191,36,.92); color: #451a03; border-radius: 999px; padding: 6px 16px; font-weight: 900; margin-top: 6px; }
+.modal .col { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.modal .row2 { display: flex; gap: 8px; }
+
+/* ---------- shop / ranks / profile ---------- */
+.panel-wrap { max-width: 512px; margin: 0 auto; padding: 12px 12px 90px; }
+.panel-title { font-size: 22px; font-weight: 900; margin: 0 0 4px; }
+.tabs-row { display: flex; gap: 6px; overflow-x: auto; margin: 10px 0; padding-bottom: 2px; }
+.tab-btn { flex-shrink: 0; border-radius: 999px; padding: 7px 14px; font-size: 12px; font-weight: 800; background: rgba(0,0,0,.32); color: rgba(255,255,255,.85); }
+.tab-btn.active { background: #fff; color: #1e293b; }
+.shop-item { display: flex; align-items: center; gap: 10px; border-radius: 20px; background: rgba(0,0,0,.28); border: 1px solid rgba(255,255,255,.18); padding: 10px 12px; margin-bottom: 8px; }
+.shop-item .info { flex: 1; min-width: 0; }
+.shop-item .nm { font-size: 14px; font-weight: 800; }
+.shop-item .ds { font-size: 11px; opacity: .75; }
+.shop-item .pr { font-size: 12px; font-weight: 900; color: #fcd34d; white-space: nowrap; }
+.skins-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.skin-card { border-radius: 18px; background: rgba(0,0,0,.28); border: 1px solid rgba(255,255,255,.18); padding: 10px 8px; text-align: center; }
+.skin-card.equipped { border-color: #fbbf24; box-shadow: 0 0 0 1px #fbbf24; }
+.skin-preview { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; justify-items: center; margin-bottom: 8px; }
+.skin-tile { width: 26px; height: 26px; position: relative; container-type: size; }
+.skin-tile .tile-rim { position: absolute; }
+.skin-tile .tile-body { position: absolute; inset: 8%; overflow: hidden; }
+.skin-tile .tile-glyph { font-size: 50cqw; }
+.rank-podium { display: flex; gap: 6px; align-items: flex-end; justify-content: center; margin: 12px 0; }
+.rank-podium .pod { flex: 1; border-radius: 16px 16px 6px 6px; background: rgba(0,0,0,.32); padding: 8px 4px; text-align: center; font-size: 11px; }
+.rank-podium .pod .em { font-size: 22px; }
+.rank-row { display: flex; align-items: center; gap: 10px; border-radius: 14px; padding: 7px 10px; margin-bottom: 4px; background: rgba(0,0,0,.24); font-size: 13px; }
+.rank-row.me { background: rgba(251,191,36,.9); color: #451a03; font-weight: 900; }
+.rank-row .pos { width: 34px; font-weight: 900; opacity: .8; }
+.rank-row .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.search-input { width: 100%; border-radius: 999px; border: 1px solid rgba(255,255,255,.3); background: rgba(0,0,0,.3); color: #fff; padding: 9px 16px; font-size: 14px; outline: none; margin-bottom: 10px; }
+.profile-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.avatar-bubble { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; }
+.stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 8px; }
+.stat-card { border-radius: 18px; background: rgba(0,0,0,.28); border: 1px solid rgba(255,255,255,.16); padding: 10px 12px; }
+.stat-card .v { font-size: 20px; font-weight: 900; }
+.stat-card .k { font-size: 11px; opacity: .75; }
+.name-input { width: 100%; border-radius: 14px; border: 1px solid rgba(255,255,255,.3); background: rgba(0,0,0,.3); color: #fff; padding: 10px 14px; font-size: 15px; outline: none; }
+.settings-block { margin-top: 14px; border-radius: 20px; background: rgba(0,0,0,.28); border: 1px solid rgba(255,255,255,.16); padding: 12px 14px; }
+.settings-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; font-size: 14px; font-weight: 700; }
+.seg { display: inline-flex; border-radius: 999px; overflow: hidden; border: 1px solid rgba(255,255,255,.3); }
+.seg button { padding: 6px 14px; font-size: 12px; font-weight: 800; color: rgba(255,255,255,.8); }
+.seg button.on { background: #fff; color: #1e293b; }
+.eq-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+
+/* small screens */
+@media (max-width: 380px) {
+  .levels-grid { gap: 5px; }
+  .board-box { padding: 7px; }
+}
+
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* ============ data.js ============ */
+/* ============================================================
+ * Blooming World — data layer (port of i18n.ts, shapes.ts,
+ * themes.ts, shop.ts, levels.ts, leaderboard.ts)
+ * ============================================================ */
+
+/* ---------------- i18n ---------------- */
+const I18N_RU = {
+  'app.title': 'Цветущий мир',
+  'app.subtitle': 'Три-в-ряд: эволюция сада',
+  'nav.map': 'Карта', 'nav.shop': 'Магазин', 'nav.ranks': 'Рейтинг', 'nav.profile': 'Профиль',
+  'map.play': 'Играть', 'map.continue': 'Продолжить', 'map.level': 'Уровень',
+  'map.chapter': 'Глава', 'map.locked': 'Закрыто', 'map.bloomed': 'Расцвело!',
+  'map.nextChapter': 'Следующая глава через {n} ур.',
+  'map.comingSoon': 'В планах: 10 000 уровней. Сейчас — первые 100!',
+  'game.moves': 'Ходы', 'game.score': 'Очки', 'game.goal': 'Цель',
+  'game.tapHint': 'Тапай группы из 2+ камней',
+  'game.swapHint': 'Меняй камни местами: собирай 3+ в ряд',
+  'game.bossLevel': 'ВЗРЫВНОЙ УРОВЕНЬ',
+  'game.win': 'Победа!', 'game.lose': 'Ходы закончились',
+  'game.next': 'Следующий уровень', 'game.retry': 'Ещё раз', 'game.exit': 'На карту',
+  'game.cascade': 'Комбо x{n}!',
+  'game.shuffled': 'Ходов больше нет — поле перемешано',
+  'game.plus5': '+5 ходов', 'game.buyAndUse': 'Купить и применить', 'game.use': 'Применить',
+  'game.boosters': 'Бусты', 'game.selectTarget': 'Выбери цель на поле', 'game.cancel': 'Отмена',
+  'game.starReward': 'Награда', 'game.newStars': 'Новый рекорд звёзд!', 'game.firstWin': 'Первое прохождение!',
+  'game.stoneGoal': 'Разбей камни', 'game.itemGoal': 'Собери бутоны',
+  'game.collectGoal': 'Собери камни', 'game.scoreGoal': 'Набери очки',
+  'shop.title': 'Магазин', 'shop.coins': 'Монеты',
+  'shop.tab.boosters': 'Бусты', 'shop.tab.bank': 'Банк', 'shop.tab.skins': 'Скины',
+  'shop.tab.avatars': 'Аватары', 'shop.tab.frames': 'Рамки', 'shop.tab.names': 'Имя', 'shop.tab.effects': 'Эффекты',
+  'shop.buy': 'Купить', 'shop.equip': 'Надеть', 'shop.equipped': 'Надето', 'shop.owned': 'Куплено',
+  'shop.notEnough': 'Недостаточно монет', 'shop.purchased': 'Покупка совершена!',
+  'shop.demoNote': 'Демо-режим: оплата симулируется, монеты зачисляются бесплатно',
+  'shop.simulatePay': 'Пополнить (демо)',
+  'shop.effectTile': 'Эффекты камней', 'shop.effectAvatar': 'Эффекты аватара', 'shop.effectName': 'Эффекты имени',
+  'shop.free': 'Бесплатно',
+  'ranks.title': 'Глобальный рейтинг', 'ranks.players': 'игроков', 'ranks.youAre': 'Вы на месте',
+  'ranks.level': 'Ур.', 'ranks.stars': 'Звёзды', 'ranks.you': 'ВЫ', 'ranks.search': 'Поиск игрока...', 'ranks.top3': 'Лидеры',
+  'profile.title': 'Профиль', 'profile.name': 'Имя игрока', 'profile.namePlaceholder': 'Введите имя',
+  'profile.save': 'Сохранить', 'profile.saved': 'Сохранено!', 'profile.stats': 'Статистика',
+  'profile.stat.wins': 'Побед', 'profile.stat.levels': 'Уровней пройдено', 'profile.stat.stars': 'Звёзд собрано',
+  'profile.stat.bestCascade': 'Лучшее комбо', 'profile.stat.totalScore': 'Всего очков', 'profile.stat.moves': 'Ходов сделано',
+  'profile.equipped': 'Экипировка',
+  'settings.title': 'Настройки', 'settings.language': 'Язык', 'settings.sound': 'Звук',
+  'settings.on': 'Вкл', 'settings.off': 'Выкл',
+  'settings.reset': 'Сбросить прогресс',
+  'settings.resetConfirm': 'Точно сбросить весь прогресс? Это действие необратимо.',
+  'settings.resetYes': 'Да, сбросить', 'settings.resetNo': 'Отмена', 'settings.resetDone': 'Прогресс сброшен',
+  'common.coins': 'монет', 'common.close': 'Закрыть', 'common.ok': 'ОК', 'common.loading': 'Загрузка...',
+  'goal.stone': 'Камни', 'goal.item': 'Бутоны', 'goal.moves': 'Ходы',
+  'era.unlock': 'Глава {n}: {name} — {tag}',
+};
+const I18N_EN = {
+  'app.title': 'Blooming World',
+  'app.subtitle': 'Match-3: garden evolution',
+  'nav.map': 'Map', 'nav.shop': 'Shop', 'nav.ranks': 'Ranks', 'nav.profile': 'Profile',
+  'map.play': 'Play', 'map.continue': 'Continue', 'map.level': 'Level',
+  'map.chapter': 'Chapter', 'map.locked': 'Locked', 'map.bloomed': 'Bloomed!',
+  'map.nextChapter': 'Next chapter in {n} lv.',
+  'map.comingSoon': 'Planned: 10,000 levels. Now the first 100!',
+  'game.moves': 'Moves', 'game.score': 'Score', 'game.goal': 'Goal',
+  'game.tapHint': 'Tap groups of 2+ gems',
+  'game.swapHint': 'Swap gems: match 3+ in a row',
+  'game.bossLevel': 'BLAST LEVEL',
+  'game.win': 'Victory!', 'game.lose': 'Out of moves',
+  'game.next': 'Next level', 'game.retry': 'Retry', 'game.exit': 'Map',
+  'game.cascade': 'Combo x{n}!',
+  'game.shuffled': 'No moves left — board shuffled',
+  'game.plus5': '+5 moves', 'game.buyAndUse': 'Buy & use', 'game.use': 'Use',
+  'game.boosters': 'Boosters', 'game.selectTarget': 'Pick a target on the board', 'game.cancel': 'Cancel',
+  'game.starReward': 'Reward', 'game.newStars': 'New star record!', 'game.firstWin': 'First clear!',
+  'game.stoneGoal': 'Break the stones', 'game.itemGoal': 'Collect the buds',
+  'game.collectGoal': 'Collect gems', 'game.scoreGoal': 'Score points',
+  'shop.title': 'Shop', 'shop.coins': 'Coins',
+  'shop.tab.boosters': 'Boosters', 'shop.tab.bank': 'Bank', 'shop.tab.skins': 'Skins',
+  'shop.tab.avatars': 'Avatars', 'shop.tab.frames': 'Frames', 'shop.tab.names': 'Name', 'shop.tab.effects': 'Effects',
+  'shop.buy': 'Buy', 'shop.equip': 'Equip', 'shop.equipped': 'Equipped', 'shop.owned': 'Owned',
+  'shop.notEnough': 'Not enough coins', 'shop.purchased': 'Purchase complete!',
+  'shop.demoNote': 'Demo mode: payment is simulated, coins are added for free',
+  'shop.simulatePay': 'Top up (demo)',
+  'shop.effectTile': 'Gem effects', 'shop.effectAvatar': 'Avatar effects', 'shop.effectName': 'Name effects',
+  'shop.free': 'Free',
+  'ranks.title': 'Global leaderboard', 'ranks.players': 'players', 'ranks.youAre': 'You are #',
+  'ranks.level': 'Lv', 'ranks.stars': 'Stars', 'ranks.you': 'YOU', 'ranks.search': 'Search player...', 'ranks.top3': 'Top players',
+  'profile.title': 'Profile', 'profile.name': 'Player name', 'profile.namePlaceholder': 'Enter name',
+  'profile.save': 'Save', 'profile.saved': 'Saved!', 'profile.stats': 'Statistics',
+  'profile.stat.wins': 'Wins', 'profile.stat.levels': 'Levels cleared', 'profile.stat.stars': 'Stars earned',
+  'profile.stat.bestCascade': 'Best combo', 'profile.stat.totalScore': 'Total score', 'profile.stat.moves': 'Moves made',
+  'profile.equipped': 'Equipment',
+  'settings.title': 'Settings', 'settings.language': 'Language', 'settings.sound': 'Sound',
+  'settings.on': 'On', 'settings.off': 'Off',
+  'settings.reset': 'Reset progress',
+  'settings.resetConfirm': 'Really reset all progress? This cannot be undone.',
+  'settings.resetYes': 'Yes, reset', 'settings.resetNo': 'Cancel', 'settings.resetDone': 'Progress reset',
+  'common.coins': 'coins', 'common.close': 'Close', 'common.ok': 'OK', 'common.loading': 'Loading...',
+  'goal.stone': 'Stones', 'goal.item': 'Buds', 'goal.moves': 'Moves',
+  'era.unlock': 'Chapter {n}: {name} — {tag}',
+};
+const DICTS = { ru: I18N_RU, en: I18N_EN };
+function translate(lang, key, vars) {
+  let s = (DICTS[lang] && DICTS[lang][key]) || DICTS.en[key] || key;
+  if (vars) for (const [k, v] of Object.entries(vars)) s = s.replace('{' + k + '}', String(v));
+  return s;
+}
+
+/* ---------------- shapes (colorblind-safe silhouettes) ---------------- */
+const GEM_SHAPE_CLIP = [
+  'polygon(50% 2%, 97% 91%, 3% 91%)',
+  'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+  'polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0% 50%)',
+  null,
+  'polygon(15% 15%, 85% 15%, 85% 85%, 15% 85%)',
+  'polygon(50% 0%, 63% 34%, 98% 35%, 71% 57%, 82% 91%, 50% 71%, 18% 91%, 29% 57%, 2% 35%, 37% 34%)',
+];
+function gemShapeCss(color) {
+  const i = Math.max(0, Math.min(GEM_SHAPE_CLIP.length - 1, color));
+  const clip = GEM_SHAPE_CLIP[i];
+  return clip ? { clipPath: clip, borderRadius: '4%' } : { borderRadius: '50%' };
+}
+
+/* ---------------- themes: colorblind-safe palette engine ---------------- */
+function hexToHsl(hex) {
+  const n = hex.replace('#', '');
+  const r = parseInt(n.slice(0, 2), 16) / 255, g = parseInt(n.slice(2, 4), 16) / 255, b = parseInt(n.slice(4, 6), 16) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  let h = 0, s = 0;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+    else if (max === g) h = ((b - r) / d + 2) / 6;
+    else h = ((r - g) / d + 4) / 6;
+  }
+  return [h * 360, s * 100, l * 100];
+}
+function hslToHex(h, s, l) {
+  const hh = (((h % 360) + 360) % 360) / 360;
+  const ss = Math.min(100, Math.max(0, s)) / 100;
+  const ll = Math.min(94, Math.max(0, l)) / 100;
+  const c = (1 - Math.abs(2 * ll - 1)) * ss;
+  const x = c * (1 - Math.abs(((hh * 6) % 2) - 1));
+  const m = ll - c / 2;
+  let r = 0, g = 0, b = 0;
+  if (hh < 1 / 6) { r = c; g = x; }
+  else if (hh < 2 / 6) { r = x; g = c; }
+  else if (hh < 3 / 6) { g = c; b = x; }
+  else if (hh < 4 / 6) { g = x; b = c; }
+  else if (hh < 5 / 6) { r = x; b = c; }
+  else { r = c; }
+  const to = (v) => Math.round((v + m) * 255).toString(16).padStart(2, '0');
+  return '#' + to(r) + to(g) + to(b);
+}
+function tint(hex, sMul, lAdd) {
+  const [h, s, l] = hexToHsl(hex);
+  return hslToHex(h, s * sMul, l + lAdd);
+}
+const ANCHORS = ['#c74134', '#f6e04b', '#2ea56d', '#3d9be0', '#b06fc9', '#ef8f2a'];
+function eraPal(sMul, lAdd, darkL) {
+  return {
+    p: ANCHORS.map((c) => tint(c, sMul, lAdd)),
+    d: ANCHORS.map((c) => tint(c, sMul * 0.92, lAdd + darkL)),
+  };
+}
+const PAL = [
+  eraPal(0.55, -3, -14), eraPal(0.72, 2, -16), eraPal(0.88, 1, -18), eraPal(1.0, 2, -18),
+  eraPal(0.92, 7, -14), eraPal(0.9, 8, -12), eraPal(1.18, 6, -10), eraPal(0.82, 10, -16),
+  eraPal(0.98, 8, -14), eraPal(1.04, 10, -14),
+];
+const CHAPTERS = [
+  { id: 0, name: { ru: 'Пустошь', en: 'The Barrens' }, tagline: { ru: 'Всё начинается с простых камней', en: 'It all starts with simple stones' },
+    palette: PAL[0].p, paletteDark: PAL[0].d, uiAccent: '#8a7a68',
+    tile: { rim: 'rgba(40,34,28,.55)', rimWidth: 0.05, flat: true, gradient: false, gloss: false, pixelShadow: false, softShadow: false, glow: false, glass: false, shine: false, wobble: false, pattern: 'none' },
+    bg: { sky: 'linear-gradient(180deg,#9b978e 0%,#b5b0a6 60%,#8d8779 100%)', ground: 'linear-gradient(180deg,#8d8271 0%,#6e6657 100%)', hillFar: '#a19a8c', hillNear: '#847c6c', dark: false, clouds: 0, sun: false, stars: false, trees: 0, bushes: 0, flowers: 0, butterflies: 0, petals: 0, fireflies: 0, sparkles: 0, rays: false } },
+  { id: 1, name: { ru: 'Первые ростки', en: 'First Sprouts' }, tagline: { ru: 'Пиксельная жизнь пробивается сквозь камень', en: 'Pixel life breaks through the stone' },
+    palette: PAL[1].p, paletteDark: PAL[1].d, uiAccent: '#7ac96a',
+    tile: { rim: 'rgba(30,26,20,.5)', rimWidth: 0.045, flat: true, gradient: false, gloss: false, pixelShadow: true, softShadow: false, glow: false, glass: false, shine: false, wobble: false, pattern: 'pixel' },
+    bg: { sky: 'linear-gradient(180deg,#8fb8c9 0%,#b5d6c9 60%,#8fb894 100%)', ground: 'linear-gradient(180deg,#7aa86a 0%,#568a4c 100%)', hillFar: '#9bc98e', hillNear: '#6fae62', dark: false, clouds: 1, sun: false, stars: false, trees: 1, bushes: 0, flowers: 1, butterflies: 0, petals: 0, fireflies: 0, sparkles: 0, rays: false } },
+  { id: 2, name: { ru: 'Зелёный берег', en: 'Green Shore' }, tagline: { ru: '16 цветов вместо четырёх', en: 'Sixteen colors instead of four' },
+    palette: PAL[2].p, paletteDark: PAL[2].d, uiAccent: '#3d9be0',
+    tile: { rim: 'rgba(28,32,40,.45)', rimWidth: 0.04, flat: false, gradient: true, gloss: false, pixelShadow: true, softShadow: false, glow: false, glass: false, shine: false, wobble: false, pattern: 'none' },
+    bg: { sky: 'linear-gradient(180deg,#7ec3e8 0%,#a8dff0 55%,#cfe8c9 100%)', ground: 'linear-gradient(180deg,#7ab86a 0%,#4c8a44 100%)', hillFar: '#93cc85', hillNear: '#63a855', dark: false, clouds: 2, sun: true, stars: false, trees: 2, bushes: 1, flowers: 3, butterflies: 0, petals: 0, fireflies: 0, sparkles: 0, rays: false } },
+  { id: 3, name: { ru: 'Роща', en: 'The Grove' }, tagline: { ru: 'Глянец и глубина', en: 'Gloss and depth' },
+    palette: PAL[3].p, paletteDark: PAL[3].d, uiAccent: '#ef8f2a',
+    tile: { rim: 'rgba(30,26,40,.4)', rimWidth: 0.035, flat: false, gradient: true, gloss: true, pixelShadow: false, softShadow: true, glow: false, glass: false, shine: false, wobble: false, pattern: 'none' },
+    bg: { sky: 'linear-gradient(180deg,#6fc0f0 0%,#9fd8f5 50%,#d4ecc0 100%)', ground: 'linear-gradient(180deg,#82c46e 0%,#4c9440 100%)', hillFar: '#9cd48a', hillNear: '#68b458', dark: false, clouds: 2, sun: true, stars: false, trees: 3, bushes: 2, flowers: 5, butterflies: 1, petals: 0, fireflies: 0, sparkles: 0, rays: false } },
+  { id: 4, name: { ru: 'Луг цветов', en: 'Flower Meadow' }, tagline: { ru: 'Флэт, чистота и свет', en: 'Flat, clean and light' },
+    palette: PAL[4].p, paletteDark: PAL[4].d, uiAccent: '#2ea56d',
+    tile: { rim: 'rgba(30,26,40,.35)', rimWidth: 0.03, flat: true, gradient: false, gloss: false, pixelShadow: false, softShadow: true, glow: false, glass: false, shine: false, wobble: true, pattern: 'none' },
+    bg: { sky: 'linear-gradient(180deg,#87d0f5 0%,#bce6fa 50%,#dff2cf 100%)', ground: 'linear-gradient(180deg,#8cc978 0%,#57a04a 100%)', hillFar: '#a5dc92', hillNear: '#74bc62', dark: false, clouds: 3, sun: true, stars: false, trees: 3, bushes: 3, flowers: 8, butterflies: 1, petals: 2, fireflies: 0, sparkles: 2, rays: false } },
+  { id: 5, name: { ru: 'Светлый лес', en: 'Bright Forest' }, tagline: { ru: 'Мягкие граденты оживают', en: 'Soft gradients come alive' },
+    palette: PAL[5].p, paletteDark: PAL[5].d, uiAccent: '#3d9be0',
+    tile: { rim: 'rgba(30,26,40,.35)', rimWidth: 0.03, flat: false, gradient: true, gloss: false, pixelShadow: false, softShadow: true, glow: false, glass: false, shine: false, wobble: true, pattern: 'none' },
+    bg: { sky: 'linear-gradient(180deg,#9adcf8 0%,#c8ecfa 45%,#e8f6d8 100%)', ground: 'linear-gradient(180deg,#95d482 0%,#5ea84e 100%)', hillFar: '#b0e09c', hillNear: '#80c86c', dark: false, clouds: 3, sun: true, stars: false, trees: 4, bushes: 4, flowers: 10, butterflies: 2, petals: 3, fireflies: 0, sparkles: 3, rays: false } },
+  { id: 6, name: { ru: 'Волшебный сад', en: 'Enchanted Garden' }, tagline: { ru: 'Неон зажигает сад', en: 'Neon lights up the garden' },
+    palette: PAL[6].p, paletteDark: PAL[6].d, uiAccent: '#22e0ff',
+    tile: { rim: 'rgba(235,240,255,.7)', rimWidth: 0.035, flat: false, gradient: true, gloss: false, pixelShadow: false, softShadow: false, glow: true, glass: false, shine: false, wobble: true, pattern: 'none' },
+    bg: { sky: 'linear-gradient(180deg,#1a1030 0%,#31195c 55%,#183248 100%)', ground: 'linear-gradient(180deg,#1e4a3a 0%,#12332a 100%)', hillFar: '#24405c', hillNear: '#1a2f46', dark: true, clouds: 0, sun: false, stars: true, trees: 3, bushes: 2, flowers: 6, butterflies: 0, petals: 0, fireflies: 5, sparkles: 5, rays: false } },
+  { id: 7, name: { ru: 'Сумеречные поляны', en: 'Twilight Glades' }, tagline: { ru: 'Сад становится стеклянным', en: 'The garden turns to glass' },
+    palette: PAL[7].p, paletteDark: PAL[7].d, uiAccent: '#3d9be0',
+    tile: { rim: 'rgba(240,244,255,.6)', rimWidth: 0.04, flat: false, gradient: true, gloss: true, pixelShadow: false, softShadow: true, glow: false, glass: true, shine: false, wobble: true, pattern: 'none' },
+    bg: { sky: 'linear-gradient(180deg,#3a2a6a 0%,#8a5aa8 45%,#e88a5a 100%)', ground: 'linear-gradient(180deg,#5a7a4a 0%,#3a5232 100%)', hillFar: '#7a5a98', hillNear: '#553f70', dark: true, clouds: 1, sun: false, stars: true, trees: 4, bushes: 3, flowers: 9, butterflies: 1, petals: 4, fireflies: 3, sparkles: 4, rays: false } },
+  { id: 8, name: { ru: 'Радужная долина', en: 'Rainbow Valley' }, tagline: { ru: 'Мир наполняется жизнью', en: 'The world fills with life' },
+    palette: PAL[8].p, paletteDark: PAL[8].d, uiAccent: '#ef8f2a',
+    tile: { rim: 'rgba(110,70,24,.4)', rimWidth: 0.03, flat: false, gradient: true, gloss: true, pixelShadow: false, softShadow: true, glow: false, glass: false, shine: true, wobble: true, pattern: 'rays' },
+    bg: { sky: 'linear-gradient(180deg,#8ad4ff 0%,#c0e8ff 40%,#ffe0b0 100%)', ground: 'linear-gradient(180deg,#9ade84 0%,#64b452 100%)', hillFar: '#b5e8a0', hillNear: '#88cc70', dark: false, clouds: 4, sun: true, stars: false, trees: 5, bushes: 5, flowers: 12, butterflies: 2, petals: 6, fireflies: 0, sparkles: 6, rays: true } },
+  { id: 9, name: { ru: 'Золотой сад', en: 'Golden Garden' }, tagline: { ru: 'Вершина расцвета', en: 'The peak of bloom' },
+    palette: PAL[9].p, paletteDark: PAL[9].d, uiAccent: '#f6e04b',
+    tile: { rim: 'rgba(110,70,24,.45)', rimWidth: 0.035, flat: false, gradient: true, gloss: true, pixelShadow: false, softShadow: true, glow: true, glass: false, shine: true, wobble: true, pattern: 'rays' },
+    bg: { sky: 'linear-gradient(180deg,#ffca7a 0%,#ffb0c8 45%,#ffe9c0 100%)', ground: 'linear-gradient(180deg,#a8e890 0%,#70c05c 100%)', hillFar: '#c8f0b0', hillNear: '#98d880', dark: false, clouds: 4, sun: true, stars: false, trees: 5, bushes: 5, flowers: 14, butterflies: 3, petals: 8, fireflies: 0, sparkles: 8, rays: true } },
+];
+function chapterTheme(chapter) {
+  return CHAPTERS[Math.max(0, Math.min(CHAPTERS.length - 1, chapter))];
+}
+
+/* ---------------- shop catalog ---------------- */
+const BOOSTERS = [
+  { id: 'hammer', icon: '🔨', price: 40, name: { ru: 'Молоток', en: 'Hammer' }, desc: { ru: 'Убрать один камень с поля', en: 'Remove a single gem' } },
+  { id: 'bomb', icon: '💣', price: 60, name: { ru: 'Бомба', en: 'Bomb' }, desc: { ru: 'Взрыв 3×3 в выбранной точке', en: 'Blast a 3×3 area' } },
+  { id: 'cross', icon: '⚡', price: 80, name: { ru: 'Молния', en: 'Lightning' }, desc: { ru: 'Очистить ряд и столбец крестом', en: 'Clear a row and column' } },
+  { id: 'shuffle', icon: '🔀', price: 50, name: { ru: 'Перемешать', en: 'Shuffle' }, desc: { ru: 'Перемешать все камни на поле', en: 'Reshuffle all gems' } },
+  { id: 'undo', icon: '↩️', price: 30, name: { ru: 'Отмена хода', en: 'Undo' }, desc: { ru: 'Отменить последний своп', en: 'Undo your last swap' } },
+  { id: 'moves5', icon: '➕5', price: 100, name: { ru: '+5 ходов', en: '+5 Moves' }, desc: { ru: 'Дополнительные 5 ходов в уровне', en: 'Five extra moves in a level' } },
+];
+const BOOSTER_MAP = Object.fromEntries(BOOSTERS.map((b) => [b.id, b]));
+const COIN_PACKS = [
+  { id: 'p1', coins: 500, priceLabel: '$0.99' },
+  { id: 'p2', coins: 1200, priceLabel: '$1.99', bonus: '+10%' },
+  { id: 'p3', coins: 3500, priceLabel: '$4.99', bonus: '+25%' },
+  { id: 'p4', coins: 8000, priceLabel: '$9.99', bonus: '+40%' },
+  { id: 'p5', coins: 20000, priceLabel: '$19.99', bonus: '+60%' },
+];
+const GEM_SKINS = [
+  { id: 'classic', name: { ru: 'Классика', en: 'Classic' }, price: 0 },
+  { id: 'stones', name: { ru: 'Камни', en: 'Stones' }, price: 0, ring: true },
+  { id: 'fruits', name: { ru: 'Фрукты', en: 'Fruits' }, price: 300, glyphs: ['🍓', '🍋', '🍏', '🫐', '🍇', '🍊'] },
+  { id: 'sweets', name: { ru: 'Сладости', en: 'Sweets' }, price: 400, glyphs: ['🍬', '🍭', '🍩', '🧊', '🧁', '🍫'] },
+  { id: 'flowers', name: { ru: 'Цветы', en: 'Flowers' }, price: 500, glyphs: ['🌹', '🌻', '🍀', '🪻', '🌸', '🌷'] },
+  { id: 'planets', name: { ru: 'Планеты', en: 'Planets' }, price: 600, glyphs: ['🔴', '🪐', '🌍', '🌑', '💫', '⭐'] },
+  { id: 'runes', name: { ru: 'Руны', en: 'Runes' }, price: 700, glyphs: ['🔥', '⚡', '🌿', '🌊', '🔮', '☀️'] },
+  { id: 'ocean', name: { ru: 'Океан', en: 'Ocean' }, price: 800, glyphs: ['🐠', '🐟', '🐙', '🦐', '🐡', '🦑'] },
+  { id: 'animals', name: { ru: 'Зверята', en: 'Critters' }, price: 900, glyphs: ['🐭', '🐤', '🐸', '🦋', '🐹', '🦊'] },
+  { id: 'cosmos', name: { ru: 'Космос', en: 'Cosmos' }, price: 1200, glyphs: ['🚀', '🛸', '☄️', '🌌', '🔭', '👾'] },
+];
+const AVATARS = [
+  { id: 'av-seed', emoji: '🌱', bg: 'linear-gradient(135deg,#b8e0a0,#7ac96a)', price: 0 },
+  { id: 'av-flower', emoji: '🌼', bg: 'linear-gradient(135deg,#ffe9a0,#ffd166)', price: 0 },
+  { id: 'av-cat', emoji: '🐱', bg: 'linear-gradient(135deg,#ffd8b0,#ffb35e)', price: 50 },
+  { id: 'av-fox', emoji: '🦊', bg: 'linear-gradient(135deg,#ffc8a0,#ff8a2a)', price: 50 },
+  { id: 'av-panda', emoji: '🐼', bg: 'linear-gradient(135deg,#e8e8e8,#a8a8b8)', price: 50 },
+  { id: 'av-frog', emoji: '🐸', bg: 'linear-gradient(135deg,#c0f0a8,#4fd05c)', price: 80 },
+  { id: 'av-owl', emoji: '🦉', bg: 'linear-gradient(135deg,#d8c8a8,#9a7a5a)', price: 80 },
+  { id: 'av-bee', emoji: '🐝', bg: 'linear-gradient(135deg,#ffe66a,#ffb300)', price: 80 },
+  { id: 'av-butterfly', emoji: '🦋', bg: 'linear-gradient(135deg,#c8e0ff,#5ac8ff)', price: 120 },
+  { id: 'av-ladybug', emoji: '🐞', bg: 'linear-gradient(135deg,#ffc0c0,#ff5a5a)', price: 120 },
+  { id: 'av-unicorn', emoji: '🦄', bg: 'linear-gradient(135deg,#ffd0f0,#c084ff)', price: 200 },
+  { id: 'av-dragon', emoji: '🐲', bg: 'linear-gradient(135deg,#c0f0d0,#2fd0c6)', price: 200 },
+  { id: 'av-mushroom', emoji: '🍄', bg: 'linear-gradient(135deg,#ffc8c8,#e04470)', price: 150 },
+  { id: 'av-sun', emoji: '☀️', bg: 'linear-gradient(135deg,#fff0b0,#ffb300)', price: 150 },
+  { id: 'av-moon', emoji: '🌙', bg: 'linear-gradient(135deg,#d0d8ff,#8a9ad6)', price: 150 },
+  { id: 'av-star', emoji: '⭐', bg: 'linear-gradient(135deg,#fff8c0,#ffd21f)', price: 150 },
+  { id: 'av-gem', emoji: '💎', bg: 'linear-gradient(135deg,#c8f0ff,#5ac8ff)', price: 250 },
+  { id: 'av-fire', emoji: '🔥', bg: 'linear-gradient(135deg,#ffd0a0,#ff5a1f)', price: 250 },
+  { id: 'av-rocket', emoji: '🚀', bg: 'linear-gradient(135deg,#d0e0ff,#7e2fc2)', price: 300 },
+  { id: 'av-robot', emoji: '🤖', bg: 'linear-gradient(135deg,#d8e8e8,#6aa8a4)', price: 300 },
+  { id: 'av-queen', emoji: '👑', bg: 'linear-gradient(135deg,#fff0a0,#e0a81f)', price: 400 },
+  { id: 'av-mage', emoji: '🧙', bg: 'linear-gradient(135deg,#d8c0ff,#7426a8)', price: 400 },
+  { id: 'av-phoenix', emoji: '🦅', bg: 'linear-gradient(135deg,#ffd8a0,#ff7a1f)', price: 500 },
+  { id: 'av-rainbow', emoji: '🌈', bg: 'linear-gradient(135deg,#ff9ab8,#ffd83d,#6bff8f,#6be5ff,#d18bff)', price: 600 },
+];
+const FRAMES = [
+  { id: 'fr-none', name: { ru: 'Без рамки', en: 'None' }, price: 0, css: 'none' },
+  { id: 'fr-wood', name: { ru: 'Дерево', en: 'Wood' }, price: 60, css: '0 0 0 3px #8a5f40, 0 2px 6px rgba(0,0,0,.3)' },
+  { id: 'fr-leaf', name: { ru: 'Листья', en: 'Leaves' }, price: 100, css: '0 0 0 3px #4fd05c, 0 0 8px rgba(79,208,92,.5)' },
+  { id: 'fr-sun', name: { ru: 'Солнце', en: 'Sun' }, price: 120, css: '0 0 0 3px #ffb300, 0 0 12px rgba(255,179,0,.6)' },
+  { id: 'fr-ice', name: { ru: 'Лёд', en: 'Ice' }, price: 150, css: '0 0 0 3px #6be5ff, 0 0 10px rgba(107,229,255,.6)' },
+  { id: 'fr-rose', name: { ru: 'Роза', en: 'Rose' }, price: 180, css: '0 0 0 3px #ff7799, 0 0 10px rgba(255,119,153,.6)' },
+  { id: 'fr-gold', name: { ru: 'Золото', en: 'Gold' }, price: 300, css: '0 0 0 4px #ffd83d, 0 0 14px rgba(255,216,61,.7)' },
+  { id: 'fr-emerald', name: { ru: 'Изумруд', en: 'Emerald' }, price: 300, css: '0 0 0 4px #6bff8f, 0 0 14px rgba(107,255,143,.7)' },
+  { id: 'fr-amethyst', name: { ru: 'Аметист', en: 'Amethyst' }, price: 350, css: '0 0 0 4px #d18bff, 0 0 14px rgba(209,139,255,.7)' },
+  { id: 'fr-royal', name: { ru: 'Королевский', en: 'Royal' }, price: 500, css: '0 0 0 4px #fff, 0 0 0 7px #ffd83d, 0 0 18px rgba(255,216,61,.8)' },
+  { id: 'fr-neon', name: { ru: 'Неон', en: 'Neon' }, price: 500, css: '0 0 0 3px #22e0ff, 0 0 18px #22e0ff, 0 0 30px rgba(34,224,255,.5)' },
+  { id: 'fr-rainbow', name: { ru: 'Радуга', en: 'Rainbow' }, price: 800, css: '0 0 0 4px transparent, 0 0 16px #ff9ab8, 0 0 24px #ffd83d, 0 0 32px #6bff8f' },
+];
+const NAME_STYLES = [
+  { id: 'ns-basic', name: { ru: 'Обычный', en: 'Basic' }, price: 0, css: 'color:#ffffff;font-weight:700' },
+  { id: 'ns-fire', name: { ru: 'Огонь', en: 'Fire' }, price: 100, css: 'color:#ff7a1f;font-weight:900;text-shadow:0 0 8px rgba(255,122,31,.8)' },
+  { id: 'ns-ice', name: { ru: 'Лёд', en: 'Ice' }, price: 100, css: 'color:#9be8ff;font-weight:700;text-shadow:0 1px 0 #2a9ad6,0 0 8px rgba(107,229,255,.6)' },
+  { id: 'ns-gold', name: { ru: 'Золото', en: 'Gold' }, price: 200, css: 'color:#ffd83d;font-weight:900;text-shadow:0 1px 0 #a68a00,0 0 10px rgba(255,216,61,.7)' },
+  { id: 'ns-emerald', name: { ru: 'Изумруд', en: 'Emerald' }, price: 150, css: 'color:#8fffa8;font-weight:800;text-shadow:0 0 8px rgba(107,255,143,.6)' },
+  { id: 'ns-rose', name: { ru: 'Роза', en: 'Rose' }, price: 150, css: 'color:#ffb8c8;font-weight:800;text-shadow:0 0 8px rgba(255,119,153,.7)' },
+  { id: 'ns-royal', name: { ru: 'Роял', en: 'Royal' }, price: 300, css: 'color:#fff;font-weight:900;letter-spacing:.06em;text-shadow:0 0 4px #ffd83d,0 0 12px #e0a81f' },
+  { id: 'ns-neon', name: { ru: 'Неон', en: 'Neon' }, price: 350, css: 'color:#22e0ff;font-weight:900;text-shadow:0 0 6px #22e0ff,0 0 14px rgba(34,224,255,.8)' },
+  { id: 'ns-shadow', name: { ru: 'Тень', en: 'Shadow' }, price: 200, css: 'color:#3a3a4a;font-weight:900;text-shadow:0 2px 0 rgba(255,255,255,.25)' },
+  { id: 'ns-magic', name: { ru: 'Магия', en: 'Magic' }, price: 400, css: 'color:#e8ccff;font-weight:900;font-style:italic;text-shadow:0 0 8px #c44dff,0 0 16px rgba(196,77,255,.6)' },
+];
+const EFFECTS = [
+  { id: 'fx-sparkle', kind: 'tile', visual: '✦', price: 150, name: { ru: 'Искры', en: 'Sparks' } },
+  { id: 'fx-petals', kind: 'tile', visual: '🌸', price: 200, name: { ru: 'Лепестки', en: 'Petals' } },
+  { id: 'fx-stars', kind: 'tile', visual: '⭐', price: 250, name: { ru: 'Звёзды', en: 'Stars' } },
+  { id: 'fx-leaves', kind: 'tile', visual: '🍃', price: 250, name: { ru: 'Листья', en: 'Leaves' } },
+  { id: 'fx-hearts', kind: 'tile', visual: '💚', price: 300, name: { ru: 'Сердечки', en: 'Hearts' } },
+  { id: 'fx-rainbow', kind: 'tile', visual: '🌈', price: 500, name: { ru: 'Радуга', en: 'Rainbow' } },
+  { id: 'ae-glow', kind: 'avatar', visual: 'glow', price: 100, name: { ru: 'Свечение', en: 'Glow' } },
+  { id: 'ae-pulse', kind: 'avatar', visual: 'pulse', price: 150, name: { ru: 'Пульс', en: 'Pulse' } },
+  { id: 'ae-spin', kind: 'avatar', visual: 'spin', price: 250, name: { ru: 'Вращение', en: 'Spin' } },
+  { id: 'ae-aurora', kind: 'avatar', visual: 'aurora', price: 350, name: { ru: 'Аврора', en: 'Aurora' } },
+  { id: 'ae-flame', kind: 'avatar', visual: 'flame', price: 350, name: { ru: 'Пламя', en: 'Flame' } },
+  { id: 'ae-galaxy', kind: 'avatar', visual: 'galaxy', price: 500, name: { ru: 'Галактика', en: 'Galaxy' } },
+  { id: 'ne-glow', kind: 'name', visual: 'glow', price: 100, name: { ru: 'Сияние', en: 'Radiance' } },
+  { id: 'ne-rainbow', kind: 'name', visual: 'rainbow', price: 250, name: { ru: 'Радуга', en: 'Rainbow' } },
+  { id: 'ne-blink', kind: 'name', visual: 'blink', price: 150, name: { ru: 'Мерцание', en: 'Blink' } },
+  { id: 'ne-wave', kind: 'name', visual: 'wave', price: 300, name: { ru: 'Волна', en: 'Wave' } },
+  { id: 'ne-fire', kind: 'name', visual: 'fire', price: 300, name: { ru: 'Пламя', en: 'Flame' } },
+  { id: 'ne-starlight', kind: 'name', visual: 'starlight', price: 450, name: { ru: 'Звёздный свет', en: 'Starlight' } },
+];
+const TILE_EFFECTS = EFFECTS.filter((e) => e.kind === 'tile');
+
+/* ---------------- level generator (100 levels / 10 chapters) ---------------- */
+const TOTAL_LEVELS = 100;
+const CHAPTER_SIZE = 10;
+const TOTAL_CHAPTERS = TOTAL_LEVELS / CHAPTER_SIZE;
+function chapterOfLevel(level) {
+  return Math.min(TOTAL_CHAPTERS - 1, Math.floor((level - 1) / CHAPTER_SIZE));
+}
+function generateStones(rng, w, h, count, maxHp, avoidBottomRows) {
+  const stones = [];
+  const used = new Set();
+  let guard = 0;
+  while (stones.length < count && guard++ < 200) {
+    const r = Math.floor(rng() * (h - avoidBottomRows));
+    const c = Math.floor(rng() * w);
+    const i = r * w + c;
+    if (used.has(i)) continue;
+    used.add(i);
+    const hp = maxHp <= 1 ? 1 : 1 + Math.floor(rng() * maxHp);
+    stones.push({ idx: i, hp: Math.min(hp, maxHp) });
+  }
+  return stones;
+}
+function getLevelConfig(level) {
+  const lv = Math.max(1, Math.min(TOTAL_LEVELS, level));
+  const chapter = chapterOfLevel(lv);
+  const rng = mulberry32(lv * 9176 + 11);
+  const isBoss = lv % CHAPTER_SIZE === 0;
+  const w = lv <= 3 ? 7 : 8;
+  const h = lv <= 3 ? 7 : 8;
+  const colors = lv <= 5 ? 4 : lv <= 20 ? 5 : 6;
+  const moves = isBoss
+    ? 26 + (rng() < 0.5 ? 0 : 1)
+    : Math.max(22, 30 - Math.round(chapter * 0.8) - (rng() < 0.3 ? 1 : 0));
+  let stones = [];
+  if (!isBoss && chapter >= 2) {
+    const base = Math.min(18, 4 + (chapter - 2) * 3);
+    const extra = lv % 7 === 0 ? 6 : 0;
+    const maxHp = lv >= 45 ? 2 : 1;
+    stones = generateStones(rng, w, h, base + extra, maxHp, 2);
+  } else if (isBoss && chapter >= 4) {
+    stones = generateStones(rng, w, h, Math.min(10, chapter - 2), 1, 2);
+  }
+  const isItemLevel = !isBoss && chapter >= 3 && lv % 8 === 5;
+  const items = isItemLevel ? 2 + Math.floor(chapter / 2) : 0;
+  if (isItemLevel) stones = stones.filter((s) => Math.floor(s.idx / w) < h - 1);
+  const voids = [];
+  if (!isBoss && chapter >= 4) {
+    const voidCount = Math.min(8, 2 + (chapter - 4));
+    let guard = 0;
+    while (voids.length < voidCount && guard++ < 100) {
+      const r = Math.floor(rng() * h);
+      const c = Math.floor(rng() * w);
+      if (r === h - 1) continue;
+      const i = r * w + c;
+      if (stones.some((s) => s.idx === i)) continue;
+      if (!voids.includes(i)) voids.push(i);
+    }
+  }
+  const goals = [];
+  const targetScore = Math.round(moves * (isBoss ? 30 + chapter * 2 : 42 + chapter * 3));
+  const target2 = Math.round(targetScore * 1.6);
+  const target3 = Math.round(targetScore * 2.4);
+  const colorCount = Math.max(8, Math.round(moves * (0.5 + chapter * 0.03)));
+  if (isBoss) {
+    goals.push({ type: 'score', count: targetScore });
+  } else if (lv <= 5) {
+    goals.push({ type: 'collect', color: Math.floor(rng() * colors), count: Math.max(6, Math.round(colorCount * 0.6)) });
+  } else if (lv % 7 === 0 && chapter >= 2) {
+    goals.push({ type: 'stone', count: stones.length });
+    goals.push({ type: 'score', count: Math.round(targetScore * 0.7) });
+  } else if (isItemLevel) {
+    goals.push({ type: 'item', count: items });
+  } else if (lv % 9 === 4) {
+    goals.push({ type: 'score', count: targetScore });
+  } else if (chapter >= 2 && lv % 3 === 0) {
+    const c1 = Math.floor(rng() * colors);
+    let c2 = Math.floor(rng() * colors);
+    if (c2 === c1) c2 = (c1 + 3) % colors;
+    goals.push({ type: 'collect', color: c1, count: colorCount });
+    goals.push({ type: 'collect', color: c2, count: Math.round(colorCount * 0.75) });
+  } else {
+    goals.push({ type: 'collect', color: Math.floor(rng() * colors), count: colorCount });
+    goals.push({ type: 'score', count: Math.round(targetScore * 0.75) });
+  }
+  return { level: lv, chapter, w, h, colors, moves, mode: isBoss ? 'tap' : 'swap', goals, stones, voids, items, targetScore, star2: target2, star3: target3 };
+}
+
+/* ---------------- leaderboard bots (deterministic) ---------------- */
+const NAME_A = ['Ирина', 'Алекс', 'Мария', 'Дмитрий', 'Софья', 'Максим', 'Алиса', 'Егор', 'Полина', 'Артём', 'Вика', 'Никита', 'Лиза', 'Кирилл', 'Настя', 'Роман', 'Даша', 'Влад', 'Катя', 'Олег', 'Юля', 'Саша', 'Глеб', 'Мила', 'Luna', 'Neo', 'Kate', 'Max', 'Emma', 'Leo', 'Mia', 'Dan'];
+const NAME_B = ['_pro', '_2026', 'XD', '_top', ' GG', '★', '_zai', '777', '_pro2', ' Jr', 'Queen', 'King', '™', '_ru', '_ua', '_kz', '🌸', '⚡', '🔥', '🍀'];
+function botName(rng) {
+  const a = NAME_A[Math.floor(rng() * NAME_A.length)];
+  const b = rng() < 0.55 ? NAME_B[Math.floor(rng() * NAME_B.length)] : '';
+  const c = rng() < 0.3 ? String(Math.floor(rng() * 900) + 100) : '';
+  return a + b + c;
+}
+function botLevel(rng) {
+  const u = rng();
+  if (u < 0.30) return 1 + Math.floor(rng() * 30);
+  if (u < 0.55) return 30 + Math.floor(rng() * 120);
+  if (u < 0.75) return 150 + Math.floor(rng() * 400);
+  if (u < 0.88) return 550 + Math.floor(rng() * 900);
+  if (u < 0.96) return 1450 + Math.floor(rng() * 2000);
+  return 3450 + Math.floor(Math.pow(rng(), 2.2) * (TOTAL_LEVELS * 99));
+}
+function generateBots(count) {
+  const n = count || 520;
+  const rng = mulberry32(20261107);
+  const bots = [];
+  for (let i = 0; i < n; i++) {
+    const level = botLevel(rng);
+    const stars = Math.round(level * (1.6 + rng() * 1.3));
+    const avatar = AVATARS[Math.floor(rng() * AVATARS.length)];
+    const frame = FRAMES[Math.floor(rng() * FRAMES.length)];
+    const style = NAME_STYLES[Math.floor(rng() * NAME_STYLES.length)];
+    const nameFx = rng() < 0.3 ? ['ne-glow', 'ne-rainbow', 'ne-blink', 'ne-wave', 'ne-fire', 'ne-starlight'][Math.floor(rng() * 6)] : null;
+    bots.push({ id: 'bot-' + i, name: botName(rng), level, stars, avatarId: avatar.id, frameId: frame.id, nameStyleId: style.id, nameEffectId: nameFx, isPlayer: false });
+  }
+  return bots.sort((x, y) => y.level - x.level || y.stars - x.stars);
+}
+
+/* ============ engine.js ============ */
+/* ============================================================
+ * Bloom Match — match-3 engine (JS port of engine.ts, 1:1)
+ * Swap-matches, cascades, specials (rocket H/V, bomb, rainbow),
+ * combo swaps, stone blockers, drop items, tap-mode and boosters.
+ * ============================================================ */
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+let nextId = 1;
+function resetIdCounter() { nextId = 1; }
+function newId() { return nextId++; }
+
+const EMPTY_MOVE = {
+  valid: false, frames: [], score: 0, colorsCollected: [],
+  itemsCollected: 0, stonesDestroyed: 0, maxCascade: 0, shuffled: false,
+};
+
+function cloneBoard(b) {
+  return {
+    w: b.w, h: b.h,
+    cells: b.cells.map((c) =>
+      c ? { tile: c.tile ? Object.assign({}, c.tile) : null, blocker: c.blocker ? Object.assign({}, c.blocker) : null } : null),
+  };
+}
+function idxOf(b, r, c) { return r * b.w + c; }
+function cellAt(b, r, c) {
+  if (r < 0 || r >= b.h || c < 0 || c >= b.w) return null;
+  return b.cells[r * b.w + c];
+}
+function isOpen(b, r, c) { return cellAt(b, r, c) !== null; }
+function gemColor(b, r, c) {
+  const cell = cellAt(b, r, c);
+  if (!cell || !cell.tile) return -1;
+  const t = cell.tile;
+  if (t.kind !== 'gem' || t.color < 0) return -1;
+  return t.color;
+}
+function tileAt(b, r, c) { const cell = cellAt(b, r, c); return cell ? cell.tile : null; }
+function isMovable(t) { return !!t && t.kind === 'gem'; }
+
+function findRuns(b) {
+  const runs = [];
+  for (let r = 0; r < b.h; r++) {
+    let c = 0;
+    while (c < b.w) {
+      const col = gemColor(b, r, c);
+      if (col < 0) { c++; continue; }
+      let e = c + 1;
+      while (e < b.w && gemColor(b, r, e) === col) e++;
+      if (e - c >= 3) {
+        const cells = [];
+        for (let k = c; k < e; k++) cells.push(idxOf(b, r, k));
+        runs.push({ cells, dir: 'h' });
+      }
+      c = e;
+    }
+  }
+  for (let c = 0; c < b.w; c++) {
+    let r = 0;
+    while (r < b.h) {
+      const col = gemColor(b, r, c);
+      if (col < 0) { r++; continue; }
+      let e = r + 1;
+      while (e < b.h && gemColor(b, e, c) === col) e++;
+      if (e - r >= 3) {
+        const cells = [];
+        for (let k = r; k < e; k++) cells.push(idxOf(b, k, c));
+        runs.push({ cells, dir: 'v' });
+      }
+      r = e;
+    }
+  }
+  return runs;
+}
+
+function groupify(runs) {
+  const parent = new Map();
+  const find = (x) => {
+    let p = parent.get(x);
+    if (p === undefined) { parent.set(x, x); p = x; }
+    while (p !== parent.get(p)) p = parent.get(p);
+    return p;
+  };
+  const union = (a, b) => {
+    const ra = find(a), rb = find(b);
+    if (ra !== rb) parent.set(ra, rb);
+  };
+  for (const run of runs) {
+    for (const cell of run.cells) find(cell);
+    for (let i = 1; i < run.cells.length; i++) union(run.cells[i - 1], run.cells[i]);
+  }
+  for (let i = 0; i < runs.length; i++) {
+    for (let j = i + 1; j < runs.length; j++) {
+      for (const a of runs[i].cells) {
+        if (runs[j].cells.includes(a)) { union(runs[i].cells[0], runs[j].cells[0]); break; }
+      }
+    }
+  }
+  const groups = new Map();
+  for (const run of runs) {
+    for (const cell of run.cells) {
+      const root = find(cell);
+      let g = groups.get(root);
+      if (!g) { g = { cells: [], maxH: 0, maxV: 0, hasH: false, hasV: false }; groups.set(root, g); }
+      if (!g.cells.includes(cell)) g.cells.push(cell);
+      const len = run.cells.length;
+      if (run.dir === 'h') { g.hasH = true; g.maxH = Math.max(g.maxH, len); }
+      else { g.hasV = true; g.maxV = Math.max(g.maxV, len); }
+    }
+  }
+  return [...groups.values()];
+}
+
+function specialForGroup(g) {
+  if (g.maxH >= 5 || g.maxV >= 5) return 'rainbow';
+  if (g.hasH && g.hasV) return 'bomb';
+  if (g.maxH === 4) return 'rocketH';
+  if (g.maxV === 4) return 'rocketV';
+  return 'none';
+}
+
+function makeTile(color, special, kind) {
+  return { id: newId(), color, special: special || 'none', kind: kind || 'gem' };
+}
+
+function createBoard(cfg, rng) {
+  resetIdCounter();
+  const total = cfg.w * cfg.h;
+  const cells = [];
+  for (let i = 0; i < total; i++) cells.push(cfg.voids.includes(i) ? null : { tile: null, blocker: null });
+  for (const s of cfg.stones) {
+    if (cells[s.idx]) cells[s.idx] = { tile: null, blocker: { type: 'stone', hp: s.hp } };
+  }
+  const board = { w: cfg.w, h: cfg.h, cells };
+  for (let r = 0; r < cfg.h; r++) {
+    for (let c = 0; c < cfg.w; c++) {
+      const cell = cellAt(board, r, c);
+      if (!cell || cell.blocker) continue;
+      const forbidden = new Set();
+      const l1 = gemColor(board, r, c - 1), l2 = gemColor(board, r, c - 2);
+      if (l1 >= 0 && l1 === l2) forbidden.add(l1);
+      const u1 = gemColor(board, r - 1, c), u2 = gemColor(board, r - 2, c);
+      if (u1 >= 0 && u1 === u2) forbidden.add(u1);
+      let col = Math.floor(rng() * cfg.colors);
+      let guard = 0;
+      while (forbidden.has(col) && guard++ < 20) col = Math.floor(rng() * cfg.colors);
+      cell.tile = makeTile(col);
+    }
+  }
+  let tries = 0;
+  while (!hasAnyMove(board, cfg.mode) && tries++ < 25) shuffleGems(board, rng);
+  return board;
+}
+
+function compactColumns(b) {
+  for (let c = 0; c < b.w; c++) {
+    let segRows = [];
+    const flush = () => {
+      if (segRows.length === 0) return;
+      let write = segRows[0];
+      for (const r of segRows) {
+        const cell = cellAt(b, r, c);
+        if (cell.tile && write !== r) {
+          const dest = cellAt(b, write, c);
+          dest.tile = cell.tile;
+          cell.tile = null;
+        }
+        write--;
+      }
+      segRows = [];
+    };
+    for (let r = b.h - 1; r >= 0; r--) {
+      const cell = cellAt(b, r, c);
+      if (!cell || cell.blocker) { flush(); continue; }
+      segRows.push(r);
+    }
+    flush();
+  }
+}
+
+function diagonalSlides(b, maxPass) {
+  for (let pass = 0; pass < (maxPass || 12); pass++) {
+    let moved = false;
+    for (let r = 1; r < b.h; r++) {
+      for (let c = 0; c < b.w; c++) {
+        const cell = cellAt(b, r, c);
+        if (!cell || cell.blocker || cell.tile) continue;
+        const belowOpen = (cc) => {
+          const bc = cellAt(b, r, cc);
+          return !!bc && !bc.blocker;
+        };
+        for (const dc of [-1, 1]) {
+          const sc = c + dc;
+          if (sc < 0 || sc >= b.w) continue;
+          const src = cellAt(b, r - 1, sc);
+          if (!src || !src.tile || !isMovable(src.tile)) continue;
+          if (belowOpen(sc)) continue;
+          cell.tile = src.tile;
+          src.tile = null;
+          moved = true;
+          break;
+        }
+      }
+    }
+    if (!moved) break;
+  }
+}
+
+function applyGravity(b, cfg, rng, itemsLeft) {
+  const spawnIds = [];
+  const collectedIds = [];
+  // 1) straight compaction inside segments
+  compactColumns(b);
+  // 2) diagonal slides
+  diagonalSlides(b, 12);
+  // 3) refill top empty stretches
+  for (let c = 0; c < b.w; c++) {
+    let filling = false;
+    for (let r = 0; r < b.h; r++) {
+      const cell = cellAt(b, r, c);
+      if (!cell) continue;
+      if (cell.blocker) { filling = false; continue; }
+      if (!cell.tile) filling = true;
+      if (filling && !cell.tile) {
+        let tile;
+        if (itemsLeft.n > 0 && rng() < 0.45) {
+          tile = makeTile(-3, 'none', 'item');
+          itemsLeft.n--;
+        } else {
+          tile = makeTile(Math.floor(rng() * cfg.colors));
+        }
+        cell.tile = tile;
+        spawnIds.push(tile.id);
+      }
+    }
+  }
+  // 4) collect drop items reaching the bottom row
+  let guard = 0;
+  let collectedAny = true;
+  while (collectedAny && guard++ < 8) {
+    collectedAny = false;
+    for (let c = 0; c < b.w; c++) {
+      const cell = cellAt(b, b.h - 1, c);
+      if (cell && cell.tile && cell.tile.kind === 'item') {
+        collectedIds.push(cell.tile.id);
+        cell.tile = null;
+        collectedAny = true;
+      }
+    }
+    if (collectedAny) {
+      compactColumns(b);
+      diagonalSlides(b, 6);
+    }
+  }
+  return { spawnIds, collectedIds };
+}
+
+function mostCommonColor(b) {
+  const counts = new Map();
+  for (const cell of b.cells) {
+    if (cell && cell.tile && cell.tile.kind === 'gem' && cell.tile.color >= 0) {
+      counts.set(cell.tile.color, (counts.get(cell.tile.color) || 0) + 1);
+    }
+  }
+  let best = 0, bestN = -1;
+  for (const [col, n] of counts) {
+    if (n > bestN) { bestN = n; best = col; }
+  }
+  return best;
+}
+
+function blastCellsFor(b, i) {
+  const tile = b.cells[i] ? b.cells[i].tile : null;
+  if (!tile) return [];
+  const r = Math.floor(i / b.w);
+  const c = i % b.w;
+  const out = [];
+  const push = (rr, cc) => {
+    const cell = cellAt(b, rr, cc);
+    if (cell) out.push(idxOf(b, rr, cc));
+  };
+  switch (tile.special) {
+    case 'rocketH':
+      for (let cc = 0; cc < b.w; cc++) push(r, cc);
+      break;
+    case 'rocketV':
+      for (let rr = 0; rr < b.h; rr++) push(rr, c);
+      break;
+    case 'bomb':
+      for (let rr = r - 1; rr <= r + 1; rr++)
+        for (let cc = c - 1; cc <= c + 1; cc++) push(rr, cc);
+      break;
+    case 'rainbow': {
+      const col = mostCommonColor(b);
+      for (let rr = 0; rr < b.h; rr++)
+        for (let cc = 0; cc < b.w; cc++)
+          if (gemColor(b, rr, cc) === col) push(rr, cc);
+      break;
+    }
+    default: break;
+  }
+  return out;
+}
+
+function runDetonations(b, st, queue, processed) {
+  while (queue.length > 0) {
+    const i = queue.pop();
+    if (processed.has(i)) continue;
+    processed.add(i);
+    const tile = b.cells[i] ? b.cells[i].tile : null;
+    if (!tile || tile.special === 'none') continue;
+    st.detonations++;
+    for (const j of blastCellsFor(b, i)) {
+      const cell = b.cells[j];
+      if (!cell) continue;
+      if (cell.blocker) { st.stonesHit.add(j); continue; }
+      if (!cell.tile) continue;
+      if (cell.tile.kind === 'item') {
+        if (!st.collectedIds.includes(cell.tile.id)) st.collectedIds.push(cell.tile.id);
+        st.clearSet.add(j);
+        continue;
+      }
+      st.clearSet.add(j);
+      if (cell.tile.special !== 'none') queue.push(j);
+    }
+  }
+}
+
+function emptyAcc(itemsTotal) {
+  return {
+    valid: true, frames: [], score: 0, colorsCollected: [0, 0, 0, 0, 0, 0],
+    itemsCollected: 0, stonesDestroyed: 0, maxCascade: 0, shuffled: false,
+    itemsLeft: { n: itemsTotal },
+  };
+}
+
+function hitAdjacentStones(b, st, clearSet) {
+  for (const i of clearSet) {
+    const r = Math.floor(i / b.w);
+    const c = i % b.w;
+    for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+      const n = cellAt(b, r + dr, c + dc);
+      if (n && n.blocker) st.stonesHit.add(idxOf(b, r + dr, c + dc));
+    }
+  }
+}
+
+function resolveCascade(startBoard, cfg, rng, acc, preferCell) {
+  let b = startBoard;
+  let cascade = 1;
+  for (;;) {
+    const runs = findRuns(b);
+    if (runs.length === 0) break;
+    const groups = groupify(runs);
+    const st = { clearSet: new Set(), stonesHit: new Set(), collectedIds: [], detonations: 0 };
+    const queue = [];
+    const born = [];
+    for (const g of groups) {
+      const kind = specialForGroup(g);
+      let spawnCell = null;
+      if (kind !== 'none') {
+        if (preferCell !== null && preferCell !== undefined && g.cells.includes(preferCell)) spawnCell = preferCell;
+        else spawnCell = g.cells[Math.floor(g.cells.length / 2)];
+      }
+      for (const cellIdx of g.cells) {
+        const tile = b.cells[cellIdx].tile;
+        if (spawnCell !== null && cellIdx === spawnCell) { born.push({ idx: cellIdx, kind }); continue; }
+        st.clearSet.add(cellIdx);
+        if (tile.special !== 'none') queue.push(cellIdx);
+      }
+    }
+    runDetonations(b, st, queue, new Set());
+    hitAdjacentStones(b, st, st.clearSet);
+    const clearedGems = [...st.clearSet].filter((i) => {
+      const t = b.cells[i] ? b.cells[i].tile : null;
+      return !!t && t.kind === 'gem';
+    }).length;
+    const points = clearedGems * 10 * cascade + st.detonations * 40 + born.length * 60;
+    const display = cloneBoard(b);
+    for (const bornSpec of born) {
+      const t = display.cells[bornSpec.idx].tile;
+      t.special = bornSpec.kind;
+    }
+    acc.frames.push({
+      board: display,
+      clearingIds: [...st.clearSet].map((i) => b.cells[i].tile.id),
+      bornIds: born.map((x) => x.idx),
+      spawnIds: [],
+      collectedIds: st.collectedIds,
+      stonesHit: [...st.stonesHit],
+      points, cascade,
+    });
+    for (const bornSpec of born) {
+      const cell = b.cells[bornSpec.idx];
+      cell.tile.special = bornSpec.kind;
+    }
+    for (const i of st.clearSet) {
+      const cell = b.cells[i];
+      if (cell.tile && cell.tile.kind === 'item') acc.itemsCollected++;
+      else if (cell.tile && cell.tile.kind === 'gem' && cell.tile.color >= 0) acc.colorsCollected[cell.tile.color]++;
+      cell.tile = null;
+    }
+    for (const si of st.stonesHit) {
+      const cell = b.cells[si];
+      if (cell.blocker) {
+        cell.blocker.hp--;
+        if (cell.blocker.hp <= 0) { cell.blocker = null; acc.stonesDestroyed++; }
+      }
+    }
+    acc.score += points;
+    acc.maxCascade = Math.max(acc.maxCascade, cascade);
+    const grav = applyGravity(b, cfg, rng, acc.itemsLeft);
+    const itemPoints = grav.collectedIds.length * 100;
+    acc.score += itemPoints;
+    acc.itemsCollected += grav.collectedIds.length;
+    acc.frames.push({
+      board: cloneBoard(b), clearingIds: [], bornIds: [], spawnIds: grav.spawnIds,
+      collectedIds: grav.collectedIds, stonesHit: [], points: itemPoints, cascade,
+    });
+    preferCell = null;
+    cascade++;
+  }
+  if (!hasAnyMove(b, cfg.mode)) {
+    shuffleGems(b, rng);
+    acc.shuffled = true;
+    acc.frames.push({
+      board: cloneBoard(b), clearingIds: [], bornIds: [], spawnIds: [],
+      collectedIds: [], stonesHit: [], points: 0, cascade: 0,
+    });
+  }
+}
+
+function applyBlastMove(board, cfg, rng, initialClear, initialQueue, basePoints, itemsTotal) {
+  const acc = emptyAcc(itemsTotal);
+  const b = board;
+  const st = { clearSet: new Set(initialClear), stonesHit: new Set(), collectedIds: [], detonations: 0 };
+  runDetonations(b, st, initialQueue, new Set());
+  hitAdjacentStones(b, st, st.clearSet);
+  const display = cloneBoard(b);
+  acc.frames.push({
+    board: display,
+    clearingIds: [...st.clearSet].map((i) => b.cells[i].tile.id),
+    bornIds: [], spawnIds: [], collectedIds: st.collectedIds,
+    stonesHit: [...st.stonesHit], points: basePoints, cascade: 1,
+  });
+  for (const i of st.clearSet) {
+    const cell = b.cells[i];
+    if (cell.tile && cell.tile.kind === 'item') acc.itemsCollected++;
+    else if (cell.tile && cell.tile.kind === 'gem' && cell.tile.color >= 0) acc.colorsCollected[cell.tile.color]++;
+    cell.tile = null;
+  }
+  for (const si of st.stonesHit) {
+    const cell = b.cells[si];
+    if (cell.blocker) {
+      cell.blocker.hp--;
+      if (cell.blocker.hp <= 0) { cell.blocker = null; acc.stonesDestroyed++; }
+    }
+  }
+  acc.score += basePoints + st.detonations * 40 + st.collectedIds.length * 100;
+  const grav = applyGravity(b, cfg, rng, acc.itemsLeft);
+  acc.score += grav.collectedIds.length * 100;
+  acc.itemsCollected += grav.collectedIds.length;
+  acc.frames.push({
+    board: cloneBoard(b), clearingIds: [], bornIds: [], spawnIds: grav.spawnIds,
+    collectedIds: grav.collectedIds, stonesHit: [], points: grav.collectedIds.length * 100, cascade: 1,
+  });
+  resolveCascade(b, cfg, rng, acc, null);
+  return {
+    valid: true, frames: acc.frames, score: acc.score, colorsCollected: acc.colorsCollected,
+    itemsCollected: acc.itemsCollected, stonesDestroyed: acc.stonesDestroyed,
+    maxCascade: Math.max(acc.maxCascade, 1), shuffled: acc.shuffled,
+  };
+}
+
+function areAdjacent(b, a, d) {
+  const ra = Math.floor(a / b.w), ca = a % b.w;
+  const rd = Math.floor(d / b.w), cd = d % b.w;
+  return Math.abs(ra - rd) + Math.abs(ca - cd) === 1;
+}
+function swapTiles(b, a, d) {
+  const ca = b.cells[a], cd = b.cells[d];
+  const t = ca.tile;
+  ca.tile = cd.tile;
+  cd.tile = t;
+}
+function createsMatchAfterSwap(board, a, d) {
+  const b = cloneBoard(board);
+  swapTiles(b, a, d);
+  return findRuns(b).length > 0;
+}
+function swapCreatesMatch(board, a, d) { return createsMatchAfterSwap(board, a, d); }
+
+function trySwap(board, a, d, cfg, rng) {
+  if (!areAdjacent(board, a, d)) return EMPTY_MOVE;
+  const ca = board.cells[a], cd = board.cells[d];
+  if (!ca || !cd || !ca.tile || !cd.tile) return EMPTY_MOVE;
+  if (!isMovable(ca.tile) || !isMovable(cd.tile)) return EMPTY_MOVE;
+
+  const ta = ca.tile, td = cd.tile;
+  const acc = emptyAcc(cfg.items);
+
+  // rainbow combinations
+  if (ta.special === 'rainbow' || td.special === 'rainbow') {
+    const b = cloneBoard(board);
+    swapTiles(b, a, d);
+    acc.frames.push({ board: cloneBoard(b), clearingIds: [], bornIds: [], spawnIds: [], collectedIds: [], stonesHit: [], points: 0, cascade: 0 });
+    const rIdx = ta.special === 'rainbow' ? d : a;
+    const otherIdx = ta.special === 'rainbow' ? a : d;
+    const other = b.cells[otherIdx].tile;
+    const st = { clearSet: new Set([rIdx, otherIdx]), stonesHit: new Set(), collectedIds: [], detonations: 0 };
+    const queue = [];
+    if (other.special === 'rainbow') {
+      for (let i = 0; i < b.cells.length; i++) {
+        const cell = b.cells[i];
+        if (cell && cell.tile && cell.tile.kind === 'gem') {
+          st.clearSet.add(i);
+          if (cell.tile.special !== 'none') queue.push(i);
+        }
+      }
+    } else if (other.special !== 'none') {
+      for (const j of blastCellsFor(b, otherIdx)) st.clearSet.add(j);
+      for (let i = 0; i < b.cells.length; i++) {
+        const cell = b.cells[i];
+        if (cell && cell.tile && cell.tile.kind === 'gem' && cell.tile.color === other.color) st.clearSet.add(i);
+      }
+      queue.push(otherIdx);
+    } else {
+      for (let i = 0; i < b.cells.length; i++) {
+        const cell = b.cells[i];
+        if (cell && cell.tile && cell.tile.kind === 'gem' && cell.tile.color === other.color) {
+          st.clearSet.add(i);
+          if (cell.tile.special !== 'none') queue.push(i);
+        }
+      }
+    }
+    runDetonations(b, st, queue, new Set());
+    acc.frames.push({
+      board: cloneBoard(b), clearingIds: [...st.clearSet].map((i) => b.cells[i].tile.id),
+      bornIds: [], spawnIds: [], collectedIds: st.collectedIds, stonesHit: [...st.stonesHit],
+      points: st.clearSet.size * 15, cascade: 1,
+    });
+    for (const i of st.clearSet) {
+      const cell = b.cells[i];
+      if (cell.tile && cell.tile.kind === 'item') acc.itemsCollected++;
+      else if (cell.tile && cell.tile.kind === 'gem' && cell.tile.color >= 0) acc.colorsCollected[cell.tile.color]++;
+      cell.tile = null;
+    }
+    for (const si of st.stonesHit) {
+      const cell = b.cells[si];
+      if (cell.blocker) {
+        cell.blocker.hp--;
+        if (cell.blocker.hp <= 0) { cell.blocker = null; acc.stonesDestroyed++; }
+      }
+    }
+    acc.score += st.clearSet.size * 15;
+    const grav = applyGravity(b, cfg, rng, acc.itemsLeft);
+    acc.score += grav.collectedIds.length * 100;
+    acc.itemsCollected += grav.collectedIds.length;
+    acc.frames.push({
+      board: cloneBoard(b), clearingIds: [], bornIds: [], spawnIds: grav.spawnIds,
+      collectedIds: grav.collectedIds, stonesHit: [], points: grav.collectedIds.length * 100, cascade: 1,
+    });
+    resolveCascade(b, cfg, rng, acc, null);
+    acc.maxCascade = Math.max(acc.maxCascade, 1);
+    return finalize(acc);
+  }
+
+  // special + special combos
+  if (ta.special !== 'none' && td.special !== 'none') {
+    const b = cloneBoard(board);
+    const r = Math.floor(d / b.w);
+    const c = d % b.w;
+    const initialClear = [a, d];
+    if (ta.special === 'rocketH' && td.special === 'rocketH') {
+      for (let cc = 0; cc < b.w; cc++) initialClear.push(idxOf(b, r, cc));
+      for (let rr = 0; rr < b.h; rr++) initialClear.push(idxOf(b, rr, c));
+    } else {
+      for (let rr = r - 2; rr <= r + 2; rr++)
+        for (let cc = c - 2; cc <= c + 2; cc++) {
+          if (rr < 0 || rr >= b.h || cc < 0 || cc >= b.w) continue;
+          initialClear.push(idxOf(b, rr, cc));
+        }
+    }
+    const queue = initialClear.filter((i) => {
+      const t = b.cells[i] ? b.cells[i].tile : null;
+      return !!t && t.special !== 'none' && i !== a && i !== d;
+    });
+    return applyBlastMove(b, cfg, rng, initialClear, queue, 200, cfg.items);
+  }
+
+  // normal swap
+  if (!createsMatchAfterSwap(board, a, d)) return EMPTY_MOVE;
+  const b = cloneBoard(board);
+  swapTiles(b, a, d);
+  acc.frames.push({ board: cloneBoard(b), clearingIds: [], bornIds: [], spawnIds: [], collectedIds: [], stonesHit: [], points: 0, cascade: 0 });
+  resolveCascade(b, cfg, rng, acc, d);
+  return finalize(acc);
+}
+
+function finalize(acc) {
+  return {
+    valid: true, frames: acc.frames, score: acc.score, colorsCollected: acc.colorsCollected,
+    itemsCollected: acc.itemsCollected, stonesDestroyed: acc.stonesDestroyed,
+    maxCascade: acc.maxCascade, shuffled: acc.shuffled,
+  };
+}
+
+function tryTap(board, r, c, cfg, rng) {
+  const cell = cellAt(board, r, c);
+  if (!cell || !cell.tile || cell.tile.kind !== 'gem') return EMPTY_MOVE;
+  const color = cell.tile.color;
+  if (color < 0) return EMPTY_MOVE;
+  const group = [];
+  const seen = new Set();
+  const stack = [idxOf(board, r, c)];
+  seen.add(idxOf(board, r, c));
+  while (stack.length > 0) {
+    const i = stack.pop();
+    group.push(i);
+    const rr = Math.floor(i / board.w), cc = i % board.w;
+    for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+      const nr = rr + dr, nc = cc + dc;
+      if (nr < 0 || nr >= board.h || nc < 0 || nc >= board.w) continue;
+      const ni = idxOf(board, nr, nc);
+      if (seen.has(ni)) continue;
+      const nCell = board.cells[ni];
+      if (nCell && nCell.tile && nCell.tile.kind === 'gem' && nCell.tile.color === color) {
+        seen.add(ni);
+        stack.push(ni);
+      }
+    }
+  }
+  if (group.length < 2) return EMPTY_MOVE;
+  const b = cloneBoard(board);
+  const initialClear = [...group];
+  const queue = [];
+  for (const i of group) {
+    const t = b.cells[i].tile;
+    if (t.special !== 'none') queue.push(i);
+  }
+  if (group.length >= 5) {
+    const rr = Math.floor(group[0] / b.w), cc = group[0] % b.w;
+    for (let dr = -1; dr <= 1; dr++)
+      for (let dc = -1; dc <= 1; dc++) {
+        const nr = rr + dr, nc = cc + dc;
+        if (nr < 0 || nr >= b.h || nc < 0 || nc >= b.w) continue;
+        const ni = idxOf(b, nr, nc);
+        if (!initialClear.includes(ni)) initialClear.push(ni);
+        const t = b.cells[ni] ? b.cells[ni].tile : null;
+        if (t && t.special !== 'none' && !queue.includes(ni)) queue.push(ni);
+      }
+  }
+  const basePoints = group.length * 15 + (group.length >= 5 ? 100 : 0);
+  return applyBlastMove(b, cfg, rng, initialClear, queue, basePoints, cfg.items);
+}
+
+/* ---------------- Boosters ---------------- */
+function hammerHit(board, r, c, cfg, rng) {
+  const cell = cellAt(board, r, c);
+  if (!cell) return EMPTY_MOVE;
+  if (cell.blocker) {
+    const b = cloneBoard(board);
+    const target = b.cells[idxOf(b, r, c)];
+    target.blocker.hp--;
+    let destroyed = false;
+    if (target.blocker.hp <= 0) { target.blocker = null; destroyed = true; }
+    const acc = emptyAcc(cfg.items);
+    acc.frames.push({
+      board: cloneBoard(b), clearingIds: [], bornIds: [], spawnIds: [],
+      collectedIds: [], stonesHit: [idxOf(b, r, c)], points: 50, cascade: 1,
+    });
+    if (destroyed) acc.stonesDestroyed++;
+    acc.score += 50;
+    return finalize(acc);
+  }
+  if (!cell.tile) return EMPTY_MOVE;
+  const b = cloneBoard(board);
+  const i = idxOf(b, r, c);
+  const t = b.cells[i].tile;
+  if (t.special !== 'none') return applyBlastMove(b, cfg, rng, [], [i], 60, cfg.items);
+  return applyBlastMove(b, cfg, rng, [i], [], 60, cfg.items);
+}
+
+function crossBlast(board, r, c, cfg, rng) {
+  const b = cloneBoard(board);
+  const initialClear = [];
+  for (let cc = 0; cc < b.w; cc++) initialClear.push(idxOf(b, r, cc));
+  for (let rr = 0; rr < b.h; rr++) initialClear.push(idxOf(b, rr, c));
+  const queue = initialClear.filter((i) => {
+    const t = b.cells[i] ? b.cells[i].tile : null;
+    return !!t && t.special !== 'none';
+  });
+  return applyBlastMove(b, cfg, rng, initialClear, queue, 120, cfg.items);
+}
+
+function bombBlast(board, r, c, cfg, rng) {
+  const b = cloneBoard(board);
+  const initialClear = [];
+  for (let rr = r - 1; rr <= r + 1; rr++)
+    for (let cc = c - 1; cc <= c + 1; cc++) {
+      if (rr < 0 || rr >= b.h || cc < 0 || cc >= b.w) continue;
+      initialClear.push(idxOf(b, rr, cc));
+    }
+  const queue = initialClear.filter((i) => {
+    const t = b.cells[i] ? b.cells[i].tile : null;
+    return !!t && t.special !== 'none';
+  });
+  return applyBlastMove(b, cfg, rng, initialClear, queue, 120, cfg.items);
+}
+
+function shuffleBoard(board, cfg, rng) {
+  const b = cloneBoard(board);
+  shuffleGems(b, rng);
+  const acc = emptyAcc(cfg.items);
+  acc.frames.push({ board: b, clearingIds: [], bornIds: [], spawnIds: [], collectedIds: [], stonesHit: [], points: 0, cascade: 0 });
+  return finalize(acc);
+}
+
+/* ---------------- Move availability / shuffle ---------------- */
+function hasAnyMove(board, mode) {
+  if (mode === 'tap') {
+    for (let r = 0; r < board.h; r++) {
+      for (let c = 0; c < board.w; c++) {
+        const col = gemColor(board, r, c);
+        if (col < 0) continue;
+        if (gemColor(board, r + 1, c) === col || gemColor(board, r, c + 1) === col) return true;
+      }
+    }
+    return false;
+  }
+  for (let r = 0; r < board.h; r++) {
+    for (let c = 0; c < board.w; c++) {
+      const i = idxOf(board, r, c);
+      const t = tileAt(board, r, c);
+      if (!t || !isMovable(t)) continue;
+      if (t.special === 'rainbow') {
+        for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+          const n = tileAt(board, r + dr, c + dc);
+          if (n && isMovable(n)) return true;
+        }
+        continue;
+      }
+      for (const [dr, dc] of [[0, 1], [1, 0]]) {
+        const nr = r + dr, nc = c + dc;
+        const nt = tileAt(board, nr, nc);
+        if (!nt || !isMovable(nt)) continue;
+        if (nt.special === 'rainbow') return true;
+        if (createsMatchAfterSwap(board, i, idxOf(board, nr, nc))) return true;
+      }
+    }
+  }
+  return false;
+}
+
+function shuffleGems(board, rng) {
+  const positions = [];
+  const tiles = [];
+  for (let i = 0; i < board.cells.length; i++) {
+    const cell = board.cells[i];
+    if (cell && cell.tile && cell.tile.kind === 'gem') {
+      positions.push(i);
+      tiles.push(cell.tile);
+    }
+  }
+  if (positions.length < 2) return;
+  let best = null;
+  for (let attempt = 0; attempt < 30; attempt++) {
+    const order = [...tiles];
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+    positions.forEach((p, k) => { board.cells[p].tile = order[k]; });
+    const runs = findRuns(board).length;
+    const moves = hasAnyMove(board, 'swap');
+    if (runs === 0 && moves) return;
+    if (best === null) best = order;
+  }
+  if (best) {
+    positions.forEach((p, k) => { board.cells[p].tile = best[k]; });
+  }
+}
+
+/* ============ app-core.js ============ */
+/* ============================================================
+ * Blooming World — standalone core: sound, store, helpers,
+ * background & tile rendering (port of sound.ts / store.ts /
+ * BloomingBackground / GemTile)
+ * ============================================================ */
+
+/* ---------------- WebAudio synth ---------------- */
+let audioCtx = null;
+let soundEnabled = true;
+function setSoundEnabled(v) { soundEnabled = v; }
+function ac() {
+  if (!soundEnabled) return null;
+  if (typeof window === 'undefined') return null;
+  if (!audioCtx) {
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (e) { return null; }
+  }
+  if (audioCtx.state === 'suspended') void audioCtx.resume();
+  return audioCtx;
+}
+function tone(freq, dur, type, vol, delay) {
+  const c = ac();
+  if (!c) return;
+  const t0 = c.currentTime + (delay || 0);
+  const osc = c.createOscillator();
+  const gain = c.createGain();
+  osc.type = type || 'sine';
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(vol || 0.08, t0);
+  gain.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+  osc.connect(gain).connect(c.destination);
+  osc.start(t0);
+  osc.stop(t0 + dur + 0.02);
+}
+const sfx = {
+  click() { tone(520, 0.06, 'triangle', 0.05); },
+  swap() { tone(320, 0.08, 'sine', 0.05); },
+  match(cascade) {
+    const base = 440 * Math.pow(1.12, Math.min(cascade || 1, 8));
+    tone(base, 0.09, 'triangle', 0.07);
+    tone(base * 1.5, 0.09, 'sine', 0.04, 0.03);
+  },
+  boom() { tone(120, 0.25, 'sawtooth', 0.09); tone(80, 0.3, 'square', 0.05, 0.02); },
+  special() { tone(660, 0.12, 'triangle', 0.07); tone(880, 0.12, 'triangle', 0.06, 0.06); tone(1100, 0.14, 'sine', 0.05, 0.12); },
+  coin() { tone(880, 0.07, 'square', 0.05); tone(1320, 0.1, 'square', 0.05, 0.06); },
+  win() { tone(523, 0.14, 'triangle', 0.08); tone(659, 0.14, 'triangle', 0.08, 0.12); tone(784, 0.2, 'triangle', 0.08, 0.24); tone(1047, 0.3, 'sine', 0.07, 0.4); },
+  lose() { tone(330, 0.2, 'sine', 0.07); tone(262, 0.25, 'sine', 0.07, 0.15); tone(196, 0.35, 'sine', 0.06, 0.3); },
+  star(n) { tone(700 + n * 200, 0.15, 'triangle', 0.08); },
+};
+
+/* ---------------- player store (zustand-compatible save) ---------------- */
+const SAVE_KEY = 'blooming-world-save-v1';
+const DEFAULT_BOOSTERS = { hammer: 1, bomb: 0, cross: 0, shuffle: 1, undo: 0, moves5: 0 };
+function defaultState() {
+  return {
+    name: '', lang: 'ru', sound: true, coins: 300, stars: {}, scores: {},
+    boosters: Object.assign({}, DEFAULT_BOOSTERS),
+    owned: {
+      skins: ['classic', 'stones'], avatars: ['av-seed', 'av-flower'],
+      frames: ['fr-none'], nameStyles: ['ns-basic'], effects: [],
+    },
+    equipped: { skin: 'classic', avatar: 'av-seed', frame: 'fr-none', nameStyle: 'ns-basic', tileEffect: '', avatarEffect: '', nameEffect: '' },
+    stats: { wins: 0, bestCascade: 0, totalScore: 0, movesMade: 0 },
+  };
+}
+function normalizeState(s) {
+  const d = defaultState();
+  const out = Object.assign({}, d, s || {});
+  out.stars = Object.assign({}, s && s.stars ? s.stars : {});
+  out.scores = Object.assign({}, s && s.scores ? s.scores : {});
+  out.boosters = Object.assign({}, DEFAULT_BOOSTERS, s && s.boosters ? s.boosters : {});
+  out.owned = Object.assign({}, d.owned, s && s.owned ? s.owned : {});
+  out.equipped = Object.assign({}, d.equipped, s && s.equipped ? s.equipped : {});
+  out.stats = Object.assign({}, d.stats, s && s.stats ? s.stats : {});
+  out.lang = out.lang === 'en' ? 'en' : 'ru';
+  return out;
+}
+function loadState() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return defaultState();
+    const parsed = JSON.parse(raw);
+    return normalizeState(parsed && parsed.state ? parsed.state : parsed);
+  } catch (e) { return defaultState(); }
+}
+function saveState() {
+  try {
+    const inner = Object.assign({}, App.player);
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ state: inner, version: 0 }));
+  } catch (e) { /* storage unavailable — play without persistence */ }
+}
+/* store actions (mutate App.player + persist) */
+const store = {
+  t(key, vars) { return translate(App.player.lang, key, vars); },
+  setLang(l) { App.player.lang = l; saveState(); },
+  setSound(v) { setSoundEnabled(v); App.player.sound = v; saveState(); },
+  setName(n) { App.player.name = String(n).slice(0, 16); saveState(); },
+  addCoins(n) { App.player.coins += n; saveState(); },
+  spendCoins(n) {
+    if (App.player.coins < n) return false;
+    App.player.coins -= n; saveState(); return true;
+  },
+  recordWin(level, stars, score, maxCascade, movesUsed) {
+    const s = App.player;
+    const prevStars = s.stars[level] || 0;
+    const firstClear = !(level in s.stars);
+    const newStars = stars > prevStars;
+    const chapter = chapterOfLevel(level);
+    const reward = firstClear ? 30 + stars * 10 + chapter * 5 : 10 + stars * 5;
+    s.stars[level] = Math.max(prevStars, stars);
+    s.scores[level] = Math.max(s.scores[level] || 0, score);
+    s.coins += reward;
+    s.stats.wins += 1;
+    s.stats.bestCascade = Math.max(s.stats.bestCascade, maxCascade);
+    s.stats.totalScore += score;
+    s.stats.movesMade += movesUsed;
+    saveState();
+    return { firstClear, newStars, reward };
+  },
+  addBooster(id, n) { App.player.boosters[id] = (App.player.boosters[id] || 0) + n; saveState(); },
+  useBooster(id) {
+    const s = App.player;
+    if ((s.boosters[id] || 0) <= 0) return false;
+    s.boosters[id]--; saveState(); return true;
+  },
+  buyBooster(id) {
+    const s = App.player;
+    const price = BOOSTER_MAP[id].price;
+    if (s.coins < price) return false;
+    s.coins -= price;
+    s.boosters[id] = (s.boosters[id] || 0) + 1;
+    saveState(); return true;
+  },
+  buyCosmetic(kind, id, price) {
+    const s = App.player;
+    if (s.owned[kind].includes(id)) return false;
+    if (s.coins < price) return false;
+    s.coins -= price;
+    s.owned[kind].push(id);
+    saveState(); return true;
+  },
+  equip(kind, id) { App.player.equipped[kind] = id; saveState(); },
+  maxUnlocked() {
+    const s = App.player;
+    const levels = Object.keys(s.stars).map(Number);
+    const cleared = levels.length > 0 ? Math.max.apply(null, levels) : 0;
+    return Math.min(TOTAL_LEVELS, cleared + 1);
+  },
+  totalStars() {
+    const vals = Object.values(App.player.stars);
+    return vals.reduce((a, b) => a + b, 0);
+  },
+  resetAll() {
+    const keepLang = App.player.lang;
+    App.player = normalizeState(defaultState());
+    App.player.lang = keepLang;
+    setSoundEnabled(App.player.sound);
+    saveState();
+  },
+};
+
+/* ---------------- tiny dom helpers ---------------- */
+function el(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text !== undefined && text !== null) n.textContent = text;
+  return n;
+}
+function fmt(n) { return Number(n).toLocaleString('ru-RU'); }
+function shade(hex, amount) {
+  const n = hex.replace('#', '');
+  const r = Math.max(0, Math.min(255, parseInt(n.slice(0, 2), 16) + amount));
+  const g = Math.max(0, Math.min(255, parseInt(n.slice(2, 4), 16) + amount));
+  const b = Math.max(0, Math.min(255, parseInt(n.slice(4, 6), 16) + amount));
+  return '#' + r.toString(16).padStart(2, '0') + g.toString(16).padStart(2, '0') + b.toString(16).padStart(2, '0');
+}
+const SPECIAL_GLYPH = { rocketH: '⇢', rocketV: '⇣', bomb: '✹', rainbow: '❈' };
+const RAINBOW_BG = 'conic-gradient(#c74134,#f6e04b,#2ea56d,#3d9be0,#b06fc9,#ef8f2a,#c74134)';
+const ITEM_BG = 'linear-gradient(160deg,#a5825a,#7c5c3a 55%,#5c4326)';
+
+/**
+ * Tile markup. anim: '' | 'pop' | 'born' | 'fall' (wobble auto by era)
+ * scale: 1 (board) — uses cqw units; container must have container-type.
+ */
+function tileHtml(tile, theme, skin, anim) {
+  const st = theme.tile;
+  const palette = skin.palette || theme.palette;
+  const isRainbow = tile.color === -1;
+  const isItem = tile.kind === 'item';
+  const colorIdx = Math.max(0, Math.min(5, tile.color));
+  const base = palette[colorIdx] || '#999999';
+  const dark = shade(base, -46);
+  const light = shade(base, 42);
+
+  let shape;
+  if (isRainbow) shape = 'border-radius:50%;';
+  else if (isItem) shape = 'border-radius:26%;';
+  else {
+    const s = gemShapeCss(tile.color);
+    shape = (s.clipPath ? 'clip-path:' + s.clipPath + ';' : '') + 'border-radius:' + s.borderRadius + ';';
+  }
+
+  let background;
+  if (isRainbow) background = RAINBOW_BG;
+  else if (isItem) background = ITEM_BG;
+  else if (skin.glyphs || st.gradient) background = 'linear-gradient(160deg, ' + light + ', ' + base + ' 55%, ' + dark + ')';
+  else background = base;
+
+  const rimInset = Math.round((0.06 - st.rimWidth) * 100);
+  const rimFilters = [];
+  if (st.pixelShadow && !st.softShadow) rimFilters.push('drop-shadow(0.08em 0.08em 0 rgba(0,0,0,.4))');
+  if (st.softShadow) rimFilters.push('drop-shadow(0 0.07em 0.12em rgba(0,0,0,.35))');
+  const glowColor = isItem ? '#a5825a' : base;
+  const fillFilters = st.glow
+    ? ['drop-shadow(0 0 0.2em ' + glowColor + ')', 'drop-shadow(0 0 0.42em ' + glowColor + '55)']
+    : [];
+
+  let cls = 'tile-root';
+  if (anim === 'pop') cls += ' bm-pop';
+  else if (anim === 'born') cls += ' bm-born';
+  else if (anim === 'fall') cls += ' bm-fall-in';
+  else if (st.wobble) cls += ' bm-wobble';
+  if (isRainbow) cls += ' bm-rainbow-spin';
+  else if (tile.special !== 'none') cls += ' bm-special-pulse';
+
+  let inner = '';
+  if (st.rimWidth > 0) {
+    inner += '<div class="tile-rim" style="inset:' + rimInset + '%;background:' + st.rim + ';' + shape +
+      (rimFilters.length ? 'filter:' + rimFilters.join(', ') + ';' : '') + '"></div>';
+  }
+  inner += '<div class="tile-body" style="background:' + background + ';' + shape +
+    (st.glass ? 'backdrop-filter:blur(2px);opacity:.9;' : '') +
+    (fillFilters.length ? 'filter:' + fillFilters.join(', ') + ';' : '') + '">';
+  if (st.pattern === 'pixel') inner += '<div class="bm-pixel-pattern"></div>';
+  if (st.pattern === 'rays') inner += '<div style="position:absolute;inset:0;background:repeating-conic-gradient(from 0deg, rgba(255,255,255,.10) 0deg 8deg, transparent 8deg 16deg)"></div>';
+  if (st.gloss) inner += '<div style="position:absolute;left:10%;right:10%;top:6%;height:38%;background:linear-gradient(180deg, rgba(255,255,255,.5), rgba(255,255,255,.06))"></div>';
+  if (st.shine) inner += '<div class="bm-shine-wrap"><div class="bm-shine-bar"></div></div>';
+  if (skin.ring && !isRainbow && !isItem) inner += '<div style="position:absolute;inset:0;background:radial-gradient(closest-side, transparent 56%, rgba(255,255,255,.55) 66%, transparent 78%)"></div>';
+  inner += '</div>';
+
+  let over = '';
+  if (skin.glyphs && !isRainbow && !isItem) {
+    over += '<span class="tile-glyph">' + skin.glyphs[colorIdx] + '</span>';
+  }
+  if (tile.special !== 'none') {
+    over += '<span class="spec-disc"' + (skin.glyphs ? ' style="background:transparent"' : '') + '><span class="spec-glyph">' + SPECIAL_GLYPH[tile.special] + '</span></span>';
+  }
+  if (isItem) over += '<span class="tile-glyph" style="font-size:48cqw">🌰</span>';
+
+  return '<div class="' + cls + '" style="container-type:size">' + inner +
+    '<div class="tile-over">' + over + '</div></div>';
+}
+
+/* mini tile for shop previews (anchored palette, fixed size) */
+function previewTileHtml(color, skin) {
+  const fakeTheme = { tile: Object.assign({}, chapterTheme(9).tile, { wobble: false, shine: false }) };
+  const skin2 = skin.glyphs || skin.ring
+    ? skin
+    : {};
+  const tile = { id: 0, color, special: 'none', kind: 'gem' };
+  return '<div class="skin-tile" style="container-type:size">' +
+    tileHtml(tile, Object.assign({}, fakeTheme, { palette: ANCHORS }), skin2, '') + '</div>';
+}
+
+/* ---------------- blooming background ---------------- */
+function mulberry32Public(seed) { return mulberry32(seed); }
+function buildBackground(bg, seed, asRoot) {
+  const layer = el('div', 'bg-layer' + (asRoot ? ' as-root' : ''));
+  const rng = mulberry32Public((seed || 1) * 7919 + 13);
+  const rand = (min, max) => min + rng() * (max - min);
+
+  const sky = el('div');
+  sky.style.cssText = 'position:absolute;inset:0;background:' + bg.sky;
+  layer.appendChild(sky);
+
+  if (bg.dark) {
+    // moon + stars instead of sun
+    layer.appendChild(el('div', 'bg-moon'));
+  } else if (bg.sun) {
+    if (bg.rays) layer.appendChild(el('div', 'bg-rays'));
+    layer.appendChild(el('div', 'bg-sun'));
+  }
+  if (bg.stars) {
+    for (let i = 0; i < 26; i++) {
+      const s = el('div', 'bg-star');
+      s.style.left = rand(2, 98) + '%';
+      s.style.top = rand(2, 55) + '%';
+      s.style.animationDelay = rand(0, 3) + 's';
+      layer.appendChild(s);
+    }
+  }
+  for (let i = 0; i < (bg.clouds || 0); i++) {
+    const c = el('div', 'bg-cloud');
+    c.style.top = rand(6, 30) + '%';
+    c.style.transform = 'scale(' + rand(0.6, 1.3) + ')';
+    c.style.animationDuration = rand(45, 90) + 's';
+    c.style.animationDelay = -rand(0, 60) + 's';
+    layer.appendChild(c);
+  }
+  const hillFar = el('div', 'bg-hill');
+  hillFar.style.background = bg.hillFar;
+  layer.appendChild(hillFar);
+  const hillNear = el('div', 'bg-hill near');
+  hillNear.style.background = bg.hillNear;
+  layer.appendChild(hillNear);
+  const ground = el('div', 'bg-ground');
+  ground.style.background = bg.ground;
+  layer.appendChild(ground);
+
+  const TREES = ['#2e8a4e', '#3aa25c', '#2f7d46', '#46b36a', '#2e8a4e'];
+  for (let i = 0; i < (bg.trees || 0); i++) {
+    const t = el('div', 'bg-tree');
+    t.style.setProperty('--tree', TREES[i % TREES.length]);
+    t.style.left = rand(2, 92) + '%';
+    t.style.transform += ' scale(' + rand(0.7, 1.15) + ')';
+    t.style.animationDelay = -rand(0, 4) + 's';
+    layer.appendChild(t);
+  }
+  for (let i = 0; i < (bg.bushes || 0); i++) {
+    const b = el('div', 'bg-bush');
+    b.style.setProperty('--bush', i % 2 ? '#3da05a' : '#33914e');
+    b.style.left = rand(1, 90) + '%';
+    b.style.transform = 'scale(' + rand(0.6, 1.2) + ')';
+    layer.appendChild(b);
+  }
+  const FLW = ['#ff8ab0', '#ffd166', '#c084fc', '#7dd3fc', '#fda4af', '#fef08a'];
+  for (let i = 0; i < (bg.flowers || 0); i++) {
+    const f = el('div', 'bg-flower');
+    f.style.setProperty('--fl', FLW[i % FLW.length]);
+    f.style.left = rand(1, 95) + '%';
+    f.style.bottom = rand(18.5, 24) + '%';
+    f.style.transform = 'scale(' + rand(0.7, 1.3) + ')';
+    layer.appendChild(f);
+  }
+  for (let i = 0; i < (bg.butterflies || 0); i++) {
+    const b = el('div', 'bg-butterfly');
+    b.style.setProperty('--bf', FLW[i % FLW.length]);
+    b.style.left = rand(10, 80) + '%';
+    b.style.top = rand(20, 55) + '%';
+    b.style.animationDuration = rand(7, 12) + 's';
+    b.style.animationDelay = -rand(0, 8) + 's';
+    layer.appendChild(b);
+  }
+  const PT = ['#ffb0c8', '#ffd9a0', '#e9d5ff', '#fff1a8'];
+  for (let i = 0; i < (bg.petals || 0); i++) {
+    const p = el('div', 'bg-petal');
+    p.style.setProperty('--pt', PT[i % PT.length]);
+    p.style.left = rand(0, 100) + '%';
+    p.style.setProperty('--drift', rand(-8, 8) + 'vw');
+    p.style.animationDuration = rand(8, 16) + 's';
+    p.style.animationDelay = -rand(0, 14) + 's';
+    layer.appendChild(p);
+  }
+  for (let i = 0; i < (bg.fireflies || 0); i++) {
+    const f = el('div', 'bg-firefly');
+    f.style.left = rand(3, 95) + '%';
+    f.style.top = rand(15, 70) + '%';
+    f.style.animationDuration = rand(3.5, 6) + 's';
+    f.style.animationDelay = -rand(0, 5) + 's';
+    layer.appendChild(f);
+  }
+  const SPK = ['✦', '✧', '⋆'];
+  for (let i = 0; i < (bg.sparkles || 0); i++) {
+    const s = el('div', 'bg-sparkle', SPK[i % SPK.length]);
+    s.style.left = rand(3, 95) + '%';
+    s.style.top = rand(8, 68) + '%';
+    s.style.animationDuration = rand(2.4, 4.5) + 's';
+    s.style.animationDelay = -rand(0, 4) + 's';
+    layer.appendChild(s);
+  }
+  return layer;
+}
+
+/* ============ app-ui.js ============ */
+/* ============================================================
+ * Blooming World — standalone UI: app shell, map, game,
+ * shop, ranks, profile (port of page.tsx + screens)
+ * ============================================================ */
+
+const App = {
+  screen: 'map',        // map | shop | ranks | profile
+  level: null,          // playing level number or null
+  player: null,
+  bots: null,
+  shopTab: 'boosters',
+  ranksQuery: '',
+  savedFlash: false,
+};
+
+function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
+
+/* ---------- app shell ---------- */
+function renderApp() {
+  const root = document.getElementById('app');
+  root.innerHTML = '';
+  const theme = chapterTheme(Math.floor((store.maxUnlocked() - 1) / CHAPTER_SIZE));
+  root.appendChild(buildBackground(theme.bg, 99, true));
+
+  const screenBox = el('div', 'screen');
+  root.appendChild(screenBox);
+  if (App.level !== null) {
+    Game.mount(screenBox);
+  } else {
+    if (App.screen === 'map') renderMap(screenBox);
+    else if (App.screen === 'shop') renderShop(screenBox);
+    else if (App.screen === 'ranks') renderRanks(screenBox);
+    else renderProfile(screenBox);
+    screenBox.appendChild(buildNav());
+  }
+}
+
+function buildNav() {
+  const nav = el('nav', 'bottom-nav');
+  nav.setAttribute('aria-label', 'Main navigation');
+  const row = el('div', 'row');
+  const items = [
+    { key: 'map', icon: '🗺️', label: store.t('nav.map') },
+    { key: 'shop', icon: '🛍️', label: store.t('nav.shop') },
+    { key: 'ranks', icon: '🏆', label: store.t('nav.ranks') },
+    { key: 'profile', icon: '👤', label: store.t('nav.profile') },
+  ];
+  for (const item of items) {
+    const b = el('button', 'nav-btn' + (App.screen === item.key ? ' active' : ''));
+    b.type = 'button';
+    b.innerHTML = '<span class="ico">' + item.icon + '</span><span>' + item.label + '</span>';
+    b.onclick = () => { sfx.click(); App.screen = item.key; renderApp(); };
+    row.appendChild(b);
+  }
+  nav.appendChild(row);
+  return nav;
+}
+
+function coinPill() {
+  const d = el('span', 'coin-pill');
+  d.innerHTML = '🪙 ' + fmt(App.player.coins);
+  return d;
+}
+
+let toastTimer = null;
+function showToast(msg) {
+  let wrap = document.getElementById('bm-toast');
+  if (!wrap) {
+    wrap = el('div', 'toast-wrap');
+    wrap.id = 'bm-toast';
+    document.body.appendChild(wrap);
+  }
+  wrap.innerHTML = '';
+  const box = el('div', 'toast-box bm-toast-in', msg);
+  wrap.appendChild(box);
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { wrap.innerHTML = ''; }, 1800);
+}
+
+/* ============================================================
+ * MAP SCREEN
+ * ============================================================ */
+function renderMap(box) {
+  const wrap = el('div', 'map-wrap');
+  const t = (k, v) => store.t(k, v);
+
+  const head = el('div', 'map-head');
+  head.innerHTML = '<div><h1 class="bm-text-outline">' + t('app.title') + '</h1><p class="bm-text-outline">' + t('app.subtitle') + '</p></div>';
+  const starsPill = el('span', 'coin-pill');
+  starsPill.innerHTML = '⭐ ' + store.totalStars();
+  head.appendChild(starsPill);
+  wrap.appendChild(head);
+
+  const maxUnlocked = store.maxUnlocked();
+  const currentChapter = Math.min(TOTAL_CHAPTERS - 1, Math.floor((maxUnlocked - 1) / CHAPTER_SIZE));
+
+  const playBtn = el('button', 'btn btn-primary');
+  playBtn.type = 'button';
+  playBtn.style.cssText = 'width:100%;margin-bottom:16px;padding:18px;font-size:18px;';
+  playBtn.textContent = '▶ ' + t('map.continue') + ' · ' + t('map.level') + ' ' + maxUnlocked;
+  playBtn.onclick = () => { sfx.click(); App.level = maxUnlocked; renderApp(); };
+  wrap.appendChild(playBtn);
+
+  for (const ch of CHAPTERS) {
+    const unlocked = ch.id <= currentChapter;
+    const theme = chapterTheme(ch.id);
+    const card = el('div', 'chapter-card' + (unlocked ? '' : ' locked'));
+    card.appendChild(buildBackground(theme.bg, ch.id + 11));
+    const inner = el('div', 'chapter-inner');
+
+    const topRow = el('div');
+    topRow.style.cssText = 'display:flex;justify-content:space-between;align-items:flex-start;';
+    const titleBox = el('div');
+    titleBox.innerHTML =
+      '<div class="chapter-kicker bm-text-outline">' + t('map.chapter') + ' ' + (ch.id + 1) + '</div>' +
+      '<div class="chapter-name bm-text-outline">' + ch.name[App.player.lang] + '</div>' +
+      '<div class="chapter-tag bm-text-outline">' + ch.tagline[App.player.lang] + '</div>';
+    topRow.appendChild(titleBox);
+    const levels = Array.from({ length: CHAPTER_SIZE }, (_, i) => ch.id * CHAPTER_SIZE + i + 1);
+    const cleared = levels.filter((lv) => (App.player.stars[lv] || 0) > 0).length;
+    if (cleared === CHAPTER_SIZE) {
+      const bloom = el('span', 'bloomed-pill');
+      bloom.textContent = '🌸 ' + t('map.bloomed');
+      topRow.appendChild(bloom);
+    }
+    inner.appendChild(topRow);
+
+    const grid = el('div', 'levels-grid');
+    for (const lv of levels) {
+      const lvStars = App.player.stars[lv] || 0;
+      const lvUnlocked = lv <= maxUnlocked;
+      const isCurrent = lv === maxUnlocked && ch.id === currentChapter;
+      const btn = el('button', 'level-btn ' + (lvUnlocked ? (isCurrent ? 'current' : 'open') : 'locked'));
+      btn.type = 'button';
+      btn.setAttribute('aria-label', t('map.level') + ' ' + lv);
+      btn.innerHTML = '<span>' + (lvUnlocked ? lv : '🔒') + '</span>' +
+        '<span class="level-stars">' + (lvStars > 0 ? '⭐'.repeat(lvStars) : (lvUnlocked ? '' : '·')) + '</span>';
+      if (lvUnlocked) {
+        btn.onclick = () => { sfx.click(); App.level = lv; renderApp(); };
+      } else {
+        btn.disabled = true;
+      }
+      grid.appendChild(btn);
+    }
+    inner.appendChild(grid);
+    if (!unlocked) {
+      const note = el('div', 'bm-text-outline');
+      note.style.cssText = 'margin-top:8px;text-align:center;font-size:11px;font-weight:700;opacity:.85;';
+      note.textContent = t('map.nextChapter', { n: maxUnlocked - ch.id * CHAPTER_SIZE });
+      inner.appendChild(note);
+    }
+    card.appendChild(inner);
+    wrap.appendChild(card);
+  }
+
+  const soon = el('div');
+  soon.style.cssText = 'text-align:center;font-size:11px;opacity:.75;padding:6px 0 2px;';
+  soon.textContent = t('map.comingSoon');
+  wrap.appendChild(soon);
+
+  box.appendChild(wrap);
+}
+
+/* ============================================================
+ * GAME SCREEN
+ * ============================================================ */
+const Game = {
+  cfg: null, board: null, moves: 0, score: 0,
+  progress: { colors: [0, 0, 0, 0, 0, 0], items: 0, stones: 0 },
+  busy: false, selected: null, activeBooster: null, buyBoosterId: null,
+  winInfo: null, loseOpen: false, plus5Used: 0, attempt: 0,
+  rng: () => 0, playId: 0, snapshot: null, shakeIdx: null,
+  clearing: new Set(), born: new Set(), spawned: new Set(), stonesHit: new Set(),
+
+  mount(box) {
+    const lv = App.level;
+    this.cfg = getLevelConfig(lv);
+    this.rng = mulberry32(lv * 7919 + this.attempt * 104729 + 13);
+    this.board = createBoard(this.cfg, this.rng);
+    this.moves = this.cfg.moves;
+    this.score = 0;
+    this.progress = { colors: [0, 0, 0, 0, 0, 0], items: 0, stones: 0 };
+    this.busy = false;
+    this.selected = null;
+    this.activeBooster = null;
+    this.buyBoosterId = null;
+    this.winInfo = null;
+    this.loseOpen = false;
+    this.plus5Used = 0;
+    this.snapshot = null;
+    this.shakeIdx = null;
+    this.clearing = new Set(); this.born = new Set(); this.spawned = new Set(); this.stonesHit = new Set();
+    this.buildDom(box);
+    this.rebuildBoard();
+    this.updateHud();
+    this.renderModals();
+  },
+
+  theme() { return chapterTheme(this.cfg.chapter); },
+  skin() { return GEM_SKINS.find((s) => s.id === App.player.equipped.skin) || GEM_SKINS[0]; },
+  tileFx() {
+    if (!App.player.equipped.tileEffect) return null;
+    return EFFECTS.find((e) => e.id === App.player.equipped.tileEffect) || null;
+  },
+  isBoss() { return this.cfg.mode === 'tap'; },
+
+  buildDom(box) {
+    const t = (k, v) => store.t(k, v);
+    const theme = this.theme();
+    const wrap = el('div', 'game-wrap');
+    wrap.style.background = 'none';
+
+    // top bar
+    const top = el('div', 'game-top');
+    const exitBtn = el('button', 'btn btn-ghost');
+    exitBtn.type = 'button';
+    exitBtn.style.cssText = 'padding:7px 14px;font-size:13px;';
+    exitBtn.textContent = '← ' + t('game.exit');
+    exitBtn.onclick = () => {
+      this.playId += 1;
+      sfx.click();
+      App.level = null;
+      renderApp();
+    };
+    top.appendChild(exitBtn);
+    const titleBox = el('div', 'game-title bm-text-outline');
+    titleBox.innerHTML = t('map.level') + ' ' + this.cfg.level +
+      (this.isBoss() ? '<span class="boss-badge bm-text-outline">' + t('game.bossLevel') + '</span>' : '');
+    top.appendChild(titleBox);
+    const coins = coinPill();
+    coins.id = 'game-coins';
+    top.appendChild(coins);
+    wrap.appendChild(top);
+
+    // stats row
+    const stats = el('div', 'stats-row');
+    const movesBox = el('div', 'stat-box');
+    movesBox.innerHTML = '<div class="lbl">' + t('game.moves') + '</div><div class="val" id="hud-moves">' + this.moves + '</div>';
+    const scoreBox = el('div', 'stat-box');
+    scoreBox.innerHTML = '<div class="lbl">' + t('game.score') + '</div><div class="val" id="hud-score">0</div>';
+    stats.appendChild(movesBox);
+    stats.appendChild(scoreBox);
+    wrap.appendChild(stats);
+
+    // goals
+    const goals = el('div', 'goals-row');
+    goals.id = 'goals-row';
+    wrap.appendChild(goals);
+
+    // board
+    const boardOuter = el('div', 'board-outer');
+    const boardBox = el('div', 'board-box');
+    boardBox.style.background = theme.bg.dark ? 'rgba(0,0,0,.35)' : 'rgba(255,255,255,.15)';
+    boardBox.style.backdropFilter = 'blur(2px)';
+    boardBox.style.boxShadow = theme.bg.dark
+      ? '0 8px 30px rgba(0,0,0,.5), inset 0 0 40px rgba(34,224,255,.06)'
+      : '0 8px 30px rgba(0,0,0,.25), inset 0 0 30px rgba(255,255,255,.08)';
+    this.boardInner = el('div', 'board-inner');
+    this.boardInner.id = 'board-inner';
+    this.boardInner.style.aspectRatio = this.cfg.w + ' / ' + this.cfg.h;
+    if (theme.tile.pattern === 'pixel') this.boardInner.classList.add('bm-checker-light');
+    this.boardInner.onclick = (e) => {
+      const cellEl = e.target.closest('[data-idx]');
+      if (!cellEl) return;
+      this.handleCellClick(Number(cellEl.dataset.idx));
+    };
+    boardBox.appendChild(this.boardInner);
+    boardOuter.appendChild(boardBox);
+    wrap.appendChild(boardOuter);
+
+    // hint
+    const hint = el('div', 'hint-line');
+    hint.id = 'hint-line';
+    wrap.appendChild(hint);
+
+    // boosters
+    const boosters = el('div', 'boosters-row');
+    boosters.id = 'boosters-row';
+    wrap.appendChild(boosters);
+    const cancelRow = el('div', 'cancel-row');
+    cancelRow.id = 'cancel-row';
+    wrap.appendChild(cancelRow);
+
+    // modals container
+    this.modalBox = el('div');
+    wrap.appendChild(this.modalBox);
+
+    box.appendChild(wrap);
+    this.renderBoosters();
+    this.updateHint();
+  },
+
+  updateHint() {
+    const hint = document.getElementById('hint-line');
+    if (!hint) return;
+    hint.textContent = this.activeBooster
+      ? store.t('game.selectTarget') + ' (' + BOOSTER_MAP[this.activeBooster].icon + ')'
+      : this.isBoss() ? store.t('game.tapHint') : store.t('game.swapHint');
+    const cancelRow = document.getElementById('cancel-row');
+    cancelRow.innerHTML = '';
+    if (this.activeBooster) {
+      const btn = el('button', 'btn btn-ghost');
+      btn.type = 'button';
+      btn.style.cssText = 'padding:5px 16px;font-size:12px;';
+      btn.textContent = store.t('game.cancel');
+      btn.onclick = () => { this.activeBooster = null; this.renderBoosters(); this.updateHint(); };
+      cancelRow.appendChild(btn);
+    }
+  },
+
+  renderBoosters() {
+    const row = document.getElementById('boosters-row');
+    if (!row) return;
+    row.innerHTML = '';
+    for (const id of ['hammer', 'bomb', 'cross', 'shuffle', 'undo', 'moves5']) {
+      const def = BOOSTER_MAP[id];
+      const count = App.player.boosters[id] || 0;
+      const btn = el('button', 'booster-btn' + (this.activeBooster === id ? ' active' : ''));
+      btn.type = 'button';
+      btn.setAttribute('aria-label', def.name[App.player.lang]);
+      btn.innerHTML = '<span>' + def.icon + '</span>' +
+        '<span class="booster-count ' + (count > 0 ? 'has' : 'zero') + '">' + count + '</span>';
+      btn.onclick = () => this.handleBoosterButton(id);
+      row.appendChild(btn);
+    }
+  },
+
+  goalMet(p, sc) {
+    return this.cfg.goals.every((g) => {
+      if (g.type === 'score') return sc >= g.count;
+      if (g.type === 'collect') return (p.colors[g.color] || 0) >= g.count;
+      if (g.type === 'item') return p.items >= g.count;
+      if (g.type === 'stone') return p.stones >= g.count;
+      return false;
+    });
+  },
+
+  updateHud() {
+    const mv = document.getElementById('hud-moves');
+    if (mv) mv.textContent = this.moves;
+    const sc = document.getElementById('hud-score');
+    if (sc) sc.textContent = fmt(this.score);
+    const coins = document.getElementById('game-coins');
+    if (coins) coins.innerHTML = '🪙 ' + fmt(App.player.coins);
+    const goals = document.getElementById('goals-row');
+    if (!goals) return;
+    goals.innerHTML = '';
+    for (const g of this.cfg.goals) {
+      let done = false;
+      let content = '';
+      if (g.type === 'score') {
+        done = this.score >= g.count;
+        content = '🏆 ' + store.t('game.scoreGoal') + ' ' + fmt(this.score) + '/' + fmt(g.count);
+      } else if (g.type === 'collect') {
+        const have = this.progress.colors[g.color] || 0;
+        done = have >= g.count;
+        const shape = gemShapeCss(g.color);
+        const color = (this.skin().palette || this.theme().palette)[g.color] || '#999';
+        content = '<span style="display:inline-block;width:14px;height:14px;border:1px solid rgba(255,255,255,.6);' +
+          (shape.clipPath ? 'clip-path:' + shape.clipPath + ';' : '') +
+          'border-radius:' + shape.borderRadius + ';background:' + color + '"></span> ' +
+          have + '/' + g.count;
+      } else if (g.type === 'item') {
+        done = this.progress.items >= g.count;
+        content = '🌰 ' + store.t('game.itemGoal') + ' ' + this.progress.items + '/' + g.count;
+      } else {
+        done = this.progress.stones >= g.count;
+        content = '🪨 ' + store.t('game.stoneGoal') + ' ' + Math.min(this.progress.stones, g.count) + '/' + g.count;
+      }
+      const chip = el('span', 'chip' + (done ? ' done' : ''));
+      chip.innerHTML = content + (done ? ' ✓' : '');
+      goals.appendChild(chip);
+    }
+  },
+
+  rebuildBoard() {
+    const inner = this.boardInner;
+    if (!inner) return;
+    inner.innerHTML = '';
+    const w = this.board.w, h = this.board.h;
+    const cw = 100 / w, chh = 100 / h;
+    for (let idx = 0; idx < this.board.cells.length; idx++) {
+      const cell = this.board.cells[idx];
+      if (!cell) continue;
+      const r = Math.floor(idx / w), c = idx % w;
+      const div = el('div', 'cell');
+      div.style.cssText = 'left:' + (c * cw) + '%;top:' + (r * chh) + '%;width:' + cw + '%;height:' + chh + '%;';
+      div.dataset.idx = String(idx);
+
+      if (cell.blocker) {
+        const hp = cell.blocker.hp;
+        if (this.stonesHit.has(idx)) div.classList.add('bm-stone-hit');
+        const pips = Array.from({ length: Math.max(1, hp) }, () => '<span></span>').join('');
+        div.innerHTML = '<div class="stone-wrap" style="clip-path:polygon(30% 0%,70% 0%,100% 30%,100% 70%,70% 100%,30% 100%,0% 70%,0% 30%);background:rgba(28,24,20,.6);">' +
+          '<div style="position:absolute;inset:8%;' +
+          'background:' + (hp >= 2 ? 'linear-gradient(160deg,#9aa2ac,#5c646e)' : 'linear-gradient(160deg,#8a92a0,#4a5260)') + ';' +
+          'box-shadow:inset 0 2px 3px rgba(255,255,255,.25), inset 0 -3px 5px rgba(0,0,0,.35);">' +
+          (hp === 1 ? '<div style="height:100%;width:100%;opacity:.5;background:linear-gradient(115deg, transparent 42%, rgba(20,24,30,.7) 46%, rgba(20,24,30,.7) 50%, transparent 54%), linear-gradient(245deg, transparent 60%, rgba(20,24,30,.6) 66%, rgba(20,24,30,.6) 70%, transparent 74%)"></div>' : '') +
+          '</div><div class="stone-pips">' + pips + '</div></div>';
+        inner.appendChild(div);
+        continue;
+      }
+      if (!cell.tile) {
+        div.classList.add('void-cell');
+        div.innerHTML = '<div class="void-dot"></div>';
+        inner.appendChild(div);
+        continue;
+      }
+      const isSelected = this.selected === idx;
+      const tile = cell.tile;
+      let anim = '';
+      if (this.clearing.has(tile.id)) anim = 'pop';
+      else if (this.born.has(idx)) anim = 'born';
+      else if (this.spawned.has(tile.id)) anim = 'fall';
+      const btn = el('button');
+      btn.type = 'button';
+      btn.setAttribute('aria-label', 'cell ' + r + '-' + c);
+      btn.className = (isSelected ? 'sel' : '') + (this.activeBooster ? ' targeting' : '');
+      btn.innerHTML = tileHtml(tile, this.theme(), this.skin(), anim);
+      div.appendChild(btn);
+      if (this.shakeIdx === idx) div.classList.add('bm-shake');
+      inner.appendChild(div);
+    }
+  },
+
+  shake(idx) {
+    this.shakeIdx = idx;
+    this.rebuildBoard();
+    setTimeout(() => {
+      if (this.shakeIdx === idx) { this.shakeIdx = null; this.rebuildBoard(); }
+    }, 600);
+  },
+
+  spawnParticles(frame) {
+    if (!frame.board || frame.clearingIds.length === 0) return;
+    const cells = frame.clearingIds
+      .map((id) => frame.board.cells.findIndex((c) => c && c.tile && c.tile.id === id))
+      .filter((i) => i >= 0)
+      .slice(0, 14);
+    const glyph = this.tileFx() ? this.tileFx().visual : '•';
+    const color = this.skin().palette || this.theme().palette;
+    for (const idx of cells) {
+      const r = Math.floor(idx / frame.board.w), c = idx % frame.board.w;
+      const ang = Math.random() * Math.PI * 2;
+      const dist = 30 + Math.random() * 45;
+      const dx = Math.cos(ang) * dist;
+      const dy = Math.sin(ang) * dist;
+      const p = el('span', 'bm-particle', glyph);
+      p.style.left = ((c + 0.5) / frame.board.w * 100) + '%';
+      p.style.top = ((r + 0.5) / frame.board.h * 100) + '%';
+      p.style.fontSize = '14px';
+      p.style.color = color[idx % color.length] || '#fff';
+      p.style.setProperty('--dx', dx + 'px');
+      p.style.setProperty('--dy', dy + 'px');
+      p.style.setProperty('--rot', (Math.random() * 240 - 120) + 'deg');
+      this.boardInner.appendChild(p);
+      setTimeout(() => p.remove(), 700);
+    }
+  },
+
+  spawnFloat(xPct, yPct, text) {
+    const f = el('span', 'float-txt bm-float-up', text);
+    f.style.left = xPct + '%';
+    f.style.top = yPct + '%';
+    this.boardInner.appendChild(f);
+    setTimeout(() => f.remove(), 950);
+  },
+
+  async playFrames(res) {
+    const playId = ++this.playId;
+    this.busy = true;
+    for (const frame of res.frames) {
+      if (playId !== this.playId) return;
+      this.board = frame.board;
+      this.clearing = new Set(frame.clearingIds);
+      this.born = new Set(frame.bornIds);
+      this.spawned = new Set(frame.spawnIds);
+      this.stonesHit = new Set(frame.stonesHit);
+      if (frame.points > 0) {
+        this.score += frame.points;
+        if (frame.clearingIds.length > 0) {
+          const idxs = frame.clearingIds
+            .map((id) => frame.board.cells.findIndex((c) => c && c.tile && c.tile.id === id))
+            .filter((i) => i >= 0);
+          if (idxs.length > 0) {
+            const cx = idxs.reduce((a, i) => a + ((i % frame.board.w) + 0.5), 0) / idxs.length / frame.board.w;
+            const cy = idxs.reduce((a, i) => a + (Math.floor(i / frame.board.w) + 0.5), 0) / idxs.length / frame.board.h;
+            this.spawnFloat(cx * 100, cy * 100, '+' + frame.points);
+          }
+        }
+        this.updateHud();
+      }
+      if (frame.clearingIds.length > 0) { this.spawnParticles(frame); sfx.match(frame.cascade); }
+      if (frame.stonesHit.length > 0) sfx.boom();
+      if (frame.collectedIds.length > 0) sfx.coin();
+      if (frame.cascade >= 2) {
+        this.spawnFloat(50, 46, 'x' + frame.cascade + '!');
+      }
+      this.rebuildBoard();
+      await sleep(frame.clearingIds.length > 0 ? 250 : 300);
+      if (playId !== this.playId) return;
+      this.clearing = new Set(); this.born = new Set(); this.spawned = new Set(); this.stonesHit = new Set();
+      this.rebuildBoard();
+    }
+    this.progress.colors = this.progress.colors.map((v, i) => v + (res.colorsCollected[i] || 0));
+    this.progress.items += res.itemsCollected;
+    this.progress.stones += res.stonesDestroyed;
+    if (res.shuffled) showToast(store.t('game.shuffled'));
+    this.updateHud();
+    this.busy = false;
+  },
+
+  afterMove(res, movesUsed) {
+    const p = {
+      colors: this.progress.colors.map((v, i) => v + (res.colorsCollected[i] || 0)),
+      items: this.progress.items + res.itemsCollected,
+      stones: this.progress.stones + res.stonesDestroyed,
+    };
+    const sc = this.score;
+    const movesLeft = this.moves;
+    if (this.goalMet(p, sc)) {
+      const bonus = movesLeft * 50;
+      const finalScore = sc + bonus;
+      const stars = finalScore >= this.cfg.star3 ? 3 : finalScore >= this.cfg.star2 ? 2 : 1;
+      sfx.win();
+      setTimeout(() => sfx.star(1), 400);
+      const info = store.recordWin(this.cfg.level, stars, finalScore, res.maxCascade, movesUsed);
+      this.score = finalScore;
+      this.winInfo = { stars, reward: info.reward, firstClear: info.firstClear, newStars: info.newStars, bonus };
+      this.updateHud();
+      this.renderModals();
+    } else if (movesLeft <= 0) {
+      sfx.lose();
+      this.loseOpen = true;
+      this.renderModals();
+    }
+  },
+
+  async doMove(res, opts) {
+    opts = opts || {};
+    if (opts.snapshot) this.snapshot = opts.snapshot;
+    if (opts.consume !== false) {
+      this.moves -= 1;
+      this.updateHud();
+    }
+    await this.playFrames(res);
+    this.afterMove(res, opts.consume === false ? 0 : 1);
+  },
+
+  handleCellClick(idx) {
+    if (!this.board || !this.cfg || this.busy || this.winInfo || this.loseOpen) return;
+    const cell = this.board.cells[idx];
+    if (!cell) return;
+
+    if (this.activeBooster) {
+      const r = Math.floor(idx / this.board.w), c = idx % this.board.w;
+      if (this.activeBooster === 'hammer') {
+        if (store.useBooster('hammer')) {
+          this.activeBooster = null;
+          this.renderBoosters(); this.updateHint();
+          void this.doMove(hammerHit(this.board, r, c, this.cfg, this.rng), { consume: false });
+        }
+      } else if (this.activeBooster === 'bomb') {
+        if (store.useBooster('bomb')) {
+          this.activeBooster = null;
+          this.renderBoosters(); this.updateHint();
+          void this.doMove(bombBlast(this.board, r, c, this.cfg, this.rng), { consume: false });
+        }
+      } else if (this.activeBooster === 'cross') {
+        if (store.useBooster('cross')) {
+          this.activeBooster = null;
+          this.renderBoosters(); this.updateHint();
+          void this.doMove(crossBlast(this.board, r, c, this.cfg, this.rng), { consume: false });
+        }
+      }
+      return;
+    }
+
+    if (this.cfg.mode === 'tap') {
+      const res = tryTap(this.board, Math.floor(idx / this.board.w), idx % this.board.w, this.cfg, this.rng);
+      if (res.valid) {
+        this.moves -= 1;
+        this.updateHud();
+        void (async () => {
+          await this.playFrames(res);
+          this.afterMove(res, 1);
+        })();
+      } else {
+        this.shake(idx);
+      }
+      return;
+    }
+
+    // swap mode
+    const tile = cell.tile;
+    if (!tile || tile.kind !== 'gem') return;
+    if (this.selected === null) {
+      this.selected = idx;
+      sfx.click();
+      this.rebuildBoard();
+      return;
+    }
+    if (this.selected === idx) {
+      this.selected = null;
+      this.rebuildBoard();
+      return;
+    }
+    const rs = Math.floor(this.selected / this.board.w), cs = this.selected % this.board.w;
+    const rt = Math.floor(idx / this.board.w), ct = idx % this.board.w;
+    if (Math.abs(rs - rt) + Math.abs(cs - ct) !== 1) {
+      this.selected = idx;
+      sfx.click();
+      this.rebuildBoard();
+      return;
+    }
+    const snapshot = {
+      board: this.board, moves: this.moves, score: this.score,
+      colors: [...this.progress.colors], items: this.progress.items, stones: this.progress.stones,
+    };
+    const res = trySwap(this.board, this.selected, idx, this.cfg, this.rng);
+    if (!res.valid) {
+      sfx.swap();
+      this.selected = null;
+      this.shake(idx);
+      return;
+    }
+    this.selected = null;
+    sfx.swap();
+    void this.doMove(res, { snapshot });
+  },
+
+  handleBoosterButton(id) {
+    if (this.busy || this.winInfo || this.loseOpen) return;
+    sfx.click();
+    if (id === 'shuffle') {
+      if (this.board && this.cfg && store.useBooster('shuffle')) {
+        const res = shuffleBoard(this.board, this.cfg, this.rng);
+        this.board = res.frames[0].board;
+        this.rebuildBoard();
+        this.renderBoosters();
+      } else if ((App.player.boosters.shuffle || 0) <= 0) {
+        this.buyBoosterId = 'shuffle';
+        this.renderModals();
+      }
+      return;
+    }
+    if (id === 'undo') {
+      const snap = this.snapshot;
+      if (snap && store.useBooster('undo')) {
+        this.board = snap.board;
+        this.moves = snap.moves;
+        this.score = snap.score;
+        this.progress = { colors: [...snap.colors], items: snap.items, stones: snap.stones };
+        this.snapshot = null;
+        this.rebuildBoard();
+        this.updateHud();
+        this.renderBoosters();
+      } else if ((App.player.boosters.undo || 0) <= 0) {
+        this.buyBoosterId = 'undo';
+        this.renderModals();
+      }
+      return;
+    }
+    if (id === 'moves5') {
+      this.buyBoosterId = 'moves5';
+      this.renderModals();
+      return;
+    }
+    if ((App.player.boosters[id] || 0) > 0) {
+      this.activeBooster = this.activeBooster === id ? null : id;
+      this.renderBoosters();
+      this.updateHint();
+    } else {
+      this.buyBoosterId = id;
+      this.renderModals();
+    }
+  },
+
+  handlePlus5() {
+    if ((App.player.boosters.moves5 || 0) > 0) {
+      store.useBooster('moves5');
+    } else if (App.player.coins >= BOOSTER_MAP.moves5.price) {
+      store.buyBooster('moves5');
+    } else {
+      return;
+    }
+    sfx.coin();
+    this.loseOpen = false;
+    this.moves += 5;
+    this.plus5Used += 1;
+    this.updateHud();
+    this.renderModals();
+  },
+
+  renderModals() {
+    const box = this.modalBox;
+    if (!box) return;
+    box.innerHTML = '';
+    const t = (k, v) => store.t(k, v);
+
+    if (this.winInfo) {
+      const over = el('div', 'modal-overlay');
+      const modal = el('div', 'modal win');
+      modal.innerHTML = '<h2>' + t('game.win') + '</h2>';
+      const starsRow = el('div', 'stars-row');
+      for (let n = 1; n <= 3; n++) {
+        const s = el('span', n <= this.winInfo.stars ? 'bm-star-pop' : 'dim', '⭐');
+        if (n <= this.winInfo.stars) s.style.animationDelay = (n * 0.22) + 's';
+        starsRow.appendChild(s);
+      }
+      modal.appendChild(starsRow);
+      const scoreLine = el('div', 'sub');
+      scoreLine.innerHTML = t('game.score') + ': <b>' + fmt(this.score) + '</b>' +
+        (this.winInfo.bonus > 0 ? '<div style="color:#fde68a">+' + this.winInfo.bonus + ' ⚡</div>' : '');
+      modal.appendChild(scoreLine);
+      const reward = el('div', 'reward-pill');
+      reward.textContent = '🪙 +' + this.winInfo.reward;
+      modal.appendChild(reward);
+      if (this.winInfo.firstClear) {
+        const l = el('div', 'sub');
+        l.style.cssText = 'font-weight:700;color:#d1fae5;';
+        l.textContent = t('game.firstWin');
+        modal.appendChild(l);
+      } else if (this.winInfo.newStars) {
+        const l = el('div', 'sub');
+        l.style.cssText = 'font-weight:700;color:#fde68a;';
+        l.textContent = t('game.newStars');
+        modal.appendChild(l);
+      }
+      const col = el('div', 'col');
+      const nextBtn = el('button', 'btn btn-white');
+      nextBtn.type = 'button';
+      nextBtn.textContent = t('game.next') + ' →';
+      nextBtn.onclick = () => {
+        this.winInfo = null;
+        if (this.cfg.level < TOTAL_LEVELS) { App.level = this.cfg.level + 1; renderApp(); }
+        else { App.level = null; renderApp(); }
+      };
+      col.appendChild(nextBtn);
+      const row2 = el('div', 'row2');
+      const retryBtn = el('button', 'btn btn-ghost');
+      retryBtn.style.flex = '1';
+      retryBtn.type = 'button';
+      retryBtn.textContent = t('game.retry');
+      retryBtn.onclick = () => { this.winInfo = null; this.attempt += 1; renderApp(); };
+      row2.appendChild(retryBtn);
+      const exitBtn = el('button', 'btn btn-ghost');
+      exitBtn.style.flex = '1';
+      exitBtn.type = 'button';
+      exitBtn.textContent = t('game.exit');
+      exitBtn.onclick = () => { this.winInfo = null; App.level = null; renderApp(); };
+      row2.appendChild(exitBtn);
+      col.appendChild(row2);
+      modal.appendChild(col);
+      over.appendChild(modal);
+      box.appendChild(over);
+      return;
+    }
+
+    if (this.loseOpen) {
+      const over = el('div', 'modal-overlay');
+      const modal = el('div', 'modal lose');
+      modal.innerHTML = '<h2>' + t('game.lose') + '</h2>';
+      const col = el('div', 'col');
+      if (this.plus5Used < 2) {
+        const p5 = el('button', 'btn btn-amber');
+        p5.type = 'button';
+        p5.textContent = t('game.plus5') + ' · 🪙 ' + BOOSTER_MAP.moves5.price + ' ' + t('game.buyAndUse').toLowerCase();
+        p5.onclick = () => this.handlePlus5();
+        col.appendChild(p5);
+      }
+      const retryBtn = el('button', 'btn btn-ghost');
+      retryBtn.type = 'button';
+      retryBtn.textContent = t('game.retry');
+      retryBtn.onclick = () => { this.loseOpen = false; this.attempt += 1; renderApp(); };
+      col.appendChild(retryBtn);
+      const exitBtn = el('button', 'btn btn-ghost');
+      exitBtn.type = 'button';
+      exitBtn.textContent = t('game.exit');
+      exitBtn.onclick = () => { this.loseOpen = false; App.level = null; renderApp(); };
+      col.appendChild(exitBtn);
+      modal.appendChild(col);
+      over.appendChild(modal);
+      box.appendChild(over);
+      return;
+    }
+
+    if (this.buyBoosterId) {
+      const id = this.buyBoosterId;
+      const def = BOOSTER_MAP[id];
+      const over = el('div', 'modal-overlay');
+      const modal = el('div', 'modal light');
+      modal.innerHTML = '<h2>' + def.icon + ' ' + def.name[App.player.lang] + '</h2>' +
+        '<div class="sub" style="opacity:.7">' + def.desc[App.player.lang] + '</div>';
+      const col = el('div', 'col');
+      const buyBtn = el('button', 'btn btn-amber');
+      buyBtn.type = 'button';
+      buyBtn.textContent = '🪙 ' + def.price + ' · ' + t('game.buyAndUse');
+      buyBtn.onclick = () => {
+        if (id === 'moves5') {
+          this.handlePlus5();
+        } else if (store.buyBooster(id)) {
+          sfx.coin();
+          if (this.activeBooster === null && id !== 'shuffle' && id !== 'undo') {
+            this.activeBooster = id;
+          }
+        } else {
+          showToast(t('shop.notEnough'));
+        }
+        this.buyBoosterId = null;
+        this.renderBoosters();
+        this.updateHint();
+        this.renderModals();
+        this.updateHud();
+      };
+      col.appendChild(buyBtn);
+      const cancelBtn = el('button', 'btn');
+      cancelBtn.type = 'button';
+      cancelBtn.style.cssText = 'background:#e2e8f0;color:#334155;';
+      cancelBtn.textContent = t('game.cancel');
+      cancelBtn.onclick = () => { this.buyBoosterId = null; this.renderModals(); };
+      col.appendChild(cancelBtn);
+      modal.appendChild(col);
+      over.appendChild(modal);
+      box.appendChild(over);
+    }
+  },
+};
+
+/* ============================================================
+ * SHOP SCREEN
+ * ============================================================ */
+function renderShop(box) {
+  const wrap = el('div', 'panel-wrap');
+  const t = (k) => store.t(k);
+
+  const head = el('div');
+  head.style.cssText = 'display:flex;align-items:center;justify-content:space-between;';
+  head.innerHTML = '<h1 class="panel-title bm-text-outline">' + t('shop.title') + '</h1>';
+  head.appendChild(coinPill());
+  wrap.appendChild(head);
+
+  const tabs = ['boosters', 'bank', 'skins', 'avatars', 'frames', 'names', 'effects'];
+  const tabsRow = el('div', 'tabs-row');
+  for (const tab of tabs) {
+    const b = el('button', 'tab-btn' + (App.shopTab === tab ? ' active' : ''));
+    b.type = 'button';
+    b.textContent = t('shop.tab.' + tab);
+    b.onclick = () => { sfx.click(); App.shopTab = tab; renderApp(); };
+    tabsRow.appendChild(b);
+  }
+  wrap.appendChild(tabsRow);
+
+  const content = el('div');
+  const lang = App.player.lang;
+  const equipBtn = (kind, id, price, ownedNow) => {
+    const equippedId = kind === 'skin' ? App.player.equipped.skin
+      : kind === 'avatar' ? App.player.equipped.avatar
+      : kind === 'frame' ? App.player.equipped.frame
+      : kind === 'nameStyle' ? App.player.equipped.nameStyle
+      : kind === 'tileEffect' ? App.player.equipped.tileEffect
+      : kind === 'avatarEffect' ? App.player.equipped.avatarEffect
+      : App.player.equipped.nameEffect;
+    const owned = ownedNow !== undefined ? ownedNow : App.player.owned[
+      { skin: 'skins', avatar: 'avatars', frame: 'frames', nameStyle: 'nameStyles', tileEffect: 'effects', avatarEffect: 'effects', nameEffect: 'effects' }[kind]
+    ].includes(id);
+    const btn = el('button', 'btn ' + (equippedId === id ? 'btn-dark' : 'btn-primary'));
+    btn.type = 'button';
+    btn.style.cssText = 'padding:7px 14px;font-size:12px;white-space:nowrap;';
+    if (equippedId === id) { btn.textContent = '✓ ' + t('shop.equipped'); btn.onclick = () => {}; }
+    else if (owned) {
+      btn.textContent = t('shop.equip');
+      btn.onclick = () => { sfx.click(); store.equip(kind, id); renderApp(); };
+    } else {
+      btn.innerHTML = '🪙 ' + price + ' · ' + t('shop.buy');
+      btn.onclick = () => {
+        if (store.buyCosmetic(
+          { skin: 'skins', avatar: 'avatars', frame: 'frames', nameStyle: 'nameStyles', tileEffect: 'effects', avatarEffect: 'effects', nameEffect: 'effects' }[kind],
+          id, price,
+        )) { sfx.coin(); showToast(t('shop.purchased')); }
+        else showToast(t('shop.notEnough'));
+        renderApp();
+      };
+    }
+    return btn;
+  };
+
+  if (App.shopTab === 'boosters') {
+    for (const b of BOOSTERS) {
+      const item = el('div', 'shop-item');
+      item.innerHTML = '<span style="font-size:26px">' + b.icon + '</span>' +
+        '<div class="info"><div class="nm">' + b.name[lang] + '</div><div class="ds">' + b.desc[lang] + '</div></div>' +
+        '<div style="text-align:right"><div class="pr">🪙 ' + b.price + '</div><div class="ds">×' + (App.player.boosters[b.id] || 0) + '</div></div>';
+      const buy = el('button', 'btn btn-amber');
+      buy.type = 'button';
+      buy.style.cssText = 'padding:7px 14px;font-size:12px;white-space:nowrap;';
+      buy.textContent = t('shop.buy');
+      buy.onclick = () => {
+        if (store.buyBooster(b.id)) { sfx.coin(); showToast(t('shop.purchased')); }
+        else showToast(t('shop.notEnough'));
+        renderApp();
+      };
+      item.appendChild(buy);
+      content.appendChild(item);
+    }
+  } else if (App.shopTab === 'bank') {
+    const note = el('div', 'shop-item');
+    note.innerHTML = '<span style="font-size:26px">🏦</span><div class="info"><div class="nm">' + t('shop.simulatePay') + '</div><div class="ds">' + t('shop.demoNote') + '</div></div>';
+    content.appendChild(note);
+    for (const pack of COIN_PACKS) {
+      const item = el('div', 'shop-item');
+      item.innerHTML = '<span style="font-size:26px">🪙</span>' +
+        '<div class="info"><div class="nm">' + fmt(pack.coins) + ' ' + t('common.coins') + (pack.bonus ? ' <span style="color:#34d399">' + pack.bonus + '</span>' : '') + '</div></div>' +
+        '<span class="pr">' + pack.priceLabel + '</span>';
+      const buy = el('button', 'btn btn-primary');
+      buy.type = 'button';
+      buy.style.cssText = 'padding:7px 14px;font-size:12px;white-space:nowrap;';
+      buy.textContent = t('shop.simulatePay');
+      buy.onclick = () => { sfx.coin(); store.addCoins(pack.coins); showToast(t('shop.purchased')); renderApp(); };
+      item.appendChild(buy);
+      content.appendChild(item);
+    }
+  } else if (App.shopTab === 'skins') {
+    const grid = el('div', 'skins-grid');
+    for (const s of GEM_SKINS) {
+      const card = el('div', 'skin-card' + (App.player.equipped.skin === s.id ? ' equipped' : ''));
+      const prev = el('div', 'skin-preview');
+      prev.innerHTML = ANCHORS.map((_, ci) => previewTileHtml(ci, s)).join('');
+      card.appendChild(prev);
+      card.innerHTML = card.innerHTML + '<div style="font-size:12px;font-weight:800">' + s.name[lang] + '</div>';
+      card.appendChild(equipBtn('skin', s.id, s.price, App.player.owned.skins.includes(s.id)));
+      grid.appendChild(card);
+    }
+    content.appendChild(grid);
+  } else if (App.shopTab === 'avatars') {
+    const grid = el('div', 'skins-grid');
+    for (const a of AVATARS) {
+      const card = el('div', 'skin-card' + (App.player.equipped.avatar === a.id ? ' equipped' : ''));
+      const bubble = el('div', 'avatar-bubble');
+      bubble.style.cssText += 'margin:0 auto 6px;width:44px;height:44px;font-size:24px;background:' + a.bg + ';box-shadow:' + (App.player.equipped.avatar === a.id ? '0 0 0 2px #fbbf24' : 'none') + ';';
+      bubble.textContent = a.emoji;
+      card.appendChild(bubble);
+      card.appendChild(equipBtn('avatar', a.id, a.price, App.player.owned.avatars.includes(a.id)));
+      grid.appendChild(card);
+    }
+    content.appendChild(grid);
+  } else if (App.shopTab === 'frames') {
+    for (const f of FRAMES) {
+      const item = el('div', 'shop-item');
+      const demo = el('div', 'avatar-bubble');
+      demo.style.cssText = 'width:40px;height:40px;font-size:20px;background:linear-gradient(135deg,#dbeafe,#93c5fd);box-shadow:' + f.css + ';flex-shrink:0;';
+      demo.textContent = '🌱';
+      item.appendChild(demo);
+      item.insertAdjacentHTML('beforeend', '<div class="info"><div class="nm">' + f.name[lang] + '</div></div>');
+      item.appendChild(equipBtn('frame', f.id, f.price, App.player.owned.frames.includes(f.id)));
+      content.appendChild(item);
+    }
+  } else if (App.shopTab === 'names') {
+    for (const ns of NAME_STYLES) {
+      const item = el('div', 'shop-item');
+      const demo = el('div');
+      demo.style.cssText = 'font-size:16px;width:110px;flex-shrink:0;' + ns.css;
+      demo.textContent = App.player.name || 'Player';
+      item.appendChild(demo);
+      item.insertAdjacentHTML('beforeend', '<div class="info"><div class="nm">' + ns.name[lang] + '</div></div>');
+      item.appendChild(equipBtn('nameStyle', ns.id, ns.price, App.player.owned.nameStyles.includes(ns.id)));
+      content.appendChild(item);
+    }
+  } else {
+    const groups = [
+      { kind: 'tileEffect', title: t('shop.effectTile'), items: EFFECTS.filter((e) => e.kind === 'tile') },
+      { kind: 'avatarEffect', title: t('shop.effectAvatar'), items: EFFECTS.filter((e) => e.kind === 'avatar') },
+      { kind: 'nameEffect', title: t('shop.effectName'), items: EFFECTS.filter((e) => e.kind === 'name') },
+    ];
+    for (const g of groups) {
+      const h = el('div');
+      h.style.cssText = 'font-size:13px;font-weight:900;opacity:.85;margin:10px 0 6px;';
+      h.textContent = g.title;
+      content.appendChild(h);
+      for (const e of g.items) {
+        const item = el('div', 'shop-item');
+        const visual = e.kind === 'tile' ? e.visual
+          : e.kind === 'avatar' ? { glow: '✨', pulse: '💫', spin: '🌀', aurora: '🌈', flame: '🔥', galaxy: '🌌' }[e.visual]
+          : { glow: '🌟', rainbow: '🏳️‍🌈', blink: '💡', wave: '〰️', fire: '🔥', starlight: '⭐' }[e.visual];
+        item.innerHTML = '<span style="font-size:22px;width:30px;text-align:center">' + visual + '</span>' +
+          '<div class="info"><div class="nm">' + e.name[lang] + '</div></div>' +
+          '<span class="pr">🪙 ' + e.price + '</span>';
+        item.appendChild(equipBtn(g.kind, e.id, e.price, App.player.owned.effects.includes(e.id)));
+        content.appendChild(item);
+      }
+    }
+  }
+
+  wrap.appendChild(content);
+  box.appendChild(wrap);
+}
+
+/* ============================================================
+ * RANKS SCREEN
+ * ============================================================ */
+function renderRanks(box) {
+  const wrap = el('div', 'panel-wrap');
+  const t = (k, v) => store.t(k);
+
+  wrap.innerHTML = '<h1 class="panel-title bm-text-outline">' + t('ranks.title') + '</h1>';
+
+  const maxUnlocked = store.maxUnlocked();
+  const cleared = Math.max(0, maxUnlocked - 1);
+  const playerEntry = {
+    id: 'player',
+    name: App.player.name || 'Player',
+    level: cleared,
+    stars: store.totalStars(),
+    avatarId: App.player.equipped.avatar,
+    frameId: App.player.equipped.frame,
+    nameStyleId: App.player.equipped.nameStyle,
+    nameEffectId: App.player.equipped.nameEffect || null,
+    isPlayer: true,
+  };
+  const all = [...App.bots, playerEntry].sort((x, y) =>
+    y.level - x.level || y.stars - x.stars || (x.isPlayer ? -1 : 1));
+  const pos = all.findIndex((e) => e.isPlayer) + 1;
+
+  const info = el('div');
+  info.style.cssText = 'font-size:13px;opacity:.85;';
+  info.textContent = fmt(all.length) + ' ' + t('ranks.players') + ' · ' + t('ranks.youAre') + ' #' + pos;
+  wrap.appendChild(info);
+
+  const search = el('input', 'search-input');
+  search.type = 'text';
+  search.placeholder = t('ranks.search');
+  search.value = App.ranksQuery;
+  search.oninput = () => { App.ranksQuery = search.value; renderApp(); };
+  wrap.appendChild(search);
+
+  const q = App.ranksQuery.trim().toLowerCase();
+  const filtered = q ? all.filter((e) => e.name.toLowerCase().includes(q)) : all;
+
+  if (!q && filtered.length >= 3) {
+    const podium = el('div', 'rank-podium');
+    const medals = ['🥇', '🥈', '🥉'];
+    const order = [1, 0, 2];
+    for (const i of order) {
+      const e = filtered[i];
+      const pod = el('div', 'pod');
+      pod.innerHTML = '<div class="em">' + medals[i] + '</div>' +
+        '<div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + e.name + '</div>' +
+        '<div style="opacity:.75">' + t('ranks.level') + ' ' + fmt(e.level) + ' · ⭐ ' + fmt(e.stars) + '</div>';
+      if (e.isPlayer) pod.style.boxShadow = '0 0 0 2px #fbbf24';
+      podium.appendChild(pod);
+    }
+    wrap.appendChild(podium);
+  }
+
+  // list: top 30 + window around player
+  const shown = [];
+  const topN = q ? 60 : 30;
+  const seen = new Set();
+  filtered.slice(0, topN).forEach((e, i) => { shown.push({ e, p: i + 1 }); seen.add(e.id); });
+  if (!q) {
+    const around = 3;
+    for (let i = Math.max(0, pos - around - 1); i <= Math.min(filtered.length - 1, pos + around - 1); i++) {
+      if (!seen.has(filtered[i].id)) { shown.push({ e: filtered[i], p: i + 1 }); seen.add(filtered[i].id); }
+    }
+  }
+  shown.sort((a, b) => a.p - b.p);
+  let prevP = 0;
+  for (const { e, p } of shown) {
+    if (prevP && p - prevP > 1) {
+      const dots = el('div');
+      dots.style.cssText = 'text-align:center;opacity:.5;font-size:12px;margin:2px 0;';
+      dots.textContent = '···';
+      wrap.appendChild(dots);
+    }
+    prevP = p;
+    const row = el('div', 'rank-row' + (e.isPlayer ? ' me' : ''));
+    const av = AVATARS.find((a) => a.id === e.avatarId) || AVATARS[0];
+    const fr = FRAMES.find((f) => f.id === e.frameId) || FRAMES[0];
+    const ns = NAME_STYLES.find((s) => s.id === e.nameStyleId) || NAME_STYLES[0];
+    const avBox = el('div', 'avatar-bubble');
+    avBox.style.cssText = 'width:32px;height:32px;font-size:17px;background:' + av.bg + ';box-shadow:' + fr.css + ';flex-shrink:0;';
+    avBox.textContent = av.emoji;
+    row.appendChild(avBox);
+    const nm = el('div', 'nm');
+    nm.style.cssText += ns.css;
+    if (e.isPlayer) nm.innerHTML = '<span>' + e.name + ' (' + t('ranks.you') + ')</span>';
+    else nm.textContent = e.name;
+    row.appendChild(nm);
+    const lv = el('span');
+    lv.style.cssText = 'font-weight:800;white-space:nowrap;';
+    lv.textContent = t('ranks.level') + ' ' + fmt(e.level);
+    row.appendChild(lv);
+    const st = el('span');
+    st.style.cssText = 'white-space:nowrap;';
+    st.textContent = '⭐ ' + fmt(e.stars);
+    row.appendChild(st);
+    wrap.appendChild(row);
+  }
+
+  box.appendChild(wrap);
+}
+
+/* ============================================================
+ * PROFILE SCREEN (+ settings)
+ * ============================================================ */
+function renderProfile(box) {
+  const wrap = el('div', 'panel-wrap');
+  const t = (k) => store.t(k);
+  const lang = App.player.lang;
+
+  const head = el('div', 'profile-head');
+  const av = AVATARS.find((a) => a.id === App.player.equipped.avatar) || AVATARS[0];
+  const fr = FRAMES.find((f) => f.id === App.player.equipped.frame) || FRAMES[0];
+  const ns = NAME_STYLES.find((s) => s.id === App.player.equipped.nameStyle) || NAME_STYLES[0];
+  const bubble = el('div', 'avatar-bubble');
+  bubble.style.cssText = 'background:' + av.bg + ';box-shadow:' + fr.css + ';';
+  bubble.textContent = av.emoji;
+  head.appendChild(bubble);
+  const nameBox = el('div');
+  const nameTxt = el('div');
+  nameTxt.style.cssText = 'font-size:20px;font-weight:900;' + ns.css;
+  nameTxt.textContent = App.player.name || 'Player';
+  nameBox.appendChild(nameTxt);
+  const sub = el('div');
+  sub.style.cssText = 'font-size:12px;opacity:.75;';
+  sub.textContent = t('ranks.level') + ' ' + Math.max(0, store.maxUnlocked() - 1) + ' · ⭐ ' + store.totalStars();
+  nameBox.appendChild(sub);
+  head.appendChild(nameBox);
+  wrap.appendChild(head);
+
+  // name form
+  const form = el('div', 'card');
+  form.style.cssText = 'padding:12px;display:flex;gap:8px;align-items:center;';
+  const input = el('input', 'name-input');
+  input.type = 'text';
+  input.maxLength = 16;
+  input.placeholder = t('profile.namePlaceholder');
+  input.value = App.player.name;
+  const saveBtn = el('button', 'btn btn-primary');
+  saveBtn.type = 'button';
+  saveBtn.style.cssText = 'padding:9px 16px;white-space:nowrap;';
+  saveBtn.textContent = t('profile.save');
+  saveBtn.onclick = () => {
+    sfx.click();
+    store.setName(input.value);
+    App.savedFlash = true;
+    renderApp();
+    setTimeout(() => { App.savedFlash = false; }, 1500);
+  };
+  form.appendChild(input);
+  form.appendChild(saveBtn);
+  if (App.savedFlash) {
+    const ok = el('div');
+    ok.style.cssText = 'font-size:12px;color:#6ee7b7;margin-top:6px;';
+    ok.textContent = '✓ ' + t('profile.saved');
+    wrap.appendChild(ok);
+  }
+  wrap.appendChild(form);
+
+  // stats
+  const statsTitle = el('div');
+  statsTitle.style.cssText = 'font-size:13px;font-weight:900;opacity:.85;margin:14px 0 4px;';
+  statsTitle.textContent = t('profile.stats');
+  wrap.appendChild(statsTitle);
+  const grid = el('div', 'stat-grid');
+  const levelsCleared = Object.keys(App.player.stars).length;
+  const statsData = [
+    [String(App.player.stats.wins), t('profile.stat.wins')],
+    [String(levelsCleared), t('profile.stat.levels')],
+    [String(store.totalStars()), t('profile.stat.stars')],
+    ['x' + Math.max(0, App.player.stats.bestCascade), t('profile.stat.bestCascade')],
+    [fmt(App.player.stats.totalScore), t('profile.stat.totalScore')],
+    [fmt(App.player.stats.movesMade), t('profile.stat.moves')],
+  ];
+  for (const [v, k] of statsData) {
+    const card = el('div', 'stat-card');
+    card.innerHTML = '<div class="v">' + v + '</div><div class="k">' + k + '</div>';
+    grid.appendChild(card);
+  }
+  wrap.appendChild(grid);
+
+  // equipped
+  const eqTitle = el('div');
+  eqTitle.style.cssText = 'font-size:13px;font-weight:900;opacity:.85;margin:14px 0 0;';
+  eqTitle.textContent = t('profile.equipped');
+  wrap.appendChild(eqTitle);
+  const eqList = el('div', 'eq-list');
+  const eqData = [
+    ['🎨', (GEM_SKINS.find((s) => s.id === App.player.equipped.skin) || GEM_SKINS[0]).name[lang]],
+    [av.emoji, t('shop.tab.avatars')],
+    ['🖼️', (FRAMES.find((f) => f.id === App.player.equipped.frame) || FRAMES[0]).name[lang]],
+    ['✍️', ns.name[lang]],
+  ];
+  for (const [icon, label] of eqData) {
+    const chip = el('span', 'chip');
+    chip.textContent = icon + ' ' + label;
+    eqList.appendChild(chip);
+  }
+  wrap.appendChild(eqList);
+
+  // settings
+  const settings = el('div', 'settings-block');
+  settings.innerHTML = '<div style="font-size:14px;font-weight:900;margin-bottom:6px;">⚙️ ' + t('settings.title') + '</div>';
+  const rowLang = el('div', 'settings-row');
+  rowLang.innerHTML = '<span>' + t('settings.language') + '</span>';
+  const segLang = el('div', 'seg');
+  for (const l of ['ru', 'en']) {
+    const b = el('button', App.player.lang === l ? 'on' : '', l.toUpperCase());
+    b.type = 'button';
+    b.onclick = () => { sfx.click(); store.setLang(l); renderApp(); };
+    segLang.appendChild(b);
+  }
+  rowLang.appendChild(segLang);
+  settings.appendChild(rowLang);
+
+  const rowSound = el('div', 'settings-row');
+  rowSound.innerHTML = '<span>' + t('settings.sound') + '</span>';
+  const segSound = el('div', 'seg');
+  for (const v of [true, false]) {
+    const b = el('button', App.player.sound === v ? 'on' : '', v ? t('settings.on') : t('settings.off'));
+    b.type = 'button';
+    b.onclick = () => { store.setSound(v); sfx.click(); renderApp(); };
+    segSound.appendChild(b);
+  }
+  rowSound.appendChild(segSound);
+  settings.appendChild(rowSound);
+
+  const resetBtn = el('button', 'btn');
+  resetBtn.type = 'button';
+  resetBtn.style.cssText = 'background:rgba(244,63,94,.85);color:#fff;width:100%;margin-top:8px;';
+  resetBtn.textContent = '🗑️ ' + t('settings.reset');
+  resetBtn.onclick = () => { renderResetConfirm(); };
+  settings.appendChild(resetBtn);
+  wrap.appendChild(settings);
+
+  box.appendChild(wrap);
+
+  function renderResetConfirm() {
+    const over = el('div', 'modal-overlay');
+    over.style.zIndex = '90';
+    const modal = el('div', 'modal light');
+    modal.innerHTML = '<h2>' + t('settings.reset') + '</h2><div class="sub">' + t('settings.resetConfirm') + '</div>';
+    const col = el('div', 'col');
+    const yes = el('button', 'btn');
+    yes.type = 'button';
+    yes.style.cssText = 'background:#e11d48;color:#fff;';
+    yes.textContent = t('settings.resetYes');
+    yes.onclick = () => { store.resetAll(); over.remove(); showToast(t('settings.resetDone')); renderApp(); };
+    col.appendChild(yes);
+    const no = el('button', 'btn');
+    no.type = 'button';
+    no.style.cssText = 'background:#e2e8f0;color:#334155;';
+    no.textContent = t('settings.resetNo');
+    no.onclick = () => over.remove();
+    col.appendChild(no);
+    modal.appendChild(col);
+    over.appendChild(modal);
+    document.body.appendChild(over);
+  }
+}
+
+/* ---------------- boot ---------------- */
+App.player = loadState();
+setSoundEnabled(App.player.sound);
+App.bots = generateBots();
+document.addEventListener('DOMContentLoaded', () => {
+  renderApp();
+});
+if (document.readyState !== 'loading') renderApp();
+
+</script>
+</body>
+</html>

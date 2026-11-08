@@ -1,0 +1,37 @@
+# Что НЕ попадает в зеркало blooming-world/ на GitHub
+# (rsync --exclude-from; каждая строка — шаблон относительный к корню проекта)
+
+# секреты и окружение
+.env
+.env.*
+*.pem
+*.key
+
+# зависимости и сборка
+node_modules/
+.next/
+out/
+build/
+tsconfig.tsbuildinfo
+
+# собственный git проекта и зеркало репозитория
+.git/
+.github-sync/
+blooming-world-repo/
+.zscripts/
+
+# пользовательские файлы и рабочие артефакты песочницы
+upload/
+tool-results/
+db/*.db
+*.log
+dev.log
+tmp/
+.cache/
+.DS_Store
+
+# шаблонные папки песочницы (не часть игры)
+skills/
+mini-services/
+examples/
+tests/
