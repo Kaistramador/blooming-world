@@ -403,6 +403,35 @@ input { font-family: inherit; }
 .team-chest.done .rw { color: #fff; }
 @keyframes team-glow { 0%,100% { box-shadow: 0 0 0 0 rgba(251,191,36,.6); } 50% { box-shadow: 0 0 0 6px rgba(251,191,36,0); } }
 
+/* ---------- Волна 7: пагинация карты + A/B коуч + 4 языка ---------- */
+.map-pager {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  border-radius: 16px; background: rgba(0,0,0,.3);
+  padding: 6px 8px; margin-bottom: 12px;
+}
+.map-pager-label { flex: 1; text-align: center; font-size: 11px; font-weight: 700; color: rgba(255,255,255,.85); }
+.map-pager-btn {
+  min-width: 36px; min-height: 36px; border-radius: 12px;
+  background: rgba(255,255,255,.15); color: #fff; border: 0;
+  font-size: 18px; font-weight: 900; padding: 0 10px; cursor: pointer;
+}
+.map-pager-btn:disabled { opacity: .3; cursor: default; }
+.map-pager-current {
+  min-height: 36px; border-radius: 12px; padding: 0 10px;
+  background: rgba(251,191,36,.9); color: #451a03; border: 0;
+  font-size: 11px; font-weight: 900; cursor: pointer;
+}
+.hint-line.bm-coach {
+  animation: bm-coach-pulse 1.15s ease-in-out infinite;
+  font-size: 13px; font-weight: 900; color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,.7);
+}
+@keyframes bm-coach-pulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(255,216,61,0)); }
+  50% { transform: scale(1.07); filter: drop-shadow(0 0 10px rgba(255,216,61,.75)); }
+}
+.seg.lang-row { flex-wrap: wrap; }
+
 </style>
 </head>
 <body>
@@ -437,156 +466,724 @@ const ERA_IMGS = [
 const I18N_RU = {
   'app.title': 'Цветущий мир',
   'app.subtitle': 'Три-в-ряд: эволюция сада',
-  'nav.map': 'Карта', 'nav.shop': 'Магазин', 'nav.ranks': 'Рейтинг', 'nav.profile': 'Профиль',
-  'map.play': 'Играть', 'map.continue': 'Продолжить', 'map.level': 'Уровень',
-  'map.chapter': 'Глава', 'map.locked': 'Закрыто', 'map.bloomed': 'Расцвело!',
+  'nav.map': 'Карта',
+  'nav.shop': 'Магазин',
+  'nav.ranks': 'Рейтинг',
+  'nav.profile': 'Профиль',
+  'nav.settings': 'Настройки',
+  'map.play': 'Играть',
+  'map.continue': 'Продолжить',
+  'map.level': 'Уровень',
+  'map.chapter': 'Глава',
+  'map.locked': 'Закрыто',
+  'map.bloomed': 'Расцвело!',
   'map.nextChapter': 'Следующая глава через {n} ур.',
-  'map.comingSoon': 'В планах: 10 000 уровней. Сейчас — первые 100!',
-  'game.moves': 'Ходы', 'game.score': 'Очки', 'game.goal': 'Цель',
+  'map.scale': '10 000 уровней · 1 000 глав — путь расцвета',
+  'map.newGraphics': 'Новая графика: {name}',
+  'map.pages': 'Уровни {a}–{b} из {c}',
+  'map.toCurrent': 'К текущей',
+  'game.moves': 'Ходы',
+  'game.score': 'Очки',
+  'game.goal': 'Цель',
   'game.tapHint': 'Тапай группы из 2+ камней',
   'game.swapHint': 'Меняй камни местами: собирай 3+ в ряд',
   'game.bossLevel': 'ВЗРЫВНОЙ УРОВЕНЬ',
-  'game.win': 'Победа!', 'game.lose': 'Ходы закончились',
-  'game.next': 'Следующий уровень', 'game.retry': 'Ещё раз', 'game.exit': 'На карту',
+  'game.win': 'Победа!',
+  'game.lose': 'Ходы закончились',
+  'game.next': 'Следующий уровень',
+  'game.retry': 'Ещё раз',
+  'game.exit': 'На карту',
   'game.cascade': 'Комбо x{n}!',
-  'game.combo2': 'Здорово!', 'game.combo3': 'Великолепно!', 'game.combo4': 'Изумительно!', 'game.combo5': 'Невероятно!',
+  'game.combo2': 'Здорово!',
+  'game.combo3': 'Великолепно!',
+  'game.combo4': 'Изумительно!',
+  'game.combo5': 'Невероятно!',
   'game.shuffled': 'Ходов больше нет — поле перемешано',
-  'game.plus5': '+5 ходов', 'game.buyAndUse': 'Купить и применить', 'game.use': 'Применить',
-  'game.boosters': 'Бусты', 'game.selectTarget': 'Выбери цель на поле', 'game.cancel': 'Отмена',
-  'game.starReward': 'Награда', 'game.newStars': 'Новый рекорд звёзд!', 'game.firstWin': 'Первое прохождение!',
-  'game.stoneGoal': 'Разбей камни', 'game.itemGoal': 'Собери бутоны',
-  'game.collectGoal': 'Собери камни', 'game.scoreGoal': 'Набери очки',
-  'streak.title': 'Серия побед', 'streak.next': 'До ×{m} — ещё {n}',
-  'streak.max': 'Максимальный множитель!', 'streak.lost': 'Серия побед сброшена',
+  'game.plus5': '+5 ходов',
+  'game.buyAndUse': 'Купить и применить',
+  'game.use': 'Применить',
+  'game.boosters': 'Бусты',
+  'game.selectTarget': 'Выбери цель на поле',
+  'game.cancel': 'Отмена',
+  'game.starReward': 'Награда',
+  'game.newStars': 'Новый рекорд звёзд!',
+  'game.firstWin': 'Первое прохождение!',
+  'game.stoneGoal': 'Разбей камни',
+  'game.itemGoal': 'Собери бутоны',
+  'game.collectGoal': 'Собери камни',
+  'game.scoreGoal': 'Набери очки',
+  'tut.tap': 'Тапай группу одинаковых камней!',
+  'tut.swap': 'Свайпни, чтобы собрать 3+ в ряд!',
+  'streak.title': 'Серия побед',
+  'streak.next': 'До ×{m} — ещё {n}',
+  'streak.max': 'Максимальный множитель!',
+  'streak.lost': 'Серия побед сброшена',
+  'profile.stat.streak': 'Лучшая серия',
   'nav.garden': 'Сад',
-  'garden.title': 'Сад', 'garden.subtitle': 'Восстанови сад за звёзды',
-  'garden.lockedTitle': 'Сад пока спит', 'garden.lockedHint': 'Пройди главу 1 — и сад начнёт расцветать',
-  'garden.zone0': 'У входа', 'garden.zone1': 'Сад', 'garden.zone2': 'Парк',
+  'garden.title': 'Сад',
+  'garden.subtitle': 'Восстанови сад за звёзды',
+  'garden.lockedTitle': 'Сад пока спит',
+  'garden.lockedHint': 'Пройди главу 1 — и сад начнёт расцветать',
+  'garden.zone0': 'У входа',
+  'garden.zone1': 'Сад',
+  'garden.zone2': 'Парк',
   'garden.zoneLocked': 'Откроется после главы {n}',
-  'garden.restore': 'Восстановить · ⭐{n}', 'garden.restoredCount': '{n} из {m} восстановлено',
-  'garden.bloom': 'Расцвет', 'garden.done': 'Сад полностью расцвёл!',
-  'garden.needStars': 'Не хватает звёзд', 'garden.coinsBack': 'Награда: 🪙 +{n}',
-  'garden.confirmTitle': 'Восстановить «{name}»?', 'garden.cancel': 'Позже',
-  'piggy.title': 'Копилка', 'piggy.full': 'Копилка полна!', 'piggy.open': 'Открыть копилку',
-  'piggy.collect': 'Забрать 🪙 {n}', 'piggy.progress': 'Побед до вскрытия: {n}',
-  'piggy.deposit': '🐷 +{n} в копилку ({w}/{m})', 'piggy.ready': 'Копилка готова к вскрытию!',
+  'garden.restore': 'Восстановить · ⭐{n}',
+  'garden.restoredCount': '{n} из {m} восстановлено',
+  'garden.bloom': 'Расцвет',
+  'garden.done': 'Сад полностью расцвёл!',
+  'garden.needStars': 'Не хватает звёзд',
+  'garden.coinsBack': 'Награда: 🪙 +{n}',
+  'garden.confirmTitle': 'Восстановить «{name}»?',
+  'garden.cancel': 'Позже',
+  'garden.wasJust': 'Уже стоит',
+  'piggy.title': 'Копилка',
+  'piggy.full': 'Копилка полна!',
+  'piggy.open': 'Открыть копилку',
+  'piggy.collect': 'Забрать 🪙 {n}',
+  'piggy.progress': 'Побед до вскрытия: {n}',
+  'piggy.deposit': '🐷 +{n} в копилку ({w}/{m})',
+  'piggy.ready': 'Копилка готова к вскрытию!',
   'piggy.hint': 'Каждая победа кладёт монеты в копилку',
-  'daily.title': 'Уровень дня', 'daily.sub': '×2 награда · новый каждый день',
-  'daily.play': 'Играть · ур. {n}', 'daily.done': 'Пройден · ждём завтра',
-  'daily.badge': '📅 Уровень дня ×2', 'daily.weekendHint': 'В выходные ивенты: ×2 монеты и каскад-бонус',
-  'event.weekend': 'Ивент выходных', 'event.coinsBadge': '🪙 Золотые выходные ×2',
-  'event.cascadeBadge': '🌊 Каскад ×{n}: +{c} 🪙', 'event.today': 'Только сегодня',
-  'team.title': 'Командный сундук', 'team.sub': 'Очки побед всей команды за неделю', 'team.week': 'Неделя {n}', 'team.you': 'Вы',
-  'team.contrib': 'Вы: {p} · команда: {b}', 'team.toNext': 'До следующего сундука: {n} очков', 'team.allClaimed': 'Все сундуки собраны!',
-  'team.full': 'Награда команды!', 'team.hint': 'Побеждайте — очки каждой победы летят в общий горшок', 'team.members': 'Вклад недели',
-  'team.chest': 'Сундук {n}', 'team.need': 'Нужно {n}',
-  'shop.seasonal': 'Сезонная коллекция', 'shop.seasonalSub': '{icon} {season} · смена по календарю', 'shop.seasonTag': 'Сезон',
-  'shop.title': 'Магазин', 'shop.coins': 'Монеты',
-  'shop.tab.boosters': 'Бусты', 'shop.tab.bank': 'Банк', 'shop.tab.skins': 'Скины',
-  'shop.tab.avatars': 'Аватары', 'shop.tab.frames': 'Рамки', 'shop.tab.names': 'Имя', 'shop.tab.effects': 'Эффекты',
-  'shop.buy': 'Купить', 'shop.equip': 'Надеть', 'shop.equipped': 'Надето', 'shop.owned': 'Куплено',
-  'shop.notEnough': 'Недостаточно монет', 'shop.purchased': 'Покупка совершена!',
+  'daily.title': 'Уровень дня',
+  'daily.sub': '×2 награда · новый каждый день',
+  'daily.play': 'Играть · ур. {n}',
+  'daily.done': 'Пройден · ждём завтра',
+  'daily.badge': '📅 Уровень дня ×2',
+  'daily.weekendHint': 'В выходные ивенты: ×2 монеты и каскад-бонус',
+  'event.weekend': 'Ивент выходных',
+  'event.coinsBadge': '🪙 Золотые выходные ×2',
+  'event.cascadeBadge': '🌊 Каскад ×{n}: +{c} 🪙',
+  'event.today': 'Только сегодня',
+  'team.title': 'Командный сундук',
+  'team.sub': 'Очки побед всей команды за неделю',
+  'team.week': 'Неделя {n}',
+  'team.you': 'Вы',
+  'team.contrib': 'Вы: {p} · команда: {b}',
+  'team.toNext': 'До следующего сундука: {n} очков',
+  'team.allClaimed': 'Все сундуки собраны!',
+  'team.full': 'Награда команды!',
+  'team.hint': 'Побеждайте — очки каждой победы летят в общий горшок',
+  'team.members': 'Вклад недели',
+  'team.chest': 'Сундук {n}',
+  'team.need': 'Нужно {n}',
+  'shop.seasonal': 'Сезонная коллекция',
+  'shop.seasonalSub': '{icon} {season} · смена по календарю',
+  'shop.seasonTag': 'Сезон',
+  'profile.analytics': 'Аналитика',
+  'profile.analyticsInfo': '{n} событий · сессий: {s}',
+  'profile.export': 'Выгрузить статистику (JSON)',
+  'profile.exportDone': 'Файл выгружен!',
+  'shop.title': 'Магазин',
+  'shop.coins': 'Монеты',
+  'shop.tab.boosters': 'Бусты',
+  'shop.tab.bank': 'Банк',
+  'shop.tab.skins': 'Скины',
+  'shop.tab.avatars': 'Аватары',
+  'shop.tab.frames': 'Рамки',
+  'shop.tab.names': 'Имя',
+  'shop.tab.effects': 'Эффекты',
+  'shop.buy': 'Купить',
+  'shop.equip': 'Надеть',
+  'shop.equipped': 'Надето',
+  'shop.owned': 'Куплено',
+  'shop.notEnough': 'Недостаточно монет',
+  'shop.purchased': 'Покупка совершена!',
   'shop.demoNote': 'Демо-режим: оплата симулируется, монеты зачисляются бесплатно',
   'shop.simulatePay': 'Пополнить (демо)',
-  'shop.effectTile': 'Эффекты камней', 'shop.effectAvatar': 'Эффекты аватара', 'shop.effectName': 'Эффекты имени',
+  'shop.effectTile': 'Эффекты камней',
+  'shop.effectAvatar': 'Эффекты аватара',
+  'shop.effectName': 'Эффекты имени',
   'shop.free': 'Бесплатно',
-  'ranks.title': 'Глобальный рейтинг', 'ranks.players': 'игроков', 'ranks.youAre': 'Вы на месте',
-  'ranks.level': 'Ур.', 'ranks.stars': 'Звёзды', 'ranks.you': 'ВЫ', 'ranks.search': 'Поиск игрока...', 'ranks.top3': 'Лидеры',
-  'profile.title': 'Профиль', 'profile.name': 'Имя игрока', 'profile.namePlaceholder': 'Введите имя',
-  'profile.save': 'Сохранить', 'profile.saved': 'Сохранено!', 'profile.stats': 'Статистика',
-  'profile.stat.wins': 'Побед', 'profile.stat.levels': 'Уровней пройдено', 'profile.stat.stars': 'Звёзд собрано',
-  'profile.stat.bestCascade': 'Лучшее комбо', 'profile.stat.totalScore': 'Всего очков', 'profile.stat.moves': 'Ходов сделано',
-  'profile.stat.streak': 'Лучшая серия',
-  'profile.analytics': 'Аналитика', 'profile.analyticsInfo': '{n} событий · сессий: {s}',
-  'profile.export': 'Выгрузить статистику (JSON)', 'profile.exportDone': 'Файл выгружен!',
+  'ranks.title': 'Глобальный рейтинг',
+  'ranks.players': 'игроков',
+  'ranks.youAre': 'Вы на месте',
+  'ranks.level': 'Ур.',
+  'ranks.stars': 'Звёзды',
+  'ranks.you': 'ВЫ',
+  'ranks.search': 'Поиск игрока...',
+  'ranks.top3': 'Лидеры',
+  'ranks.modeBots': '🤖 Боты',
+  'ranks.modeOnline': '🌐 Онлайн',
+  'ranks.onlineOff': 'Онлайн-рейтинг недоступен — покажем ботов',
+  'ranks.onlineEmpty': 'Пока никто не отправил результат — станьте первым!',
+  'ranks.onlineMe': 'Вы',
+  'ranks.onlineSent': 'Результат отправлен ✓',
+  'profile.title': 'Профиль',
+  'profile.name': 'Имя игрока',
+  'profile.namePlaceholder': 'Введите имя',
+  'profile.save': 'Сохранить',
+  'profile.saved': 'Сохранено!',
+  'profile.stats': 'Статистика',
+  'profile.stat.wins': 'Побед',
+  'profile.stat.levels': 'Уровней пройдено',
+  'profile.stat.stars': 'Звёзд собрано',
+  'profile.stat.bestCascade': 'Лучшее комбо',
+  'profile.stat.totalScore': 'Всего очков',
+  'profile.stat.moves': 'Ходов сделано',
   'profile.equipped': 'Экипировка',
-  'profile.install': 'Установить приложение', 'profile.installDone': 'Игра установлена!',
-  'settings.title': 'Настройки', 'settings.language': 'Язык', 'settings.sound': 'Звук',
-  'settings.on': 'Вкл', 'settings.off': 'Выкл',
+  'profile.install': 'Установить приложение',
+  'profile.installDone': 'Игра установлена!',
+  'settings.title': 'Настройки',
+  'settings.language': 'Язык',
+  'settings.sound': 'Звук',
+  'settings.on': 'Вкл',
+  'settings.off': 'Выкл',
   'settings.reset': 'Сбросить прогресс',
   'settings.resetConfirm': 'Точно сбросить весь прогресс? Это действие необратимо.',
-  'settings.resetYes': 'Да, сбросить', 'settings.resetNo': 'Отмена', 'settings.resetDone': 'Прогресс сброшен',
-  'common.coins': 'монет', 'common.close': 'Закрыть', 'common.ok': 'ОК', 'common.loading': 'Загрузка...',
-  'goal.stone': 'Камни', 'goal.item': 'Бутоны', 'goal.moves': 'Ходы',
-  'era.unlock': 'Глава {n}: {name} — {tag}',
+  'settings.resetYes': 'Да, сбросить',
+  'settings.resetNo': 'Отмена',
+  'settings.resetDone': 'Прогресс сброшен',
+  'common.coins': 'монет',
+  'common.close': 'Закрыть',
+  'common.ok': 'ОК',
+  'common.loading': 'Загрузка...',
+  'goal.stone': 'Камни',
+  'goal.item': 'Бутоны',
+  'goal.moves': 'Ходы',
+  'era.unlock': 'Глава {n}: {name} — {tag}'
 };
 const I18N_EN = {
   'app.title': 'Blooming World',
   'app.subtitle': 'Match-3: garden evolution',
-  'nav.map': 'Map', 'nav.shop': 'Shop', 'nav.ranks': 'Ranks', 'nav.profile': 'Profile',
-  'map.play': 'Play', 'map.continue': 'Continue', 'map.level': 'Level',
-  'map.chapter': 'Chapter', 'map.locked': 'Locked', 'map.bloomed': 'Bloomed!',
+  'nav.map': 'Map',
+  'nav.shop': 'Shop',
+  'nav.ranks': 'Ranks',
+  'nav.profile': 'Profile',
+  'nav.settings': 'Settings',
+  'map.play': 'Play',
+  'map.continue': 'Continue',
+  'map.level': 'Level',
+  'map.chapter': 'Chapter',
+  'map.locked': 'Locked',
+  'map.bloomed': 'Bloomed!',
   'map.nextChapter': 'Next chapter in {n} lv.',
-  'map.comingSoon': 'Planned: 10,000 levels. Now the first 100!',
-  'game.moves': 'Moves', 'game.score': 'Score', 'game.goal': 'Goal',
+  'map.scale': '10,000 levels · 1,000 chapters — the blooming path',
+  'map.newGraphics': 'New graphics: {name}',
+  'map.pages': 'Levels {a}–{b} of {c}',
+  'map.toCurrent': 'Current',
+  'game.moves': 'Moves',
+  'game.score': 'Score',
+  'game.goal': 'Goal',
   'game.tapHint': 'Tap groups of 2+ gems',
   'game.swapHint': 'Swap gems: match 3+ in a row',
   'game.bossLevel': 'BLAST LEVEL',
-  'game.win': 'Victory!', 'game.lose': 'Out of moves',
-  'game.next': 'Next level', 'game.retry': 'Retry', 'game.exit': 'Map',
+  'game.win': 'Victory!',
+  'game.lose': 'Out of moves',
+  'game.next': 'Next level',
+  'game.retry': 'Retry',
+  'game.exit': 'Map',
   'game.cascade': 'Combo x{n}!',
-  'game.combo2': 'Great!', 'game.combo3': 'Superb!', 'game.combo4': 'Amazing!', 'game.combo5': 'Incredible!',
+  'game.combo2': 'Great!',
+  'game.combo3': 'Superb!',
+  'game.combo4': 'Amazing!',
+  'game.combo5': 'Incredible!',
   'game.shuffled': 'No moves left — board shuffled',
-  'game.plus5': '+5 moves', 'game.buyAndUse': 'Buy & use', 'game.use': 'Use',
-  'game.boosters': 'Boosters', 'game.selectTarget': 'Pick a target on the board', 'game.cancel': 'Cancel',
-  'game.starReward': 'Reward', 'game.newStars': 'New star record!', 'game.firstWin': 'First clear!',
-  'game.stoneGoal': 'Break the stones', 'game.itemGoal': 'Collect the buds',
-  'game.collectGoal': 'Collect gems', 'game.scoreGoal': 'Score points',
-  'streak.title': 'Win streak', 'streak.next': '{n} more to ×{m}',
-  'streak.max': 'Maximum multiplier!', 'streak.lost': 'Win streak reset',
+  'game.plus5': '+5 moves',
+  'game.buyAndUse': 'Buy & use',
+  'game.use': 'Use',
+  'game.boosters': 'Boosters',
+  'game.selectTarget': 'Pick a target on the board',
+  'game.cancel': 'Cancel',
+  'game.starReward': 'Reward',
+  'game.newStars': 'New star record!',
+  'game.firstWin': 'First clear!',
+  'game.stoneGoal': 'Break the stones',
+  'game.itemGoal': 'Collect the buds',
+  'game.collectGoal': 'Collect gems',
+  'game.scoreGoal': 'Score points',
+  'tut.tap': 'Tap a group of matching gems!',
+  'tut.swap': 'Swipe to match 3+ in a row!',
+  'streak.title': 'Win streak',
+  'streak.next': '{n} more to ×{m}',
+  'streak.max': 'Maximum multiplier!',
+  'streak.lost': 'Win streak reset',
+  'profile.stat.streak': 'Best streak',
   'nav.garden': 'Garden',
-  'garden.title': 'Garden', 'garden.subtitle': 'Restore the garden with stars',
-  'garden.lockedTitle': 'The garden is still asleep', 'garden.lockedHint': 'Clear chapter 1 — and the garden will start to bloom',
-  'garden.zone0': 'Entrance', 'garden.zone1': 'Garden', 'garden.zone2': 'Park',
+  'garden.title': 'Garden',
+  'garden.subtitle': 'Restore the garden with stars',
+  'garden.lockedTitle': 'The garden is still asleep',
+  'garden.lockedHint': 'Clear chapter 1 — and the garden will start to bloom',
+  'garden.zone0': 'Entrance',
+  'garden.zone1': 'Garden',
+  'garden.zone2': 'Park',
   'garden.zoneLocked': 'Opens after chapter {n}',
-  'garden.restore': 'Restore · ⭐{n}', 'garden.restoredCount': '{n} of {m} restored',
-  'garden.bloom': 'Bloom', 'garden.done': 'The garden is in full bloom!',
-  'garden.needStars': 'Not enough stars', 'garden.coinsBack': 'Reward: 🪙 +{n}',
-  'garden.confirmTitle': 'Restore “{name}”?', 'garden.cancel': 'Later',
-  'piggy.title': 'Piggy bank', 'piggy.full': 'Piggy bank is full!', 'piggy.open': 'Open piggy bank',
-  'piggy.collect': 'Collect 🪙 {n}', 'piggy.progress': 'Wins until opening: {n}',
-  'piggy.deposit': '🐷 +{n} to the piggy bank ({w}/{m})', 'piggy.ready': 'Piggy bank is ready to open!',
+  'garden.restore': 'Restore · ⭐{n}',
+  'garden.restoredCount': '{n} of {m} restored',
+  'garden.bloom': 'Bloom',
+  'garden.done': 'The garden is in full bloom!',
+  'garden.needStars': 'Not enough stars',
+  'garden.coinsBack': 'Reward: 🪙 +{n}',
+  'garden.confirmTitle': 'Restore “{name}”?',
+  'garden.cancel': 'Later',
+  'garden.wasJust': 'Already restored',
+  'piggy.title': 'Piggy bank',
+  'piggy.full': 'Piggy bank is full!',
+  'piggy.open': 'Open piggy bank',
+  'piggy.collect': 'Collect 🪙 {n}',
+  'piggy.progress': 'Wins until opening: {n}',
+  'piggy.deposit': '🐷 +{n} to the piggy bank ({w}/{m})',
+  'piggy.ready': 'Piggy bank is ready to open!',
   'piggy.hint': 'Every win drops coins into the piggy bank',
-  'daily.title': 'Daily Level', 'daily.sub': '×2 reward · new every day',
-  'daily.play': 'Play · level {n}', 'daily.done': 'Completed · see you tomorrow',
-  'daily.badge': '📅 Daily level ×2', 'daily.weekendHint': 'Weekend events: ×2 coins and cascade bonus',
-  'event.weekend': 'Weekend event', 'event.coinsBadge': '🪙 Golden Weekend ×2',
-  'event.cascadeBadge': '🌊 Cascade ×{n}: +{c} 🪙', 'event.today': 'Today only',
-  'team.title': 'Team Chest', 'team.sub': 'Team’s win points for the week', 'team.week': 'Week {n}', 'team.you': 'You',
-  'team.contrib': 'You: {p} · team: {b}', 'team.toNext': '{n} points to the next chest', 'team.allClaimed': 'All chests claimed!',
-  'team.full': 'Team reward!', 'team.hint': 'Win levels — every victory adds points to the shared pot', 'team.members': 'Weekly contribution',
-  'team.chest': 'Chest {n}', 'team.need': '{n} needed',
-  'shop.seasonal': 'Seasonal Collection', 'shop.seasonalSub': '{icon} {season} · rotates with the calendar', 'shop.seasonTag': 'Season',
-  'shop.title': 'Shop', 'shop.coins': 'Coins',
-  'shop.tab.boosters': 'Boosters', 'shop.tab.bank': 'Bank', 'shop.tab.skins': 'Skins',
-  'shop.tab.avatars': 'Avatars', 'shop.tab.frames': 'Frames', 'shop.tab.names': 'Name', 'shop.tab.effects': 'Effects',
-  'shop.buy': 'Buy', 'shop.equip': 'Equip', 'shop.equipped': 'Equipped', 'shop.owned': 'Owned',
-  'shop.notEnough': 'Not enough coins', 'shop.purchased': 'Purchase complete!',
+  'daily.title': 'Daily Level',
+  'daily.sub': '×2 reward · new every day',
+  'daily.play': 'Play · level {n}',
+  'daily.done': 'Completed · see you tomorrow',
+  'daily.badge': '📅 Daily level ×2',
+  'daily.weekendHint': 'Weekend events: ×2 coins and cascade bonus',
+  'event.weekend': 'Weekend event',
+  'event.coinsBadge': '🪙 Golden Weekend ×2',
+  'event.cascadeBadge': '🌊 Cascade ×{n}: +{c} 🪙',
+  'event.today': 'Today only',
+  'team.title': 'Team Chest',
+  'team.sub': 'Team’s win points for the week',
+  'team.week': 'Week {n}',
+  'team.you': 'You',
+  'team.contrib': 'You: {p} · team: {b}',
+  'team.toNext': '{n} points to the next chest',
+  'team.allClaimed': 'All chests claimed!',
+  'team.full': 'Team reward!',
+  'team.hint': 'Win levels — every victory adds points to the shared pot',
+  'team.members': 'Weekly contribution',
+  'team.chest': 'Chest {n}',
+  'team.need': '{n} needed',
+  'shop.seasonal': 'Seasonal Collection',
+  'shop.seasonalSub': '{icon} {season} · rotates with the calendar',
+  'shop.seasonTag': 'Season',
+  'profile.analytics': 'Analytics',
+  'profile.analyticsInfo': '{n} events · sessions: {s}',
+  'profile.export': 'Export statistics (JSON)',
+  'profile.exportDone': 'File exported!',
+  'shop.title': 'Shop',
+  'shop.coins': 'Coins',
+  'shop.tab.boosters': 'Boosters',
+  'shop.tab.bank': 'Bank',
+  'shop.tab.skins': 'Skins',
+  'shop.tab.avatars': 'Avatars',
+  'shop.tab.frames': 'Frames',
+  'shop.tab.names': 'Name',
+  'shop.tab.effects': 'Effects',
+  'shop.buy': 'Buy',
+  'shop.equip': 'Equip',
+  'shop.equipped': 'Equipped',
+  'shop.owned': 'Owned',
+  'shop.notEnough': 'Not enough coins',
+  'shop.purchased': 'Purchase complete!',
   'shop.demoNote': 'Demo mode: payment is simulated, coins are added for free',
   'shop.simulatePay': 'Top up (demo)',
-  'shop.effectTile': 'Gem effects', 'shop.effectAvatar': 'Avatar effects', 'shop.effectName': 'Name effects',
+  'shop.effectTile': 'Gem effects',
+  'shop.effectAvatar': 'Avatar effects',
+  'shop.effectName': 'Name effects',
   'shop.free': 'Free',
-  'ranks.title': 'Global leaderboard', 'ranks.players': 'players', 'ranks.youAre': 'You are #',
-  'ranks.level': 'Lv', 'ranks.stars': 'Stars', 'ranks.you': 'YOU', 'ranks.search': 'Search player...', 'ranks.top3': 'Top players',
-  'profile.title': 'Profile', 'profile.name': 'Player name', 'profile.namePlaceholder': 'Enter name',
-  'profile.save': 'Save', 'profile.saved': 'Saved!', 'profile.stats': 'Statistics',
-  'profile.stat.wins': 'Wins', 'profile.stat.levels': 'Levels cleared', 'profile.stat.stars': 'Stars earned',
-  'profile.stat.bestCascade': 'Best combo', 'profile.stat.totalScore': 'Total score', 'profile.stat.moves': 'Moves made',
-  'profile.stat.streak': 'Best streak',
-  'profile.analytics': 'Analytics', 'profile.analyticsInfo': '{n} events · sessions: {s}',
-  'profile.export': 'Export statistics (JSON)', 'profile.exportDone': 'File exported!',
+  'ranks.title': 'Global leaderboard',
+  'ranks.players': 'players',
+  'ranks.youAre': 'You are #',
+  'ranks.level': 'Lv',
+  'ranks.stars': 'Stars',
+  'ranks.you': 'YOU',
+  'ranks.search': 'Search player...',
+  'ranks.top3': 'Top players',
+  'ranks.modeBots': '🤖 Bots',
+  'ranks.modeOnline': '🌐 Online',
+  'ranks.onlineOff': 'Online leaderboard unavailable — showing bots',
+  'ranks.onlineEmpty': 'Nobody has submitted yet — be the first!',
+  'ranks.onlineMe': 'You',
+  'ranks.onlineSent': 'Result submitted ✓',
+  'profile.title': 'Profile',
+  'profile.name': 'Player name',
+  'profile.namePlaceholder': 'Enter name',
+  'profile.save': 'Save',
+  'profile.saved': 'Saved!',
+  'profile.stats': 'Statistics',
+  'profile.stat.wins': 'Wins',
+  'profile.stat.levels': 'Levels cleared',
+  'profile.stat.stars': 'Stars earned',
+  'profile.stat.bestCascade': 'Best combo',
+  'profile.stat.totalScore': 'Total score',
+  'profile.stat.moves': 'Moves made',
   'profile.equipped': 'Equipment',
-  'profile.install': 'Install app', 'profile.installDone': 'Game installed!',
-  'settings.title': 'Settings', 'settings.language': 'Language', 'settings.sound': 'Sound',
-  'settings.on': 'On', 'settings.off': 'Off',
+  'profile.install': 'Install app',
+  'profile.installDone': 'Game installed!',
+  'settings.title': 'Settings',
+  'settings.language': 'Language',
+  'settings.sound': 'Sound',
+  'settings.on': 'On',
+  'settings.off': 'Off',
   'settings.reset': 'Reset progress',
   'settings.resetConfirm': 'Really reset all progress? This cannot be undone.',
-  'settings.resetYes': 'Yes, reset', 'settings.resetNo': 'Cancel', 'settings.resetDone': 'Progress reset',
-  'common.coins': 'coins', 'common.close': 'Close', 'common.ok': 'OK', 'common.loading': 'Loading...',
-  'goal.stone': 'Stones', 'goal.item': 'Buds', 'goal.moves': 'Moves',
-  'era.unlock': 'Chapter {n}: {name} — {tag}',
+  'settings.resetYes': 'Yes, reset',
+  'settings.resetNo': 'Cancel',
+  'settings.resetDone': 'Progress reset',
+  'common.coins': 'coins',
+  'common.close': 'Close',
+  'common.ok': 'OK',
+  'common.loading': 'Loading...',
+  'goal.stone': 'Stones',
+  'goal.item': 'Buds',
+  'goal.moves': 'Moves',
+  'era.unlock': 'Chapter {n}: {name} — {tag}'
 };
-const DICTS = { ru: I18N_RU, en: I18N_EN };
+const I18N_ES = {
+  'app.title': 'Mundo en Flor',
+  'app.subtitle': 'Tres en línea: evolución del jardín',
+  'nav.map': 'Mapa',
+  'nav.shop': 'Tienda',
+  'nav.ranks': 'Clasificación',
+  'nav.profile': 'Perfil',
+  'nav.settings': 'Ajustes',
+  'map.play': 'Jugar',
+  'map.continue': 'Continuar',
+  'map.level': 'Nivel',
+  'map.chapter': 'Capítulo',
+  'map.locked': 'Bloqueado',
+  'map.bloomed': '¡Floreció!',
+  'map.nextChapter': 'Próximo capítulo en {n} niv.',
+  'map.scale': '10.000 niveles · 1.000 capítulos — el camino floreciente',
+  'map.newGraphics': 'Nuevos gráficos: {name}',
+  'map.pages': 'Niveles {a}–{b} de {c}',
+  'map.toCurrent': 'Actual',
+  'game.moves': 'Movimientos',
+  'game.score': 'Puntos',
+  'game.goal': 'Objetivo',
+  'game.tapHint': 'Toca grupos de 2+ gemas',
+  'game.swapHint': 'Intercambia gemas: une 3+ en fila',
+  'game.bossLevel': 'NIVEL EXPLOSIVO',
+  'game.win': '¡Victoria!',
+  'game.lose': 'Sin movimientos',
+  'game.next': 'Siguiente nivel',
+  'game.retry': 'Otra vez',
+  'game.exit': 'Al mapa',
+  'game.cascade': '¡Combo x{n}!',
+  'game.combo2': '¡Genial!',
+  'game.combo3': '¡Magnífico!',
+  'game.combo4': '¡Increíble!',
+  'game.combo5': '¡Asombroso!',
+  'game.shuffled': 'No quedan movimientos — tablero mezclado',
+  'game.plus5': '+5 movimientos',
+  'game.buyAndUse': 'Comprar y usar',
+  'game.use': 'Usar',
+  'game.boosters': 'Potenciadores',
+  'game.selectTarget': 'Elige un objetivo en el tablero',
+  'game.cancel': 'Cancelar',
+  'game.starReward': 'Recompensa',
+  'game.newStars': '¡Nuevo récord de estrellas!',
+  'game.firstWin': '¡Primera victoria!',
+  'game.stoneGoal': 'Rompe las piedras',
+  'game.itemGoal': 'Recoge los brotes',
+  'game.collectGoal': 'Recoge gemas',
+  'game.scoreGoal': 'Consigue puntos',
+  'tut.tap': '¡Toca un grupo de gemas iguales!',
+  'tut.swap': '¡Desliza para unir 3+ en fila!',
+  'streak.title': 'Racha de victorias',
+  'streak.next': '{n} más para ×{m}',
+  'streak.max': '¡Multiplicador máximo!',
+  'streak.lost': 'Racha de victorias reiniciada',
+  'profile.stat.streak': 'Mejor racha',
+  'nav.garden': 'Jardín',
+  'garden.title': 'Jardín',
+  'garden.subtitle': 'Restaura el jardín con estrellas',
+  'garden.lockedTitle': 'El jardín aún duerme',
+  'garden.lockedHint': 'Supera el capítulo 1 — y el jardín empezará a florecer',
+  'garden.zone0': 'Entrada',
+  'garden.zone1': 'Jardín',
+  'garden.zone2': 'Parque',
+  'garden.zoneLocked': 'Se abre tras el capítulo {n}',
+  'garden.restore': 'Restaurar · ⭐{n}',
+  'garden.restoredCount': '{n} de {m} restaurados',
+  'garden.bloom': 'Floración',
+  'garden.done': '¡El jardín está en plena floración!',
+  'garden.needStars': 'Faltan estrellas',
+  'garden.coinsBack': 'Recompensa: 🪙 +{n}',
+  'garden.confirmTitle': '¿Restaurar «{name}»?',
+  'garden.cancel': 'Luego',
+  'garden.wasJust': 'Ya está puesto',
+  'piggy.title': 'Hucha',
+  'piggy.full': '¡Hucha llena!',
+  'piggy.open': 'Abrir la hucha',
+  'piggy.collect': 'Recoger 🪙 {n}',
+  'piggy.progress': 'Victorias hasta abrir: {n}',
+  'piggy.deposit': '🐷 +{n} a la hucha ({w}/{m})',
+  'piggy.ready': '¡La hucha está lista para abrir!',
+  'piggy.hint': 'Cada victoria echa monedas en la hucha',
+  'daily.title': 'Nivel del día',
+  'daily.sub': 'Recompensa ×2 · nuevo cada día',
+  'daily.play': 'Jugar · niv. {n}',
+  'daily.done': 'Completado · hasta mañana',
+  'daily.badge': '📅 Nivel del día ×2',
+  'daily.weekendHint': 'Los fines de semana hay eventos: ×2 monedas y bono de cascada',
+  'event.weekend': 'Evento de fin de semana',
+  'event.coinsBadge': '🪙 Fin de semana dorado ×2',
+  'event.cascadeBadge': '🌊 Cascada ×{n}: +{c} 🪙',
+  'event.today': 'Solo hoy',
+  'team.title': 'Cofre del equipo',
+  'team.sub': 'Puntos de victoria del equipo en la semana',
+  'team.week': 'Semana {n}',
+  'team.you': 'Tú',
+  'team.contrib': 'Tú: {p} · equipo: {b}',
+  'team.toNext': '{n} puntos para el próximo cofre',
+  'team.allClaimed': '¡Todos los cofres recogidos!',
+  'team.full': '¡Recompensa del equipo!',
+  'team.hint': 'Gana niveles: cada victoria suma puntos al bote común',
+  'team.members': 'Aportación semanal',
+  'team.chest': 'Cofre {n}',
+  'team.need': 'Faltan {n}',
+  'shop.seasonal': 'Colección de temporada',
+  'shop.seasonalSub': '{icon} {season} · cambia con el calendario',
+  'shop.seasonTag': 'Temporada',
+  'profile.analytics': 'Analíticas',
+  'profile.analyticsInfo': '{n} eventos · sesiones: {s}',
+  'profile.export': 'Exportar estadísticas (JSON)',
+  'profile.exportDone': '¡Archivo exportado!',
+  'shop.title': 'Tienda',
+  'shop.coins': 'Monedas',
+  'shop.tab.boosters': 'Potenciadores',
+  'shop.tab.bank': 'Banco',
+  'shop.tab.skins': 'Skins',
+  'shop.tab.avatars': 'Avatares',
+  'shop.tab.frames': 'Marcos',
+  'shop.tab.names': 'Nombre',
+  'shop.tab.effects': 'Efectos',
+  'shop.buy': 'Comprar',
+  'shop.equip': 'Equipar',
+  'shop.equipped': 'Equipado',
+  'shop.owned': 'Comprado',
+  'shop.notEnough': 'No hay monedas suficientes',
+  'shop.purchased': '¡Compra realizada!',
+  'shop.demoNote': 'Modo demo: el pago se simula, las monedas se añaden gratis',
+  'shop.simulatePay': 'Recargar (demo)',
+  'shop.effectTile': 'Efectos de gemas',
+  'shop.effectAvatar': 'Efectos de avatar',
+  'shop.effectName': 'Efectos de nombre',
+  'shop.free': 'Gratis',
+  'ranks.title': 'Clasificación global',
+  'ranks.players': 'jugadores',
+  'ranks.youAre': 'Estás en el puesto',
+  'ranks.level': 'Niv.',
+  'ranks.stars': 'Estrellas',
+  'ranks.you': 'TÚ',
+  'ranks.search': 'Buscar jugador...',
+  'ranks.top3': 'Líderes',
+  'ranks.modeBots': '🤖 Bots',
+  'ranks.modeOnline': '🌐 En línea',
+  'ranks.onlineOff': 'Clasificación en línea no disponible — mostramos bots',
+  'ranks.onlineEmpty': 'Nadie ha enviado resultados todavía — ¡sé el primero!',
+  'ranks.onlineMe': 'Tú',
+  'ranks.onlineSent': 'Resultado enviado ✓',
+  'profile.title': 'Perfil',
+  'profile.name': 'Nombre del jugador',
+  'profile.namePlaceholder': 'Introduce tu nombre',
+  'profile.save': 'Guardar',
+  'profile.saved': '¡Guardado!',
+  'profile.stats': 'Estadísticas',
+  'profile.stat.wins': 'Victorias',
+  'profile.stat.levels': 'Niveles superados',
+  'profile.stat.stars': 'Estrellas conseguidas',
+  'profile.stat.bestCascade': 'Mejor combo',
+  'profile.stat.totalScore': 'Puntos totales',
+  'profile.stat.moves': 'Movimientos hechos',
+  'profile.equipped': 'Equipamiento',
+  'profile.install': 'Instalar la aplicación',
+  'profile.installDone': '¡Juego instalado!',
+  'settings.title': 'Ajustes',
+  'settings.language': 'Idioma',
+  'settings.sound': 'Sonido',
+  'settings.on': 'Sí',
+  'settings.off': 'No',
+  'settings.reset': 'Reiniciar progreso',
+  'settings.resetConfirm': '¿Seguro que quieres reiniciar todo el progreso? Esta acción no se puede deshacer.',
+  'settings.resetYes': 'Sí, reiniciar',
+  'settings.resetNo': 'Cancelar',
+  'settings.resetDone': 'Progreso reiniciado',
+  'common.coins': 'monedas',
+  'common.close': 'Cerrar',
+  'common.ok': 'OK',
+  'common.loading': 'Cargando...',
+  'goal.stone': 'Piedras',
+  'goal.item': 'Brotes',
+  'goal.moves': 'Movimientos',
+  'era.unlock': 'Capítulo {n}: {name} — {tag}'
+};
+const I18N_PT = {
+  'app.title': 'Mundo em Flor',
+  'app.subtitle': 'Match-3: evolução do jardim',
+  'nav.map': 'Mapa',
+  'nav.shop': 'Loja',
+  'nav.ranks': 'Classificação',
+  'nav.profile': 'Perfil',
+  'nav.settings': 'Configurações',
+  'map.play': 'Jogar',
+  'map.continue': 'Continuar',
+  'map.level': 'Nível',
+  'map.chapter': 'Capítulo',
+  'map.locked': 'Bloqueado',
+  'map.bloomed': 'Floresceu!',
+  'map.nextChapter': 'Próximo capítulo em {n} nív.',
+  'map.scale': '10.000 níveis · 1.000 capítulos — o caminho florescente',
+  'map.newGraphics': 'Novos gráficos: {name}',
+  'map.pages': 'Niveles {a}–{b} de {c}',
+  'map.toCurrent': 'Atual',
+  'game.moves': 'Jogadas',
+  'game.score': 'Pontos',
+  'game.goal': 'Objetivo',
+  'game.tapHint': 'Toque em grupos de 2+ gemas',
+  'game.swapHint': 'Troque gemas: junte 3+ em fila',
+  'game.bossLevel': 'NÍVEL EXPLOSIVO',
+  'game.win': 'Vitória!',
+  'game.lose': 'Acabaram as jogadas',
+  'game.next': 'Próximo nível',
+  'game.retry': 'De novo',
+  'game.exit': 'Ao mapa',
+  'game.cascade': 'Combo x{n}!',
+  'game.combo2': 'Legal!',
+  'game.combo3': 'Ótimo!',
+  'game.combo4': 'Fantástico!',
+  'game.combo5': 'Incrível!',
+  'game.shuffled': 'Sem jogadas — tabuleiro embaralhado',
+  'game.plus5': '+5 jogadas',
+  'game.buyAndUse': 'Comprar e usar',
+  'game.use': 'Usar',
+  'game.boosters': 'Reforços',
+  'game.selectTarget': 'Escolha um alvo no tabuleiro',
+  'game.cancel': 'Cancelar',
+  'game.starReward': 'Recompensa',
+  'game.newStars': 'Novo recorde de estrelas!',
+  'game.firstWin': 'Primeira vitória!',
+  'game.stoneGoal': 'Quebre as pedras',
+  'game.itemGoal': 'Colete os botões',
+  'game.collectGoal': 'Colete gemas',
+  'game.scoreGoal': 'Faça pontos',
+  'tut.tap': 'Toque um grupo de gemas iguais!',
+  'tut.swap': 'Deslize para juntar 3+ em fila!',
+  'streak.title': 'Sequência de vitórias',
+  'streak.next': 'Faltam {n} para ×{m}',
+  'streak.max': 'Multiplicador máximo!',
+  'streak.lost': 'Sequência de vitórias zerada',
+  'profile.stat.streak': 'Melhor sequência',
+  'nav.garden': 'Jardim',
+  'garden.title': 'Jardim',
+  'garden.subtitle': 'Restaure o jardim com estrelas',
+  'garden.lockedTitle': 'O jardim ainda dorme',
+  'garden.lockedHint': 'Conclua o capítulo 1 — e o jardim vai começar a florescer',
+  'garden.zone0': 'Entrada',
+  'garden.zone1': 'Jardim',
+  'garden.zone2': 'Parque',
+  'garden.zoneLocked': 'Abre após o capítulo {n}',
+  'garden.restore': 'Restaurar · ⭐{n}',
+  'garden.restoredCount': '{n} de {m} restaurados',
+  'garden.bloom': 'Florescimento',
+  'garden.done': 'O jardim está em plena floração!',
+  'garden.needStars': 'Estrelas insuficientes',
+  'garden.coinsBack': 'Recompensa: 🪙 +{n}',
+  'garden.confirmTitle': 'Restaurar «{name}»?',
+  'garden.cancel': 'Depois',
+  'garden.wasJust': 'Já está no lugar',
+  'piggy.title': 'Cofrinho',
+  'piggy.full': 'Cofrinho cheio!',
+  'piggy.open': 'Abrir o cofrinho',
+  'piggy.collect': 'Pegar 🪙 {n}',
+  'piggy.progress': 'Vitórias até abrir: {n}',
+  'piggy.deposit': '🐷 +{n} no cofrinho ({w}/{m})',
+  'piggy.ready': 'O cofrinho está pronto para abrir!',
+  'piggy.hint': 'Cada vitória coloca moedas no cofrinho',
+  'daily.title': 'Nível do dia',
+  'daily.sub': 'Recompensa ×2 · novo todo dia',
+  'daily.play': 'Jogar · nív. {n}',
+  'daily.done': 'Concluído · até amanhã',
+  'daily.badge': '📅 Nível do dia ×2',
+  'daily.weekendHint': 'Nos fins de semana há eventos: moedas ×2 e bônus de cascata',
+  'event.weekend': 'Evento de fim de semana',
+  'event.coinsBadge': '🪙 Fim de semana dourado ×2',
+  'event.cascadeBadge': '🌊 Cascata ×{n}: +{c} 🪙',
+  'event.today': 'Só hoje',
+  'team.title': 'Baú da equipe',
+  'team.sub': 'Pontos de vitória da equipe na semana',
+  'team.week': 'Semana {n}',
+  'team.you': 'Você',
+  'team.contrib': 'Você: {p} · equipe: {b}',
+  'team.toNext': '{n} pontos para o próximo baú',
+  'team.allClaimed': 'Todos os baús coletados!',
+  'team.full': 'Recompensa da equipe!',
+  'team.hint': 'Vença níveis — cada vitória soma pontos no pote comum',
+  'team.members': 'Contribuição da semana',
+  'team.chest': 'Baú {n}',
+  'team.need': 'Faltam {n}',
+  'shop.seasonal': 'Coleção da estação',
+  'shop.seasonalSub': '{icon} {season} · muda com o calendário',
+  'shop.seasonTag': 'Estação',
+  'profile.analytics': 'Análises',
+  'profile.analyticsInfo': '{n} eventos · sessões: {s}',
+  'profile.export': 'Exportar estatísticas (JSON)',
+  'profile.exportDone': 'Arquivo exportado!',
+  'shop.title': 'Loja',
+  'shop.coins': 'Moedas',
+  'shop.tab.boosters': 'Reforços',
+  'shop.tab.bank': 'Banco',
+  'shop.tab.skins': 'Skins',
+  'shop.tab.avatars': 'Avatares',
+  'shop.tab.frames': 'Molduras',
+  'shop.tab.names': 'Nome',
+  'shop.tab.effects': 'Efeitos',
+  'shop.buy': 'Comprar',
+  'shop.equip': 'Equipar',
+  'shop.equipped': 'Equipado',
+  'shop.owned': 'Adquirido',
+  'shop.notEnough': 'Moedas insuficientes',
+  'shop.purchased': 'Compra concluída!',
+  'shop.demoNote': 'Modo demo: o pagamento é simulado, as moedas são adicionadas de graça',
+  'shop.simulatePay': 'Recarregar (demo)',
+  'shop.effectTile': 'Efeitos de gemas',
+  'shop.effectAvatar': 'Efeitos de avatar',
+  'shop.effectName': 'Efeitos de nome',
+  'shop.free': 'Grátis',
+  'ranks.title': 'Classificação global',
+  'ranks.players': 'jogadores',
+  'ranks.youAre': 'Você está na posição',
+  'ranks.level': 'Nív.',
+  'ranks.stars': 'Estrelas',
+  'ranks.you': 'VOCÊ',
+  'ranks.search': 'Buscar jogador...',
+  'ranks.top3': 'Líderes',
+  'ranks.modeBots': '🤖 Bots',
+  'ranks.modeOnline': '🌐 Online',
+  'ranks.onlineOff': 'Classificação online indisponível — mostrando bots',
+  'ranks.onlineEmpty': 'Ninguém enviou resultado ainda — seja o primeiro!',
+  'ranks.onlineMe': 'Você',
+  'ranks.onlineSent': 'Resultado enviado ✓',
+  'profile.title': 'Perfil',
+  'profile.name': 'Nome do jogador',
+  'profile.namePlaceholder': 'Digite o nome',
+  'profile.save': 'Salvar',
+  'profile.saved': 'Salvo!',
+  'profile.stats': 'Estatísticas',
+  'profile.stat.wins': 'Vitórias',
+  'profile.stat.levels': 'Níveis concluídos',
+  'profile.stat.stars': 'Estrelas conquistadas',
+  'profile.stat.bestCascade': 'Melhor combo',
+  'profile.stat.totalScore': 'Pontos totais',
+  'profile.stat.moves': 'Jogadas feitas',
+  'profile.equipped': 'Equipamento',
+  'profile.install': 'Instalar o aplicativo',
+  'profile.installDone': 'Jogo instalado!',
+  'settings.title': 'Configurações',
+  'settings.language': 'Idioma',
+  'settings.sound': 'Som',
+  'settings.on': 'Ligado',
+  'settings.off': 'Desligado',
+  'settings.reset': 'Zerar progresso',
+  'settings.resetConfirm': 'Tem certeza de que quer zerar todo o progresso? Esta ação não pode ser desfeita.',
+  'settings.resetYes': 'Sim, zerar',
+  'settings.resetNo': 'Cancelar',
+  'settings.resetDone': 'Progresso zerado',
+  'common.coins': 'moedas',
+  'common.close': 'Fechar',
+  'common.ok': 'OK',
+  'common.loading': 'Carregando...',
+  'goal.stone': 'Pedras',
+  'goal.item': 'Botões',
+  'goal.moves': 'Jogadas',
+  'era.unlock': 'Capítulo {n}: {name} — {tag}'
+};
+const DICTS = { ru: I18N_RU, en: I18N_EN, es: I18N_ES, pt: I18N_PT };
 function translate(lang, key, vars) {
   let s = (DICTS[lang] && DICTS[lang][key]) || DICTS.en[key] || key;
   if (vars) for (const [k, v] of Object.entries(vars)) s = s.replace('{' + k + '}', String(v));
@@ -658,59 +1255,76 @@ const PAL = [
   eraPal(0.98, 8, -14), eraPal(1.04, 10, -14),
 ];
 const CHAPTERS = [
-  { id: 0, name: { ru: 'Пустошь', en: 'The Barrens' }, tagline: { ru: 'Всё начинается с простых камней', en: 'It all starts with simple stones' },
+  { id: 0, name: { ru: 'Пустошь', en: 'The Barrens', es: 'El páramo', pt: 'O ermo' }, tagline: { ru: 'Всё начинается с простых камней', en: 'It all starts with simple stones', es: 'Todo empieza con piedras simples', pt: 'Tudo começa com pedras simples' },
     palette: PAL[0].p, paletteDark: PAL[0].d, uiAccent: '#8a7a68',
     tile: { rim: 'rgba(40,34,28,.55)', rimWidth: 0.05, flat: true, gradient: false, gloss: false, pixelShadow: false, softShadow: false, glow: false, glass: false, shine: false, wobble: false, pattern: 'none' },
     bg: { sky: 'linear-gradient(180deg,#9b978e 0%,#b5b0a6 60%,#8d8779 100%)', ground: 'linear-gradient(180deg,#8d8271 0%,#6e6657 100%)', hillFar: '#a19a8c', hillNear: '#847c6c', dark: false, clouds: 0, sun: false, stars: false, trees: 0, bushes: 0, flowers: 0, butterflies: 0, petals: 0, fireflies: 0, sparkles: 0, rays: false } },
-  { id: 1, name: { ru: 'Первые ростки', en: 'First Sprouts' }, tagline: { ru: 'Пиксельная жизнь пробивается сквозь камень', en: 'Pixel life breaks through the stone' },
+  { id: 1, name: { ru: 'Первые ростки', en: 'First Sprouts', es: 'Primeros brotes', pt: 'Primeiros brotos' }, tagline: { ru: 'Пиксельная жизнь пробивается сквозь камень', en: 'Pixel life breaks through the stone', es: 'La vida pixelada brota entre las piedras', pt: 'A vida pixelada brota entre as pedras' },
     palette: PAL[1].p, paletteDark: PAL[1].d, uiAccent: '#7ac96a',
     tile: { rim: 'rgba(30,26,20,.5)', rimWidth: 0.045, flat: true, gradient: false, gloss: false, pixelShadow: true, softShadow: false, glow: false, glass: false, shine: false, wobble: false, pattern: 'pixel' },
     bg: { sky: 'linear-gradient(180deg,#8fb8c9 0%,#b5d6c9 60%,#8fb894 100%)', ground: 'linear-gradient(180deg,#7aa86a 0%,#568a4c 100%)', hillFar: '#9bc98e', hillNear: '#6fae62', dark: false, clouds: 1, sun: false, stars: false, trees: 1, bushes: 0, flowers: 1, butterflies: 0, petals: 0, fireflies: 0, sparkles: 0, rays: false } },
-  { id: 2, name: { ru: 'Зелёный берег', en: 'Green Shore' }, tagline: { ru: '16 цветов вместо четырёх', en: 'Sixteen colors instead of four' },
+  { id: 2, name: { ru: 'Зелёный берег', en: 'Green Shore', es: 'La orilla verde', pt: 'A margem verde' }, tagline: { ru: '16 цветов вместо четырёх', en: 'Sixteen colors instead of four', es: 'Dieciséis colores en lugar de cuatro', pt: 'Dezesseis cores em vez de quatro' },
     palette: PAL[2].p, paletteDark: PAL[2].d, uiAccent: '#3d9be0',
     tile: { rim: 'rgba(28,32,40,.45)', rimWidth: 0.04, flat: false, gradient: true, gloss: false, pixelShadow: true, softShadow: false, glow: false, glass: false, shine: false, wobble: false, pattern: 'none' },
     bg: { sky: 'linear-gradient(180deg,#7ec3e8 0%,#a8dff0 55%,#cfe8c9 100%)', ground: 'linear-gradient(180deg,#7ab86a 0%,#4c8a44 100%)', hillFar: '#93cc85', hillNear: '#63a855', dark: false, clouds: 2, sun: true, stars: false, trees: 2, bushes: 1, flowers: 3, butterflies: 0, petals: 0, fireflies: 0, sparkles: 0, rays: false } },
-  { id: 3, name: { ru: 'Роща', en: 'The Grove' }, tagline: { ru: 'Глянец и глубина', en: 'Gloss and depth' },
+  { id: 3, name: { ru: 'Роща', en: 'The Grove', es: 'El bosquecillo', pt: 'O bosque' }, tagline: { ru: 'Глянец и глубина', en: 'Gloss and depth', es: 'Brillo y profundidad', pt: 'Brilho e profundidade' },
     palette: PAL[3].p, paletteDark: PAL[3].d, uiAccent: '#ef8f2a',
     tile: { rim: 'rgba(30,26,40,.4)', rimWidth: 0.035, flat: false, gradient: true, gloss: true, pixelShadow: false, softShadow: true, glow: false, glass: false, shine: false, wobble: false, pattern: 'none' },
     bg: { sky: 'linear-gradient(180deg,#6fc0f0 0%,#9fd8f5 50%,#d4ecc0 100%)', ground: 'linear-gradient(180deg,#82c46e 0%,#4c9440 100%)', hillFar: '#9cd48a', hillNear: '#68b458', dark: false, clouds: 2, sun: true, stars: false, trees: 3, bushes: 2, flowers: 5, butterflies: 1, petals: 0, fireflies: 0, sparkles: 0, rays: false } },
-  { id: 4, name: { ru: 'Луг цветов', en: 'Flower Meadow' }, tagline: { ru: 'Флэт, чистота и свет', en: 'Flat, clean and light' },
+  { id: 4, name: { ru: 'Луг цветов', en: 'Flower Meadow', es: 'La pradera florida', pt: 'A campina florida' }, tagline: { ru: 'Флэт, чистота и свет', en: 'Flat, clean and light', es: 'Plano, limpio y luminoso', pt: 'Plano, limpo e claro' },
     palette: PAL[4].p, paletteDark: PAL[4].d, uiAccent: '#2ea56d',
     tile: { rim: 'rgba(30,26,40,.35)', rimWidth: 0.03, flat: true, gradient: false, gloss: false, pixelShadow: false, softShadow: true, glow: false, glass: false, shine: false, wobble: true, pattern: 'none' },
     bg: { sky: 'linear-gradient(180deg,#87d0f5 0%,#bce6fa 50%,#dff2cf 100%)', ground: 'linear-gradient(180deg,#8cc978 0%,#57a04a 100%)', hillFar: '#a5dc92', hillNear: '#74bc62', dark: false, clouds: 3, sun: true, stars: false, trees: 3, bushes: 3, flowers: 8, butterflies: 1, petals: 2, fireflies: 0, sparkles: 2, rays: false } },
-  { id: 5, name: { ru: 'Светлый лес', en: 'Bright Forest' }, tagline: { ru: 'Мягкие граденты оживают', en: 'Soft gradients come alive' },
+  { id: 5, name: { ru: 'Светлый лес', en: 'Bright Forest', es: 'El bosque luminoso', pt: 'A floresta clara' }, tagline: { ru: 'Мягкие граденты оживают', en: 'Soft gradients come alive', es: 'Los degradados suaves cobran vida', pt: 'Os degradados suaves ganham vida' },
     palette: PAL[5].p, paletteDark: PAL[5].d, uiAccent: '#3d9be0',
     tile: { rim: 'rgba(30,26,40,.35)', rimWidth: 0.03, flat: false, gradient: true, gloss: false, pixelShadow: false, softShadow: true, glow: false, glass: false, shine: false, wobble: true, pattern: 'none' },
     bg: { sky: 'linear-gradient(180deg,#9adcf8 0%,#c8ecfa 45%,#e8f6d8 100%)', ground: 'linear-gradient(180deg,#95d482 0%,#5ea84e 100%)', hillFar: '#b0e09c', hillNear: '#80c86c', dark: false, clouds: 3, sun: true, stars: false, trees: 4, bushes: 4, flowers: 10, butterflies: 2, petals: 3, fireflies: 0, sparkles: 3, rays: false } },
-  { id: 6, name: { ru: 'Волшебный сад', en: 'Enchanted Garden' }, tagline: { ru: 'Неон зажигает сад', en: 'Neon lights up the garden' },
+  { id: 6, name: { ru: 'Волшебный сад', en: 'Enchanted Garden', es: 'El jardín encantado', pt: 'O jardim encantado' }, tagline: { ru: 'Неон зажигает сад', en: 'Neon lights up the garden', es: 'El neón enciende el jardín', pt: 'O neon acende o jardim' },
     palette: PAL[6].p, paletteDark: PAL[6].d, uiAccent: '#22e0ff',
     tile: { rim: 'rgba(235,240,255,.7)', rimWidth: 0.035, flat: false, gradient: true, gloss: false, pixelShadow: false, softShadow: false, glow: true, glass: false, shine: false, wobble: true, pattern: 'none' },
     bg: { sky: 'linear-gradient(180deg,#1a1030 0%,#31195c 55%,#183248 100%)', ground: 'linear-gradient(180deg,#1e4a3a 0%,#12332a 100%)', hillFar: '#24405c', hillNear: '#1a2f46', dark: true, clouds: 0, sun: false, stars: true, trees: 3, bushes: 2, flowers: 6, butterflies: 0, petals: 0, fireflies: 5, sparkles: 5, rays: false } },
-  { id: 7, name: { ru: 'Сумеречные поляны', en: 'Twilight Glades' }, tagline: { ru: 'Сад становится стеклянным', en: 'The garden turns to glass' },
+  { id: 7, name: { ru: 'Сумеречные поляны', en: 'Twilight Glades', es: 'Los claros del crepúsculo', pt: 'Clareiras do crepúsculo' }, tagline: { ru: 'Сад становится стеклянным', en: 'The garden turns to glass', es: 'El jardín se vuelve de cristal', pt: 'O jardim vira vidro' },
     palette: PAL[7].p, paletteDark: PAL[7].d, uiAccent: '#3d9be0',
     tile: { rim: 'rgba(240,244,255,.6)', rimWidth: 0.04, flat: false, gradient: true, gloss: true, pixelShadow: false, softShadow: true, glow: false, glass: true, shine: false, wobble: true, pattern: 'none' },
     bg: { sky: 'linear-gradient(180deg,#3a2a6a 0%,#8a5aa8 45%,#e88a5a 100%)', ground: 'linear-gradient(180deg,#5a7a4a 0%,#3a5232 100%)', hillFar: '#7a5a98', hillNear: '#553f70', dark: true, clouds: 1, sun: false, stars: true, trees: 4, bushes: 3, flowers: 9, butterflies: 1, petals: 4, fireflies: 3, sparkles: 4, rays: false } },
-  { id: 8, name: { ru: 'Радужная долина', en: 'Rainbow Valley' }, tagline: { ru: 'Мир наполняется жизнью', en: 'The world fills with life' },
+  { id: 8, name: { ru: 'Радужная долина', en: 'Rainbow Valley', es: 'El valle arcoíris', pt: 'O vale arco-íris' }, tagline: { ru: 'Мир наполняется жизнью', en: 'The world fills with life', es: 'El mundo se llena de vida', pt: 'O mundo se enche de vida' },
     palette: PAL[8].p, paletteDark: PAL[8].d, uiAccent: '#ef8f2a',
     tile: { rim: 'rgba(110,70,24,.4)', rimWidth: 0.03, flat: false, gradient: true, gloss: true, pixelShadow: false, softShadow: true, glow: false, glass: false, shine: true, wobble: true, pattern: 'rays' },
     bg: { sky: 'linear-gradient(180deg,#8ad4ff 0%,#c0e8ff 40%,#ffe0b0 100%)', ground: 'linear-gradient(180deg,#9ade84 0%,#64b452 100%)', hillFar: '#b5e8a0', hillNear: '#88cc70', dark: false, clouds: 4, sun: true, stars: false, trees: 5, bushes: 5, flowers: 12, butterflies: 2, petals: 6, fireflies: 0, sparkles: 6, rays: true } },
-  { id: 9, name: { ru: 'Золотой сад', en: 'Golden Garden' }, tagline: { ru: 'Вершина расцвета', en: 'The peak of bloom' },
+  { id: 9, name: { ru: 'Золотой сад', en: 'Golden Garden', es: 'El jardín dorado', pt: 'O jardim dourado' }, tagline: { ru: 'Вершина расцвета', en: 'The peak of bloom', es: 'La cima de la floración', pt: 'O auge da floração' },
     palette: PAL[9].p, paletteDark: PAL[9].d, uiAccent: '#f6e04b',
     tile: { rim: 'rgba(110,70,24,.45)', rimWidth: 0.035, flat: false, gradient: true, gloss: true, pixelShadow: false, softShadow: true, glow: true, glass: false, shine: true, wobble: true, pattern: 'rays' },
     bg: { sky: 'linear-gradient(180deg,#ffca7a 0%,#ffb0c8 45%,#ffe9c0 100%)', ground: 'linear-gradient(180deg,#a8e890 0%,#70c05c 100%)', hillFar: '#c8f0b0', hillNear: '#98d880', dark: false, clouds: 4, sun: true, stars: false, trees: 5, bushes: 5, flowers: 14, butterflies: 3, petals: 8, fireflies: 0, sparkles: 8, rays: true } },
 ];
-function chapterTheme(chapter) {
-  return CHAPTERS[Math.max(0, Math.min(CHAPTERS.length - 1, chapter))];
+/* Волна 7: главы дальше 10-й циклят 10 эр (§5.1 — порядок оттенков не меняется);
+ * к имени цикла добавляется римский номер («Роща II»). */
+function eraOfChapter(chapter) {
+  return ((Math.floor(chapter) % CHAPTERS.length) + CHAPTERS.length) % CHAPTERS.length;
+}
+function cycleOfChapter(chapter) { return Math.floor(Math.floor(chapter) / CHAPTERS.length); }
+function chapterTheme(chapter) { return CHAPTERS[eraOfChapter(chapter)]; }
+const ROMAN = [[100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']];
+function romanNumeral(n) {
+  let v = Math.max(1, Math.floor(n));
+  let out = '';
+  for (const p of ROMAN) { while (v >= p[0]) { out += p[1]; v -= p[0]; } }
+  return out;
+}
+function chapterDisplayName(chapter, lang) {
+  const era = CHAPTERS[eraOfChapter(chapter)];
+  const cycle = cycleOfChapter(chapter);
+  const base = era.name[lang];
+  return cycle > 0 ? base + ' ' + romanNumeral(cycle + 1) : base;
 }
 
 /* ---------------- shop catalog ---------------- */
 const BOOSTERS = [
-  { id: 'hammer', icon: '🔨', price: 40, name: { ru: 'Молоток', en: 'Hammer' }, desc: { ru: 'Убрать один камень с поля', en: 'Remove a single gem' } },
-  { id: 'bomb', icon: '💣', price: 60, name: { ru: 'Бомба', en: 'Bomb' }, desc: { ru: 'Взрыв 3×3 в выбранной точке', en: 'Blast a 3×3 area' } },
-  { id: 'cross', icon: '⚡', price: 80, name: { ru: 'Молния', en: 'Lightning' }, desc: { ru: 'Очистить ряд и столбец крестом', en: 'Clear a row and column' } },
-  { id: 'shuffle', icon: '🔀', price: 50, name: { ru: 'Перемешать', en: 'Shuffle' }, desc: { ru: 'Перемешать все камни на поле', en: 'Reshuffle all gems' } },
-  { id: 'undo', icon: '↩️', price: 30, name: { ru: 'Отмена хода', en: 'Undo' }, desc: { ru: 'Отменить последний своп', en: 'Undo your last swap' } },
-  { id: 'moves5', icon: '➕5', price: 100, name: { ru: '+5 ходов', en: '+5 Moves' }, desc: { ru: 'Дополнительные 5 ходов в уровне', en: 'Five extra moves in a level' } },
+  { id: 'hammer', icon: '🔨', price: 40, name: { ru: 'Молоток', en: 'Hammer', es: 'Martillo', pt: 'Martelo' }, desc: { ru: 'Убрать один камень с поля', en: 'Remove a single gem', es: 'Quita una gema del tablero', pt: 'Remove uma gema do tabuleiro' } },
+  { id: 'bomb', icon: '💣', price: 60, name: { ru: 'Бомба', en: 'Bomb', es: 'Bomba', pt: 'Bomba' }, desc: { ru: 'Взрыв 3×3 в выбранной точке', en: 'Blast a 3×3 area', es: 'Explota un área de 3×3', pt: 'Explode uma área de 3×3' } },
+  { id: 'cross', icon: '⚡', price: 80, name: { ru: 'Молния', en: 'Lightning', es: 'Rayo', pt: 'Raio' }, desc: { ru: 'Очистить ряд и столбец крестом', en: 'Clear a row and column', es: 'Limpia una fila y una columna', pt: 'Limpa uma linha e uma coluna' } },
+  { id: 'shuffle', icon: '🔀', price: 50, name: { ru: 'Перемешать', en: 'Shuffle', es: 'Mezclar', pt: 'Embaralhar' }, desc: { ru: 'Перемешать все камни на поле', en: 'Reshuffle all gems', es: 'Mezcla todas las gemas del tablero', pt: 'Embaralha todas as gemas' } },
+  { id: 'undo', icon: '↩️', price: 30, name: { ru: 'Отмена хода', en: 'Undo', es: 'Deshacer', pt: 'Desfazer' }, desc: { ru: 'Отменить последний своп', en: 'Undo your last swap', es: 'Deshace tu último intercambio', pt: 'Desfaz sua última troca' } },
+  { id: 'moves5', icon: '➕5', price: 100, name: { ru: '+5 ходов', en: '+5 Moves', es: '+5 movimientos', pt: '+5 jogadas' }, desc: { ru: 'Дополнительные 5 ходов в уровне', en: 'Five extra moves in a level', es: 'Cinco movimientos extra en un nivel', pt: 'Cinco jogadas extra num nível' } },
 ];
 const BOOSTER_MAP = Object.fromEntries(BOOSTERS.map((b) => [b.id, b]));
 const COIN_PACKS = [
@@ -721,16 +1335,16 @@ const COIN_PACKS = [
   { id: 'p5', coins: 20000, priceLabel: '$19.99', bonus: '+60%' },
 ];
 const GEM_SKINS = [
-  { id: 'classic', name: { ru: 'Классика', en: 'Classic' }, price: 0 },
-  { id: 'stones', name: { ru: 'Камни', en: 'Stones' }, price: 0, ring: true },
-  { id: 'fruits', name: { ru: 'Фрукты', en: 'Fruits' }, price: 300, glyphs: ['🍓', '🍋', '🍏', '🫐', '🍇', '🍊'] },
-  { id: 'sweets', name: { ru: 'Сладости', en: 'Sweets' }, price: 400, glyphs: ['🍬', '🍭', '🍩', '🧊', '🧁', '🍫'] },
-  { id: 'flowers', name: { ru: 'Цветы', en: 'Flowers' }, price: 500, glyphs: ['🌹', '🌻', '🍀', '🪻', '🌸', '🌷'] },
-  { id: 'planets', name: { ru: 'Планеты', en: 'Planets' }, price: 600, glyphs: ['🔴', '🪐', '🌍', '🌑', '💫', '⭐'] },
-  { id: 'runes', name: { ru: 'Руны', en: 'Runes' }, price: 700, glyphs: ['🔥', '⚡', '🌿', '🌊', '🔮', '☀️'] },
-  { id: 'ocean', name: { ru: 'Океан', en: 'Ocean' }, price: 800, glyphs: ['🐠', '🐟', '🐙', '🦐', '🐡', '🦑'] },
-  { id: 'animals', name: { ru: 'Зверята', en: 'Critters' }, price: 900, glyphs: ['🐭', '🐤', '🐸', '🦋', '🐹', '🦊'] },
-  { id: 'cosmos', name: { ru: 'Космос', en: 'Cosmos' }, price: 1200, glyphs: ['🚀', '🛸', '☄️', '🌌', '🔭', '👾'] },
+  { id: 'classic', name: { ru: 'Классика', en: 'Classic', es: 'Clásico', pt: 'Clássico' }, price: 0 },
+  { id: 'stones', name: { ru: 'Камни', en: 'Stones', es: 'Piedras', pt: 'Pedras' }, price: 0, ring: true },
+  { id: 'fruits', name: { ru: 'Фрукты', en: 'Fruits', es: 'Frutas', pt: 'Frutas' }, price: 300, glyphs: ['🍓', '🍋', '🍏', '🫐', '🍇', '🍊'] },
+  { id: 'sweets', name: { ru: 'Сладости', en: 'Sweets', es: 'Dulces', pt: 'Doces' }, price: 400, glyphs: ['🍬', '🍭', '🍩', '🧊', '🧁', '🍫'] },
+  { id: 'flowers', name: { ru: 'Цветы', en: 'Flowers', es: 'Flores', pt: 'Flores' }, price: 500, glyphs: ['🌹', '🌻', '🍀', '🪻', '🌸', '🌷'] },
+  { id: 'planets', name: { ru: 'Планеты', en: 'Planets', es: 'Planetas', pt: 'Planetas' }, price: 600, glyphs: ['🔴', '🪐', '🌍', '🌑', '💫', '⭐'] },
+  { id: 'runes', name: { ru: 'Руны', en: 'Runes', es: 'Runas', pt: 'Runas' }, price: 700, glyphs: ['🔥', '⚡', '🌿', '🌊', '🔮', '☀️'] },
+  { id: 'ocean', name: { ru: 'Океан', en: 'Ocean', es: 'Océano', pt: 'Oceano' }, price: 800, glyphs: ['🐠', '🐟', '🐙', '🦐', '🐡', '🦑'] },
+  { id: 'animals', name: { ru: 'Зверята', en: 'Critters', es: 'Animalitos', pt: 'Bichinhos' }, price: 900, glyphs: ['🐭', '🐤', '🐸', '🦋', '🐹', '🦊'] },
+  { id: 'cosmos', name: { ru: 'Космос', en: 'Cosmos', es: 'Cosmos', pt: 'Cosmos' }, price: 1200, glyphs: ['🚀', '🛸', '☄️', '🌌', '🔭', '👾'] },
 ];
 const AVATARS = [
   { id: 'av-seed', emoji: '🌱', bg: 'linear-gradient(135deg,#b8e0a0,#7ac96a)', price: 0 },
@@ -759,57 +1373,57 @@ const AVATARS = [
   { id: 'av-rainbow', emoji: '🌈', bg: 'linear-gradient(135deg,#ff9ab8,#ffd83d,#6bff8f,#6be5ff,#d18bff)', price: 600 },
 ];
 const FRAMES = [
-  { id: 'fr-none', name: { ru: 'Без рамки', en: 'None' }, price: 0, css: 'none' },
-  { id: 'fr-wood', name: { ru: 'Дерево', en: 'Wood' }, price: 60, css: '0 0 0 3px #8a5f40, 0 2px 6px rgba(0,0,0,.3)' },
-  { id: 'fr-leaf', name: { ru: 'Листья', en: 'Leaves' }, price: 100, css: '0 0 0 3px #4fd05c, 0 0 8px rgba(79,208,92,.5)' },
-  { id: 'fr-sun', name: { ru: 'Солнце', en: 'Sun' }, price: 120, css: '0 0 0 3px #ffb300, 0 0 12px rgba(255,179,0,.6)' },
-  { id: 'fr-ice', name: { ru: 'Лёд', en: 'Ice' }, price: 150, css: '0 0 0 3px #6be5ff, 0 0 10px rgba(107,229,255,.6)' },
-  { id: 'fr-rose', name: { ru: 'Роза', en: 'Rose' }, price: 180, css: '0 0 0 3px #ff7799, 0 0 10px rgba(255,119,153,.6)' },
-  { id: 'fr-gold', name: { ru: 'Золото', en: 'Gold' }, price: 300, css: '0 0 0 4px #ffd83d, 0 0 14px rgba(255,216,61,.7)' },
-  { id: 'fr-emerald', name: { ru: 'Изумруд', en: 'Emerald' }, price: 300, css: '0 0 0 4px #6bff8f, 0 0 14px rgba(107,255,143,.7)' },
-  { id: 'fr-amethyst', name: { ru: 'Аметист', en: 'Amethyst' }, price: 350, css: '0 0 0 4px #d18bff, 0 0 14px rgba(209,139,255,.7)' },
-  { id: 'fr-royal', name: { ru: 'Королевский', en: 'Royal' }, price: 500, css: '0 0 0 4px #fff, 0 0 0 7px #ffd83d, 0 0 18px rgba(255,216,61,.8)' },
-  { id: 'fr-neon', name: { ru: 'Неон', en: 'Neon' }, price: 500, css: '0 0 0 3px #22e0ff, 0 0 18px #22e0ff, 0 0 30px rgba(34,224,255,.5)' },
-  { id: 'fr-rainbow', name: { ru: 'Радуга', en: 'Rainbow' }, price: 800, css: '0 0 0 4px transparent, 0 0 16px #ff9ab8, 0 0 24px #ffd83d, 0 0 32px #6bff8f' },
+  { id: 'fr-none', name: { ru: 'Без рамки', en: 'None', es: 'Sin marco', pt: 'Sem moldura' }, price: 0, css: 'none' },
+  { id: 'fr-wood', name: { ru: 'Дерево', en: 'Wood', es: 'Madera', pt: 'Madeira' }, price: 60, css: '0 0 0 3px #8a5f40, 0 2px 6px rgba(0,0,0,.3)' },
+  { id: 'fr-leaf', name: { ru: 'Листья', en: 'Leaves', es: 'Hojas', pt: 'Folhas' }, price: 100, css: '0 0 0 3px #4fd05c, 0 0 8px rgba(79,208,92,.5)' },
+  { id: 'fr-sun', name: { ru: 'Солнце', en: 'Sun', es: 'Sol', pt: 'Sol' }, price: 120, css: '0 0 0 3px #ffb300, 0 0 12px rgba(255,179,0,.6)' },
+  { id: 'fr-ice', name: { ru: 'Лёд', en: 'Ice', es: 'Hielo', pt: 'Gelo' }, price: 150, css: '0 0 0 3px #6be5ff, 0 0 10px rgba(107,229,255,.6)' },
+  { id: 'fr-rose', name: { ru: 'Роза', en: 'Rose', es: 'Rosa', pt: 'Rosa' }, price: 180, css: '0 0 0 3px #ff7799, 0 0 10px rgba(255,119,153,.6)' },
+  { id: 'fr-gold', name: { ru: 'Золото', en: 'Gold', es: 'Oro', pt: 'Ouro' }, price: 300, css: '0 0 0 4px #ffd83d, 0 0 14px rgba(255,216,61,.7)' },
+  { id: 'fr-emerald', name: { ru: 'Изумруд', en: 'Emerald', es: 'Esmeralda', pt: 'Esmeralda' }, price: 300, css: '0 0 0 4px #6bff8f, 0 0 14px rgba(107,255,143,.7)' },
+  { id: 'fr-amethyst', name: { ru: 'Аметист', en: 'Amethyst', es: 'Ametista', pt: 'Ametista' }, price: 350, css: '0 0 0 4px #d18bff, 0 0 14px rgba(209,139,255,.7)' },
+  { id: 'fr-royal', name: { ru: 'Королевский', en: 'Royal', es: 'Real', pt: 'Real' }, price: 500, css: '0 0 0 4px #fff, 0 0 0 7px #ffd83d, 0 0 18px rgba(255,216,61,.8)' },
+  { id: 'fr-neon', name: { ru: 'Неон', en: 'Neon', es: 'Neón', pt: 'Neon' }, price: 500, css: '0 0 0 3px #22e0ff, 0 0 18px #22e0ff, 0 0 30px rgba(34,224,255,.5)' },
+  { id: 'fr-rainbow', name: { ru: 'Радуга', en: 'Rainbow', es: 'Arcoíris', pt: 'Arco-íris' }, price: 800, css: '0 0 0 4px transparent, 0 0 16px #ff9ab8, 0 0 24px #ffd83d, 0 0 32px #6bff8f' },
 ];
 const NAME_STYLES = [
-  { id: 'ns-basic', name: { ru: 'Обычный', en: 'Basic' }, price: 0, css: 'color:#ffffff;font-weight:700' },
-  { id: 'ns-fire', name: { ru: 'Огонь', en: 'Fire' }, price: 100, css: 'color:#ff7a1f;font-weight:900;text-shadow:0 0 8px rgba(255,122,31,.8)' },
-  { id: 'ns-ice', name: { ru: 'Лёд', en: 'Ice' }, price: 100, css: 'color:#9be8ff;font-weight:700;text-shadow:0 1px 0 #2a9ad6,0 0 8px rgba(107,229,255,.6)' },
-  { id: 'ns-gold', name: { ru: 'Золото', en: 'Gold' }, price: 200, css: 'color:#ffd83d;font-weight:900;text-shadow:0 1px 0 #a68a00,0 0 10px rgba(255,216,61,.7)' },
-  { id: 'ns-emerald', name: { ru: 'Изумруд', en: 'Emerald' }, price: 150, css: 'color:#8fffa8;font-weight:800;text-shadow:0 0 8px rgba(107,255,143,.6)' },
-  { id: 'ns-rose', name: { ru: 'Роза', en: 'Rose' }, price: 150, css: 'color:#ffb8c8;font-weight:800;text-shadow:0 0 8px rgba(255,119,153,.7)' },
-  { id: 'ns-royal', name: { ru: 'Роял', en: 'Royal' }, price: 300, css: 'color:#fff;font-weight:900;letter-spacing:.06em;text-shadow:0 0 4px #ffd83d,0 0 12px #e0a81f' },
-  { id: 'ns-neon', name: { ru: 'Неон', en: 'Neon' }, price: 350, css: 'color:#22e0ff;font-weight:900;text-shadow:0 0 6px #22e0ff,0 0 14px rgba(34,224,255,.8)' },
-  { id: 'ns-shadow', name: { ru: 'Тень', en: 'Shadow' }, price: 200, css: 'color:#3a3a4a;font-weight:900;text-shadow:0 2px 0 rgba(255,255,255,.25)' },
-  { id: 'ns-magic', name: { ru: 'Магия', en: 'Magic' }, price: 400, css: 'color:#e8ccff;font-weight:900;font-style:italic;text-shadow:0 0 8px #c44dff,0 0 16px rgba(196,77,255,.6)' },
+  { id: 'ns-basic', name: { ru: 'Обычный', en: 'Basic', es: 'Normal', pt: 'Normal' }, price: 0, css: 'color:#ffffff;font-weight:700' },
+  { id: 'ns-fire', name: { ru: 'Огонь', en: 'Fire', es: 'Fuego', pt: 'Fogo' }, price: 100, css: 'color:#ff7a1f;font-weight:900;text-shadow:0 0 8px rgba(255,122,31,.8)' },
+  { id: 'ns-ice', name: { ru: 'Лёд', en: 'Ice', es: 'Hielo', pt: 'Gelo' }, price: 100, css: 'color:#9be8ff;font-weight:700;text-shadow:0 1px 0 #2a9ad6,0 0 8px rgba(107,229,255,.6)' },
+  { id: 'ns-gold', name: { ru: 'Золото', en: 'Gold', es: 'Oro', pt: 'Ouro' }, price: 200, css: 'color:#ffd83d;font-weight:900;text-shadow:0 1px 0 #a68a00,0 0 10px rgba(255,216,61,.7)' },
+  { id: 'ns-emerald', name: { ru: 'Изумруд', en: 'Emerald', es: 'Esmeralda', pt: 'Esmeralda' }, price: 150, css: 'color:#8fffa8;font-weight:800;text-shadow:0 0 8px rgba(107,255,143,.6)' },
+  { id: 'ns-rose', name: { ru: 'Роза', en: 'Rose', es: 'Rosa', pt: 'Rosa' }, price: 150, css: 'color:#ffb8c8;font-weight:800;text-shadow:0 0 8px rgba(255,119,153,.7)' },
+  { id: 'ns-royal', name: { ru: 'Роял', en: 'Royal', es: 'Real', pt: 'Real' }, price: 300, css: 'color:#fff;font-weight:900;letter-spacing:.06em;text-shadow:0 0 4px #ffd83d,0 0 12px #e0a81f' },
+  { id: 'ns-neon', name: { ru: 'Неон', en: 'Neon', es: 'Neón', pt: 'Neon' }, price: 350, css: 'color:#22e0ff;font-weight:900;text-shadow:0 0 6px #22e0ff,0 0 14px rgba(34,224,255,.8)' },
+  { id: 'ns-shadow', name: { ru: 'Тень', en: 'Shadow', es: 'Sombra', pt: 'Sombra' }, price: 200, css: 'color:#3a3a4a;font-weight:900;text-shadow:0 2px 0 rgba(255,255,255,.25)' },
+  { id: 'ns-magic', name: { ru: 'Магия', en: 'Magic', es: 'Magia', pt: 'Magia' }, price: 400, css: 'color:#e8ccff;font-weight:900;font-style:italic;text-shadow:0 0 8px #c44dff,0 0 16px rgba(196,77,255,.6)' },
 ];
 const EFFECTS = [
-  { id: 'fx-sparkle', kind: 'tile', visual: '✦', price: 150, name: { ru: 'Искры', en: 'Sparks' } },
-  { id: 'fx-petals', kind: 'tile', visual: '🌸', price: 200, name: { ru: 'Лепестки', en: 'Petals' } },
-  { id: 'fx-stars', kind: 'tile', visual: '⭐', price: 250, name: { ru: 'Звёзды', en: 'Stars' } },
-  { id: 'fx-leaves', kind: 'tile', visual: '🍃', price: 250, name: { ru: 'Листья', en: 'Leaves' } },
-  { id: 'fx-hearts', kind: 'tile', visual: '💚', price: 300, name: { ru: 'Сердечки', en: 'Hearts' } },
-  { id: 'fx-rainbow', kind: 'tile', visual: '🌈', price: 500, name: { ru: 'Радуга', en: 'Rainbow' } },
-  { id: 'ae-glow', kind: 'avatar', visual: 'glow', price: 100, name: { ru: 'Свечение', en: 'Glow' } },
-  { id: 'ae-pulse', kind: 'avatar', visual: 'pulse', price: 150, name: { ru: 'Пульс', en: 'Pulse' } },
-  { id: 'ae-spin', kind: 'avatar', visual: 'spin', price: 250, name: { ru: 'Вращение', en: 'Spin' } },
-  { id: 'ae-aurora', kind: 'avatar', visual: 'aurora', price: 350, name: { ru: 'Аврора', en: 'Aurora' } },
-  { id: 'ae-flame', kind: 'avatar', visual: 'flame', price: 350, name: { ru: 'Пламя', en: 'Flame' } },
-  { id: 'ae-galaxy', kind: 'avatar', visual: 'galaxy', price: 500, name: { ru: 'Галактика', en: 'Galaxy' } },
-  { id: 'ne-glow', kind: 'name', visual: 'glow', price: 100, name: { ru: 'Сияние', en: 'Radiance' } },
-  { id: 'ne-rainbow', kind: 'name', visual: 'rainbow', price: 250, name: { ru: 'Радуга', en: 'Rainbow' } },
-  { id: 'ne-blink', kind: 'name', visual: 'blink', price: 150, name: { ru: 'Мерцание', en: 'Blink' } },
-  { id: 'ne-wave', kind: 'name', visual: 'wave', price: 300, name: { ru: 'Волна', en: 'Wave' } },
-  { id: 'ne-fire', kind: 'name', visual: 'fire', price: 300, name: { ru: 'Пламя', en: 'Flame' } },
-  { id: 'ne-starlight', kind: 'name', visual: 'starlight', price: 450, name: { ru: 'Звёздный свет', en: 'Starlight' } },
+  { id: 'fx-sparkle', kind: 'tile', visual: '✦', price: 150, name: { ru: 'Искры', en: 'Sparks', es: 'Chispas', pt: 'Fagulhas' } },
+  { id: 'fx-petals', kind: 'tile', visual: '🌸', price: 200, name: { ru: 'Лепестки', en: 'Petals', es: 'Pétalos', pt: 'Pétalas' } },
+  { id: 'fx-stars', kind: 'tile', visual: '⭐', price: 250, name: { ru: 'Звёзды', en: 'Stars', es: 'Estrellas', pt: 'Estrelas' } },
+  { id: 'fx-leaves', kind: 'tile', visual: '🍃', price: 250, name: { ru: 'Листья', en: 'Leaves', es: 'Hojas', pt: 'Folhas' } },
+  { id: 'fx-hearts', kind: 'tile', visual: '💚', price: 300, name: { ru: 'Сердечки', en: 'Hearts', es: 'Corazones', pt: 'Corações' } },
+  { id: 'fx-rainbow', kind: 'tile', visual: '🌈', price: 500, name: { ru: 'Радуга', en: 'Rainbow', es: 'Arcoíris', pt: 'Arco-íris' } },
+  { id: 'ae-glow', kind: 'avatar', visual: 'glow', price: 100, name: { ru: 'Свечение', en: 'Glow', es: 'Resplandor', pt: 'Brilho' } },
+  { id: 'ae-pulse', kind: 'avatar', visual: 'pulse', price: 150, name: { ru: 'Пульс', en: 'Pulse', es: 'Pulso', pt: 'Pulso' } },
+  { id: 'ae-spin', kind: 'avatar', visual: 'spin', price: 250, name: { ru: 'Вращение', en: 'Spin', es: 'Giro', pt: 'Giro' } },
+  { id: 'ae-aurora', kind: 'avatar', visual: 'aurora', price: 350, name: { ru: 'Аврора', en: 'Aurora', es: 'Aurora', pt: 'Aurora' } },
+  { id: 'ae-flame', kind: 'avatar', visual: 'flame', price: 350, name: { ru: 'Пламя', en: 'Flame', es: 'Llama', pt: 'Chama' } },
+  { id: 'ae-galaxy', kind: 'avatar', visual: 'galaxy', price: 500, name: { ru: 'Галактика', en: 'Galaxy', es: 'Galaxia', pt: 'Galáxia' } },
+  { id: 'ne-glow', kind: 'name', visual: 'glow', price: 100, name: { ru: 'Сияние', en: 'Radiance', es: 'Resplandor', pt: 'Refulgência' } },
+  { id: 'ne-rainbow', kind: 'name', visual: 'rainbow', price: 250, name: { ru: 'Радуга', en: 'Rainbow', es: 'Arcoíris', pt: 'Arco-íris' } },
+  { id: 'ne-blink', kind: 'name', visual: 'blink', price: 150, name: { ru: 'Мерцание', en: 'Blink', es: 'Parpadeo', pt: 'Piscar' } },
+  { id: 'ne-wave', kind: 'name', visual: 'wave', price: 300, name: { ru: 'Волна', en: 'Wave', es: 'Onda', pt: 'Onda' } },
+  { id: 'ne-fire', kind: 'name', visual: 'fire', price: 300, name: { ru: 'Пламя', en: 'Flame', es: 'Llama', pt: 'Chama' } },
+  { id: 'ne-starlight', kind: 'name', visual: 'starlight', price: 450, name: { ru: 'Звёздный свет', en: 'Starlight', es: 'Luz de estrellas', pt: 'Luz das estrelas' } },
 ];
 /* ---------------- Волна 4: сезонная косметика (4 сезона × 6 предметов) ---------------- */
 GEM_SKINS.push(
-  { id: 'season-autumn', name: { ru: 'Осенний сад', en: 'Autumn Garden' }, price: 800, season: 'autumn', glyphs: ['🍁', '🌽', '🌰', '🫐', '🍇', '🎃'] },
-  { id: 'season-winter', name: { ru: 'Зимние узоры', en: 'Winter Patterns' }, price: 800, season: 'winter', glyphs: ['🎅', '⭐', '🎄', '❄️', '🔮', '🍊'] },
-  { id: 'season-spring', name: { ru: 'Весенний цвет', en: 'Spring Bloom' }, price: 800, season: 'spring', glyphs: ['🌷', '🌼', '🌱', '💧', '🦋', '🌸'] },
-  { id: 'season-summer', name: { ru: 'Летний бриз', en: 'Summer Breeze' }, price: 800, season: 'summer', glyphs: ['🍉', '🌞', '🌴', '🌊', '🐚', '🍍'] },
+  { id: 'season-autumn', name: { ru: 'Осенний сад', en: 'Autumn Garden', es: 'Jardín de otoño', pt: 'Jardim de outono' }, price: 800, season: 'autumn', glyphs: ['🍁', '🌽', '🌰', '🫐', '🍇', '🎃'] },
+  { id: 'season-winter', name: { ru: 'Зимние узоры', en: 'Winter Patterns', es: 'Patrones de invierno', pt: 'Padrões de inverno' }, price: 800, season: 'winter', glyphs: ['🎅', '⭐', '🎄', '❄️', '🔮', '🍊'] },
+  { id: 'season-spring', name: { ru: 'Весенний цвет', en: 'Spring Bloom', es: 'Flor de primavera', pt: 'Flor da primavera' }, price: 800, season: 'spring', glyphs: ['🌷', '🌼', '🌱', '💧', '🦋', '🌸'] },
+  { id: 'season-summer', name: { ru: 'Летний бриз', en: 'Summer Breeze', es: 'Brisa de verano', pt: 'Brisa de verão' }, price: 800, season: 'summer', glyphs: ['🍉', '🌞', '🌴', '🌊', '🐚', '🍍'] },
 );
 AVATARS.push(
   { id: 'av-wheat', emoji: '🌾', bg: 'linear-gradient(135deg,#ffe8b0,#d9a441)', price: 180, season: 'autumn' },
@@ -822,22 +1436,22 @@ AVATARS.push(
   { id: 'av-palm', emoji: '🌴', bg: 'linear-gradient(135deg,#c0f0d0,#2fa56d)', price: 180, season: 'summer' },
 );
 FRAMES.push(
-  { id: 'fr-amber', name: { ru: 'Янтарь', en: 'Amber' }, price: 320, css: '0 0 0 4px #ef8f2a, 0 0 14px rgba(239,143,42,.7)', season: 'autumn' },
-  { id: 'fr-snow', name: { ru: 'Снежная', en: 'Snow' }, price: 320, css: '0 0 0 4px #e8f4ff, 0 0 14px rgba(200,230,255,.85)', season: 'winter' },
-  { id: 'fr-petal', name: { ru: 'Лепестки', en: 'Petals' }, price: 320, css: '0 0 0 4px #ff9ab8, 0 0 14px rgba(255,154,184,.7)', season: 'spring' },
-  { id: 'fr-sunburst', name: { ru: 'Солнечная', en: 'Sunburst' }, price: 320, css: '0 0 0 4px #ffd83d, 0 0 16px rgba(255,216,61,.85)', season: 'summer' },
+  { id: 'fr-amber', name: { ru: 'Янтарь', en: 'Amber', es: 'Ámbar', pt: 'Âmbar' }, price: 320, css: '0 0 0 4px #ef8f2a, 0 0 14px rgba(239,143,42,.7)', season: 'autumn' },
+  { id: 'fr-snow', name: { ru: 'Снежная', en: 'Snow', es: 'Nieve', pt: 'Neve' }, price: 320, css: '0 0 0 4px #e8f4ff, 0 0 14px rgba(200,230,255,.85)', season: 'winter' },
+  { id: 'fr-petal', name: { ru: 'Лепестки', en: 'Petals', es: 'Pétalos', pt: 'Pétalas' }, price: 320, css: '0 0 0 4px #ff9ab8, 0 0 14px rgba(255,154,184,.7)', season: 'spring' },
+  { id: 'fr-sunburst', name: { ru: 'Солнечная', en: 'Sunburst', es: 'Solsticio', pt: 'Solstício' }, price: 320, css: '0 0 0 4px #ffd83d, 0 0 16px rgba(255,216,61,.85)', season: 'summer' },
 );
 NAME_STYLES.push(
-  { id: 'ns-amber', name: { ru: 'Янтарный', en: 'Amber' }, price: 260, css: 'color:#ffc890;font-weight:900;text-shadow:0 1px 0 #a8611f,0 0 10px rgba(239,143,42,.7)', season: 'autumn' },
-  { id: 'ns-frost', name: { ru: 'Морозный', en: 'Frost' }, price: 260, css: 'color:#e8f4ff;font-weight:900;text-shadow:0 1px 0 #5a8ac0,0 0 10px rgba(200,230,255,.9)', season: 'winter' },
-  { id: 'ns-petal', name: { ru: 'Нежный', en: 'Petal' }, price: 260, css: 'color:#ffd8e8;font-weight:800;text-shadow:0 0 8px rgba(255,154,184,.8)', season: 'spring' },
-  { id: 'ns-sunny', name: { ru: 'Солнечный', en: 'Sunny' }, price: 260, css: 'color:#fff0a0;font-weight:900;text-shadow:0 0 10px rgba(255,216,61,.8)', season: 'summer' },
+  { id: 'ns-amber', name: { ru: 'Янтарный', en: 'Amber', es: 'Ámbar', pt: 'Âmbar' }, price: 260, css: 'color:#ffc890;font-weight:900;text-shadow:0 1px 0 #a8611f,0 0 10px rgba(239,143,42,.7)', season: 'autumn' },
+  { id: 'ns-frost', name: { ru: 'Морозный', en: 'Frost', es: 'Escarcha', pt: 'Geada' }, price: 260, css: 'color:#e8f4ff;font-weight:900;text-shadow:0 1px 0 #5a8ac0,0 0 10px rgba(200,230,255,.9)', season: 'winter' },
+  { id: 'ns-petal', name: { ru: 'Нежный', en: 'Petal', es: 'Pétalo', pt: 'Pétala' }, price: 260, css: 'color:#ffd8e8;font-weight:800;text-shadow:0 0 8px rgba(255,154,184,.8)', season: 'spring' },
+  { id: 'ns-sunny', name: { ru: 'Солнечный', en: 'Sunny', es: 'Soleado', pt: 'Ensolarado' }, price: 260, css: 'color:#fff0a0;font-weight:900;text-shadow:0 0 10px rgba(255,216,61,.8)', season: 'summer' },
 );
 EFFECTS.push(
-  { id: 'fx-leaffall', kind: 'tile', visual: '🍂', price: 380, name: { ru: 'Листопад', en: 'Leaf Fall' }, season: 'autumn' },
-  { id: 'fx-snowflakes', kind: 'tile', visual: '❄️', price: 380, name: { ru: 'Снежинки', en: 'Snowflakes' }, season: 'winter' },
-  { id: 'fx-petalrain', kind: 'tile', visual: '🌷', price: 380, name: { ru: 'Лепестковый дождь', en: 'Petal Rain' }, season: 'spring' },
-  { id: 'fx-sunshine', kind: 'tile', visual: '☀️', price: 380, name: { ru: 'Солнечные зайчики', en: 'Sunshine' }, season: 'summer' },
+  { id: 'fx-leaffall', kind: 'tile', visual: '🍂', price: 380, name: { ru: 'Листопад', en: 'Leaf Fall', es: 'Caída de hojas', pt: 'Queda de folhas' }, season: 'autumn' },
+  { id: 'fx-snowflakes', kind: 'tile', visual: '❄️', price: 380, name: { ru: 'Снежинки', en: 'Snowflakes', es: 'Copos de nieve', pt: 'Flocos de neve' }, season: 'winter' },
+  { id: 'fx-petalrain', kind: 'tile', visual: '🌷', price: 380, name: { ru: 'Лепестковый дождь', en: 'Petal Rain', es: 'Lluvia de pétalos', pt: 'Chuva de pétalas' }, season: 'spring' },
+  { id: 'fx-sunshine', kind: 'tile', visual: '☀️', price: 380, name: { ru: 'Солнечные зайчики', en: 'Sunshine', es: 'Rayos de sol', pt: 'Raios de sol' }, season: 'summer' },
 );
 /** Витрина сезона: 6 предметов (скин + 2 аватара + рамка + имя + эффект). */
 const TILE_EFFECTS = EFFECTS.filter((e) => e.kind === 'tile'); // после сезонных push (Волна 4)
@@ -851,10 +1465,13 @@ function seasonalBundleFor(season) {
   };
 }
 
-/* ---------------- level generator (100 levels / 10 chapters) ---------------- */
-const TOTAL_LEVELS = 100;
+/* ---------------- level generator (10 000 levels / 1 000 chapters) ----------------
+ * Волна 7: главы 0–9 — исходная кривая (d = chapter), далее плато d = 9
+ * (сложность финальной эры, без инфляции). Калибровка: scripts/audit-scale.ts. */
+const TOTAL_LEVELS = 10000;
 const CHAPTER_SIZE = 10;
 const TOTAL_CHAPTERS = TOTAL_LEVELS / CHAPTER_SIZE;
+function goalDepthOf(chapter) { return Math.min(9, chapter); }
 function chapterOfLevel(level) {
   return Math.min(TOTAL_CHAPTERS - 1, Math.floor((level - 1) / CHAPTER_SIZE));
 }
@@ -894,7 +1511,7 @@ function getLevelConfig(level) {
     stones = generateStones(rng, w, h, Math.min(10, chapter - 2), 1, 2);
   }
   const isItemLevel = !isBoss && chapter >= 3 && lv % 8 === 5;
-  const items = isItemLevel ? 2 + Math.floor(chapter / 2) : 0;
+  const items = isItemLevel ? Math.min(8, 2 + Math.floor(chapter / 2)) : 0;
   if (isItemLevel) stones = stones.filter((s) => Math.floor(s.idx / w) < h - 1);
   const voids = [];
   if (!isBoss && chapter >= 4) {
@@ -910,10 +1527,11 @@ function getLevelConfig(level) {
     }
   }
   const goals = [];
-  const targetScore = Math.round(moves * (isBoss ? 30 + chapter * 2 : 42 + chapter * 3));
+  const depth = goalDepthOf(chapter);
+  const targetScore = Math.round(moves * (isBoss ? 30 + depth * 2 : 42 + depth * 3));
   const target2 = Math.round(targetScore * 1.6);
   const target3 = Math.round(targetScore * 2.4);
-  const colorCount = Math.max(8, Math.round(moves * (0.5 + chapter * 0.03)));
+  const colorCount = Math.max(8, Math.round(moves * (0.5 + depth * 0.03)));
   if (isBoss) {
     goals.push({ type: 'score', count: targetScore });
   } else if (lv <= 5) {
@@ -983,40 +1601,40 @@ function gardenCoinsBack(cost) { return 10 + cost * 2; }
 const PIGGY_WINS_TARGET = 5;
 function piggyDeposit(level) { return 10 + Math.min(Math.max(level, 1), 30) * 2; }
 const GARDEN_OBJECTS = [
-  { id: 'g-grass',     name: { ru: 'Газон',            en: 'Lawn' },            emoji: '🌿', cost: 2,  zone: 0, x: 12, y: 28, size: 1.0 },
-  { id: 'g-path',      name: { ru: 'Тропинка',         en: 'Garden path' },     emoji: '🛣️', cost: 2,  zone: 0, x: 35, y: 25, size: 1.05 },
-  { id: 'g-daisy',     name: { ru: 'Ромашки',          en: 'Daisies' },         emoji: '🌼', cost: 3,  zone: 0, x: 58, y: 28, size: 0.9 },
-  { id: 'g-bush',      name: { ru: 'Кустарник',        en: 'Bush' },            emoji: '🪴', cost: 3,  zone: 0, x: 81, y: 26, size: 1.05 },
-  { id: 'g-pot',       name: { ru: 'Кашпо',            en: 'Planter' },         emoji: '🏺', cost: 4,  zone: 0, x: 12, y: 11, size: 0.95 },
-  { id: 'g-tulip',     name: { ru: 'Тюльпаны',         en: 'Tulips' },          emoji: '🌷', cost: 5,  zone: 0, x: 35, y: 9,  size: 0.95 },
-  { id: 'g-lamp',      name: { ru: 'Фонарь',           en: 'Lantern' },         emoji: '🏮', cost: 5,  zone: 0, x: 58, y: 11, size: 1.0 },
-  { id: 'g-mushroom',  name: { ru: 'Грибочки',         en: 'Mushrooms' },       emoji: '🍄', cost: 6,  zone: 0, x: 81, y: 10, size: 0.9 },
-  { id: 'g-flowerbed', name: { ru: 'Клумба',           en: 'Flowerbed' },       emoji: '💐', cost: 5,  zone: 1, x: 10, y: 59, size: 1.0 },
-  { id: 'g-apple',     name: { ru: 'Яблоня',           en: 'Apple tree' },      emoji: '🌳', cost: 6,  zone: 1, x: 29, y: 55, size: 1.35 },
-  { id: 'g-birdhouse', name: { ru: 'Скворечник',       en: 'Birdhouse' },       emoji: '🐦', cost: 7,  zone: 1, x: 49, y: 59, size: 0.95 },
-  { id: 'g-bench',     name: { ru: 'Скамейка',         en: 'Bench' },           emoji: '🪑', cost: 7,  zone: 1, x: 69, y: 57, size: 1.05 },
-  { id: 'g-bee',       name: { ru: 'Улей',             en: 'Beehive' },         emoji: '🐝', cost: 8,  zone: 1, x: 89, y: 59, size: 0.95 },
-  { id: 'g-greenhouse',name: { ru: 'Теплица',          en: 'Greenhouse' },      emoji: '🏡', cost: 8,  zone: 1, x: 76, y: 40, size: 1.3 },
-  { id: 'g-sprinkler', name: { ru: 'Поливалка',        en: 'Sprinkler' },       emoji: '💦', cost: 9,  zone: 1, x: 16, y: 50, size: 0.9 },
-  { id: 'g-swing',     name: { ru: 'Качели',           en: 'Swing set' },       emoji: '🛝', cost: 9,  zone: 1, x: 38, y: 47, size: 1.2 },
-  { id: 'g-hedge',     name: { ru: 'Живая изгородь',   en: 'Hedge' },           emoji: '🌲', cost: 9,  zone: 1, x: 60, y: 49, size: 1.2 },
-  { id: 'g-pond',      name: { ru: 'Пруд с лилиями',   en: 'Lily pond' },       emoji: '🪷', cost: 10, zone: 1, x: 82, y: 48, size: 1.1 },
-  { id: 'g-berries',   name: { ru: 'Ягодные кусты',    en: 'Berry bushes' },    emoji: '🫐', cost: 10, zone: 1, x: 26, y: 37, size: 0.95 },
-  { id: 'g-sunflower', name: { ru: 'Подсолнухи',       en: 'Sunflowers' },      emoji: '🌻', cost: 10, zone: 1, x: 52, y: 36, size: 1.0 },
-  { id: 'g-arbor',     name: { ru: 'Виноградная арка', en: 'Grape arbor' },     emoji: '🍇', cost: 8,  zone: 1, x: 8,  y: 39, size: 1.0 },
-  { id: 'g-statue',    name: { ru: 'Статуя',           en: 'Statue' },          emoji: '🗿', cost: 6,  zone: 2, x: 12, y: 91, size: 1.0 },
-  { id: 'g-clock',     name: { ru: 'Солнечные часы',   en: 'Sundial' },         emoji: '🕗', cost: 7,  zone: 2, x: 33, y: 89, size: 1.0 },
-  { id: 'g-maze',      name: { ru: 'Лабиринт',         en: 'Hedge maze' },      emoji: '🌀', cost: 7,  zone: 2, x: 54, y: 91, size: 1.0 },
-  { id: 'g-rose',      name: { ru: 'Розарий',          en: 'Rose garden' },     emoji: '🌹', cost: 8,  zone: 2, x: 75, y: 89, size: 0.95 },
-  { id: 'g-sakura',    name: { ru: 'Сакура',           en: 'Sakura tree' },     emoji: '🌸', cost: 8,  zone: 2, x: 92, y: 91, size: 1.1 },
-  { id: 'g-swans',     name: { ru: 'Лебединое озеро',  en: 'Swan lake' },       emoji: '🦢', cost: 9,  zone: 2, x: 12, y: 81, size: 1.05 },
-  { id: 'g-peacock',   name: { ru: 'Павлин',           en: 'Peacock' },         emoji: '🦚', cost: 10, zone: 2, x: 35, y: 79, size: 1.05 },
-  { id: 'g-gazebo',    name: { ru: 'Беседка',          en: 'Gazebo' },          emoji: '🛖', cost: 11, zone: 2, x: 58, y: 81, size: 1.25 },
-  { id: 'g-balloon',   name: { ru: 'Воздушный шар',    en: 'Hot-air balloon' }, emoji: '🎈', cost: 12, zone: 2, x: 81, y: 79, size: 1.15 },
-  { id: 'g-arch',      name: { ru: 'Мраморная арка',   en: 'Marble arch' },     emoji: '🏛️', cost: 13, zone: 2, x: 14, y: 70, size: 1.2 },
-  { id: 'g-carousel',  name: { ru: 'Карусель',         en: 'Carousel' },        emoji: '🎠', cost: 14, zone: 2, x: 40, y: 68, size: 1.3 },
-  { id: 'g-stage',     name: { ru: 'Летняя сцена',     en: 'Summer stage' },    emoji: '🎪', cost: 14, zone: 2, x: 65, y: 70, size: 1.3 },
-  { id: 'g-fountain',  name: { ru: 'Фонтан',           en: 'Fountain' },        emoji: '⛲', cost: 16, zone: 2, x: 88, y: 70, size: 1.3 },
+  { id: 'g-grass',     name: { ru: 'Газон', en: 'Lawn', es: 'Césped', pt: 'Grama' },            emoji: '🌿', cost: 2,  zone: 0, x: 12, y: 28, size: 1.0 },
+  { id: 'g-path',      name: { ru: 'Тропинка', en: 'Garden path', es: 'Sendero', pt: 'Caminho' },     emoji: '🛣️', cost: 2,  zone: 0, x: 35, y: 25, size: 1.05 },
+  { id: 'g-daisy',     name: { ru: 'Ромашки', en: 'Daisies', es: 'Margaritas', pt: 'Margaridas' },         emoji: '🌼', cost: 3,  zone: 0, x: 58, y: 28, size: 0.9 },
+  { id: 'g-bush',      name: { ru: 'Кустарник', en: 'Bush', es: 'Arbusto', pt: 'Arbusto' },            emoji: '🪴', cost: 3,  zone: 0, x: 81, y: 26, size: 1.05 },
+  { id: 'g-pot',       name: { ru: 'Кашпо', en: 'Planter', es: 'Jardinera', pt: 'Vaso ornamental' },         emoji: '🏺', cost: 4,  zone: 0, x: 12, y: 11, size: 0.95 },
+  { id: 'g-tulip',     name: { ru: 'Тюльпаны', en: 'Tulips', es: 'Tulipanes', pt: 'Tulipas' },          emoji: '🌷', cost: 5,  zone: 0, x: 35, y: 9,  size: 0.95 },
+  { id: 'g-lamp',      name: { ru: 'Фонарь', en: 'Lantern', es: 'Farol', pt: 'Lampião' },         emoji: '🏮', cost: 5,  zone: 0, x: 58, y: 11, size: 1.0 },
+  { id: 'g-mushroom',  name: { ru: 'Грибочки', en: 'Mushrooms', es: 'Setas', pt: 'Cogumelos' },       emoji: '🍄', cost: 6,  zone: 0, x: 81, y: 10, size: 0.9 },
+  { id: 'g-flowerbed', name: { ru: 'Клумба', en: 'Flowerbed', es: 'Macizo de flores', pt: 'Canteiro de flores' },       emoji: '💐', cost: 5,  zone: 1, x: 10, y: 59, size: 1.0 },
+  { id: 'g-apple',     name: { ru: 'Яблоня', en: 'Apple tree', es: 'Manzano', pt: 'Macieira' },      emoji: '🌳', cost: 6,  zone: 1, x: 29, y: 55, size: 1.35 },
+  { id: 'g-birdhouse', name: { ru: 'Скворечник', en: 'Birdhouse', es: 'Casita de pájaros', pt: 'Casa de pássaros' },       emoji: '🐦', cost: 7,  zone: 1, x: 49, y: 59, size: 0.95 },
+  { id: 'g-bench',     name: { ru: 'Скамейка', en: 'Bench', es: 'Banco', pt: 'Banco' },           emoji: '🪑', cost: 7,  zone: 1, x: 69, y: 57, size: 1.05 },
+  { id: 'g-bee',       name: { ru: 'Улей', en: 'Beehive', es: 'Colmena', pt: 'Colmeia' },         emoji: '🐝', cost: 8,  zone: 1, x: 89, y: 59, size: 0.95 },
+  { id: 'g-greenhouse',name: { ru: 'Теплица', en: 'Greenhouse', es: 'Invernadero', pt: 'Estufa' },      emoji: '🏡', cost: 8,  zone: 1, x: 76, y: 40, size: 1.3 },
+  { id: 'g-sprinkler', name: { ru: 'Поливалка', en: 'Sprinkler', es: 'Aspersor', pt: 'Aspersor' },       emoji: '💦', cost: 9,  zone: 1, x: 16, y: 50, size: 0.9 },
+  { id: 'g-swing',     name: { ru: 'Качели', en: 'Swing set', es: 'Columpio', pt: 'Balanço' },       emoji: '🛝', cost: 9,  zone: 1, x: 38, y: 47, size: 1.2 },
+  { id: 'g-hedge',     name: { ru: 'Живая изгородь', en: 'Hedge', es: 'Seto', pt: 'Cerca viva' },           emoji: '🌲', cost: 9,  zone: 1, x: 60, y: 49, size: 1.2 },
+  { id: 'g-pond',      name: { ru: 'Пруд с лилиями', en: 'Lily pond', es: 'Estanque de nenúfares', pt: 'Lago de vitórias-régias' },       emoji: '🪷', cost: 10, zone: 1, x: 82, y: 48, size: 1.1 },
+  { id: 'g-berries',   name: { ru: 'Ягодные кусты', en: 'Berry bushes', es: 'Arbustos de bayas', pt: 'Arbustos de frutas' },    emoji: '🫐', cost: 10, zone: 1, x: 26, y: 37, size: 0.95 },
+  { id: 'g-sunflower', name: { ru: 'Подсолнухи', en: 'Sunflowers', es: 'Girasoles', pt: 'Girassóis' },      emoji: '🌻', cost: 10, zone: 1, x: 52, y: 36, size: 1.0 },
+  { id: 'g-arbor',     name: { ru: 'Виноградная арка', en: 'Grape arbor', es: 'Pérgola de uvas', pt: 'Pérgola de uvas' },     emoji: '🍇', cost: 8,  zone: 1, x: 8,  y: 39, size: 1.0 },
+  { id: 'g-statue',    name: { ru: 'Статуя', en: 'Statue', es: 'Estatua', pt: 'Estátua' },          emoji: '🗿', cost: 6,  zone: 2, x: 12, y: 91, size: 1.0 },
+  { id: 'g-clock',     name: { ru: 'Солнечные часы', en: 'Sundial', es: 'Reloj de sol', pt: 'Relógio de sol' },         emoji: '🕗', cost: 7,  zone: 2, x: 33, y: 89, size: 1.0 },
+  { id: 'g-maze',      name: { ru: 'Лабиринт', en: 'Hedge maze', es: 'Laberinto', pt: 'Labirinto' },      emoji: '🌀', cost: 7,  zone: 2, x: 54, y: 91, size: 1.0 },
+  { id: 'g-rose',      name: { ru: 'Розарий', en: 'Rose garden', es: 'Rosaleda', pt: 'Rosário' },     emoji: '🌹', cost: 8,  zone: 2, x: 75, y: 89, size: 0.95 },
+  { id: 'g-sakura',    name: { ru: 'Сакура', en: 'Sakura tree', es: 'Sakura', pt: 'Cerejeira' },     emoji: '🌸', cost: 8,  zone: 2, x: 92, y: 91, size: 1.1 },
+  { id: 'g-swans',     name: { ru: 'Лебединое озеро', en: 'Swan lake', es: 'Lago de los cisnes', pt: 'Lago dos cisnes' },       emoji: '🦢', cost: 9,  zone: 2, x: 12, y: 81, size: 1.05 },
+  { id: 'g-peacock',   name: { ru: 'Павлин', en: 'Peacock', es: 'Pavo real', pt: 'Pavão' },         emoji: '🦚', cost: 10, zone: 2, x: 35, y: 79, size: 1.05 },
+  { id: 'g-gazebo',    name: { ru: 'Беседка', en: 'Gazebo', es: 'Quiosco', pt: 'Quiosque' },          emoji: '🛖', cost: 11, zone: 2, x: 58, y: 81, size: 1.25 },
+  { id: 'g-balloon',   name: { ru: 'Воздушный шар', en: 'Hot-air balloon', es: 'Globo aerostático', pt: 'Balão de ar quente' }, emoji: '🎈', cost: 12, zone: 2, x: 81, y: 79, size: 1.15 },
+  { id: 'g-arch',      name: { ru: 'Мраморная арка', en: 'Marble arch', es: 'Arco de mármol', pt: 'Arco de mármore' },     emoji: '🏛️', cost: 13, zone: 2, x: 14, y: 70, size: 1.2 },
+  { id: 'g-carousel',  name: { ru: 'Карусель', en: 'Carousel', es: 'Carrusel', pt: 'Carrossel' },        emoji: '🎠', cost: 14, zone: 2, x: 40, y: 68, size: 1.3 },
+  { id: 'g-stage',     name: { ru: 'Летняя сцена', en: 'Summer stage', es: 'Escenario de verano', pt: 'Palco de verão' },    emoji: '🎪', cost: 14, zone: 2, x: 65, y: 70, size: 1.3 },
+  { id: 'g-fountain',  name: { ru: 'Фонтан', en: 'Fountain', es: 'Fuente', pt: 'Fonte' },        emoji: '⛲', cost: 16, zone: 2, x: 88, y: 70, size: 1.3 },
 ];
 
 /* ============ engine.js ============ */
@@ -1414,7 +2032,8 @@ function resolveCascade(startBoard, cfg, rng, acc, preferCell) {
     }
     acc.frames.push({
       board: display,
-      clearingIds: [...st.clearSet].map((i) => b.cells[i].tile.id),
+      // Волна 7 (аудит масштаба): в clearSet могут быть клетки без тайла — фильтруем
+      clearingIds: [...st.clearSet].filter((i) => b.cells[i] && b.cells[i].tile).map((i) => b.cells[i].tile.id),
       bornIds: born.map((x) => x.idx),
       spawnIds: [],
       collectedIds: st.collectedIds,
@@ -1427,6 +2046,7 @@ function resolveCascade(startBoard, cfg, rng, acc, preferCell) {
     }
     for (const i of st.clearSet) {
       const cell = b.cells[i];
+      if (!cell) continue; // пустота (Волна 7)
       if (cell.tile && cell.tile.kind === 'item') acc.itemsCollected++;
       else if (cell.tile && cell.tile.kind === 'gem' && cell.tile.color >= 0) acc.colorsCollected[cell.tile.color]++;
       cell.tile = null;
@@ -1470,19 +2090,21 @@ function applyBlastMove(board, cfg, rng, initialClear, initialQueue, basePoints,
   const display = cloneBoard(b);
   acc.frames.push({
     board: display,
-    clearingIds: [...st.clearSet].map((i) => b.cells[i].tile.id),
+    // Волна 7 (аудит масштаба): фильтруем клетки без тайла (пустоты/камни)
+    clearingIds: [...st.clearSet].filter((i) => b.cells[i] && b.cells[i].tile).map((i) => b.cells[i].tile.id),
     bornIds: [], spawnIds: [], collectedIds: st.collectedIds,
     stonesHit: [...st.stonesHit], points: basePoints, cascade: 1,
   });
   for (const i of st.clearSet) {
     const cell = b.cells[i];
+    if (!cell) continue; // пустота (Волна 7)
     if (cell.tile && cell.tile.kind === 'item') acc.itemsCollected++;
     else if (cell.tile && cell.tile.kind === 'gem' && cell.tile.color >= 0) acc.colorsCollected[cell.tile.color]++;
     cell.tile = null;
   }
   for (const si of st.stonesHit) {
     const cell = b.cells[si];
-    if (cell.blocker) {
+    if (cell && cell.blocker) {
       cell.blocker.hp--;
       if (cell.blocker.hp <= 0) { cell.blocker = null; acc.stonesDestroyed++; }
     }
@@ -1549,7 +2171,14 @@ function trySwap(board, a, d, cfg, rng) {
         }
       }
     } else if (other.special !== 'none') {
-      for (const j of blastCellsFor(b, otherIdx)) st.clearSet.add(j);
+      for (const j of blastCellsFor(b, otherIdx)) {
+        // Волна 7: пустоты пропускаем, камни — в stonesHit (как в runDetonations)
+        const cell = b.cells[j];
+        if (!cell) continue;
+        if (cell.blocker) { st.stonesHit.add(j); continue; }
+        if (!cell.tile) continue;
+        st.clearSet.add(j);
+      }
       for (let i = 0; i < b.cells.length; i++) {
         const cell = b.cells[i];
         if (cell && cell.tile && cell.tile.kind === 'gem' && cell.tile.color === other.color) st.clearSet.add(i);
@@ -1566,12 +2195,13 @@ function trySwap(board, a, d, cfg, rng) {
     }
     runDetonations(b, st, queue, new Set());
     acc.frames.push({
-      board: cloneBoard(b), clearingIds: [...st.clearSet].map((i) => b.cells[i].tile.id),
+      board: cloneBoard(b), clearingIds: [...st.clearSet].filter((i) => b.cells[i] && b.cells[i].tile).map((i) => b.cells[i].tile.id),
       bornIds: [], spawnIds: [], collectedIds: st.collectedIds, stonesHit: [...st.stonesHit],
       points: st.clearSet.size * 15, cascade: 1,
     });
     for (const i of st.clearSet) {
       const cell = b.cells[i];
+      if (!cell) continue; // пустота (Волна 7)
       if (cell.tile && cell.tile.kind === 'item') acc.itemsCollected++;
       else if (cell.tile && cell.tile.kind === 'gem' && cell.tile.color >= 0) acc.colorsCollected[cell.tile.color]++;
       cell.tile = null;
@@ -1892,8 +2522,8 @@ function dailyLevelFor(dateKey) {
   return 1 + Math.floor(rng() * TOTAL_LEVELS);
 }
 const WEEKEND_EVENT_DEFS = {
-  coins: { id: 'coins', icon: '🪙', name: { ru: 'Золотые выходные', en: 'Golden Weekend' }, desc: { ru: 'Все победы приносят ×2 монет — только сегодня!', en: 'All wins grant ×2 coins — today only!' } },
-  cascade: { id: 'cascade', icon: '🌊', name: { ru: 'Каскадный уикенд', en: 'Cascade Weekend' }, desc: { ru: 'Каскады 3+ приносят бонусные монеты к награде!', en: 'Cascades of 3+ grant bonus coins on top of the reward!' } },
+  coins: { id: 'coins', icon: '🪙', name: { ru: 'Золотые выходные', en: 'Golden Weekend', es: 'Fin de semana dorado', pt: 'Fim de semana dourado' }, desc: { ru: 'Все победы приносят ×2 монет — только сегодня!', en: 'All wins grant ×2 coins — today only!', es: 'Todas las victorias dan ×2 monedas — ¡solo hoy!', pt: 'Todas as vitórias dão ×2 moedas — só hoje!' } },
+  cascade: { id: 'cascade', icon: '🌊', name: { ru: 'Каскадный уикенд', en: 'Cascade Weekend', es: 'Fin de semana de cascadas', pt: 'Fim de semana de cascatas' }, desc: { ru: 'Каскады 3+ приносят бонусные монеты к награде!', en: 'Cascades of 3+ grant bonus coins on top of the reward!', es: '¡Las cascadas de 3+ dan monedas extra de recompensa!', pt: 'Cascatas de 3+ dão moedas extras de recompensa!' } },
 };
 function weekendEventFor(dateKey) {
   const p = dateKey.split('-');
@@ -1908,10 +2538,10 @@ function cascadeBonus(maxCascade) {
   return steps * 30;
 }
 const SEASON_DEFS = {
-  autumn: { id: 'autumn', icon: '🍂', name: { ru: 'Осень', en: 'Autumn' } },
-  winter: { id: 'winter', icon: '❄️', name: { ru: 'Зима', en: 'Winter' } },
-  spring: { id: 'spring', icon: '🌷', name: { ru: 'Весна', en: 'Spring' } },
-  summer: { id: 'summer', icon: '☀️', name: { ru: 'Лето', en: 'Summer' } },
+  autumn: { id: 'autumn', icon: '🍂', name: { ru: 'Осень', en: 'Autumn', es: 'Otoño', pt: 'Outono' } },
+  winter: { id: 'winter', icon: '❄️', name: { ru: 'Зима', en: 'Winter', es: 'Invierno', pt: 'Inverno' } },
+  spring: { id: 'spring', icon: '🌷', name: { ru: 'Весна', en: 'Spring', es: 'Primavera', pt: 'Primavera' } },
+  summer: { id: 'summer', icon: '☀️', name: { ru: 'Лето', en: 'Summer', es: 'Verano', pt: 'Verão' } },
 };
 function seasonOfMonth(month0) {
   const m = ((month0 % 12) + 12) % 12 + 1;
@@ -1941,10 +2571,10 @@ function weekKeyOf(now) {
 function dayIndexOf(now) { return (now.getDay() + 6) % 7; }
 const TEAM_BOTS = 25;
 const TEAM_CHESTS = [
-  { need: 5000, reward: 150, icon: '📦', name: { ru: 'Деревянный', en: 'Wooden' } },
-  { need: 15000, reward: 300, icon: '🎁', name: { ru: 'Серебряный', en: 'Silver' } },
-  { need: 35000, reward: 600, icon: '🏆', name: { ru: 'Золотой', en: 'Golden' } },
-  { need: 70000, reward: 1200, icon: '💎', name: { ru: 'Бриллиантовый', en: 'Diamond' } },
+  { need: 5000, reward: 150, icon: '📦', name: { ru: 'Деревянный', en: 'Wooden', es: 'De madera', pt: 'De madeira' } },
+  { need: 15000, reward: 300, icon: '🎁', name: { ru: 'Серебряный', en: 'Silver', es: 'De plata', pt: 'De prata' } },
+  { need: 35000, reward: 600, icon: '🏆', name: { ru: 'Золотой', en: 'Golden', es: 'Dorado', pt: 'Dourado' } },
+  { need: 70000, reward: 1200, icon: '💎', name: { ru: 'Бриллиантовый', en: 'Diamond', es: 'De diamante', pt: 'De diamante' } },
 ];
 function chestReachedFor(pot) {
   let n = 0;
@@ -2038,7 +2668,8 @@ function normalizeState(s) {
     contributed: s && s.team && typeof s.team.contributed === 'number' ? s.team.contributed : 0,
     claimed: s && s.team && typeof s.team.claimed === 'number' ? Math.max(0, Math.min(4, s.team.claimed)) : 0,
   };
-  out.lang = out.lang === 'en' ? 'en' : 'ru';
+  /* Волна 7: 4 языка (ru/en/es/pt), иное — дефолт ru */
+  out.lang = (out.lang === 'ru' || out.lang === 'en' || out.lang === 'es' || out.lang === 'pt') ? out.lang : 'ru';
   return out;
 }
 function loadState() {
@@ -2225,6 +2856,73 @@ const store = {
   },
 };
 
+/* ---------------- Волна 7: A/B первых сессий (зеркало ab.ts) ----------------
+ * Вариант детерминирован по playerId (FNV-1a → 50/50), ключ ≠ сейв (§5.4).
+ * B «быстрый старт»: первая сессия открывается уровнем 1, коуч на ур. 1–3.
+ * ============================================================ */
+const AB_KEY = 'blooming-world-ab-v1';
+const AB_COACH_MAX_LEVEL = 3;
+let abCached = null;
+let abStarted = false;
+let analyticsGlobalProps = {};
+function setAnalyticsGlobals(props) { analyticsGlobalProps = Object.assign({}, analyticsGlobalProps, props || {}); }
+function analyticsGlobals() { return Object.assign({}, analyticsGlobalProps); }
+function abFnv1a(s) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+function abPlayerId() {
+  try {
+    let id = localStorage.getItem('blooming-world-player-id');
+    if (!id || !/^[A-Za-z0-9_-]{8,64}$/.test(id)) {
+      id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID().replace(/-/g, '') : ('p' + Date.now().toString(36) + Math.floor(Math.random() * 1e12).toString(36));
+      localStorage.setItem('blooming-world-player-id', id);
+    }
+    return id;
+  } catch (e) { return ''; }
+}
+function abReadBlob() {
+  try {
+    const raw = localStorage.getItem(AB_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw);
+    if (!p || (p.v !== 'A' && p.v !== 'B') || typeof p.sessions !== 'number') return null;
+    return p;
+  } catch (e) { return null; }
+}
+function abWriteBlob(blob) {
+  abCached = blob;
+  try { localStorage.setItem(AB_KEY, JSON.stringify(blob)); } catch (e) { /* только память */ }
+}
+function abVariantForId(pid) { return abFnv1a(pid) % 2 === 1 ? 'B' : 'A'; }
+function abVariant() {
+  if (abCached) return abCached.v;
+  const stored = abReadBlob();
+  if (stored) { abCached = stored; return stored.v; }
+  const pid = abPlayerId();
+  const variant = abVariantForId(pid || 'fallback-id');
+  abWriteBlob({ v: variant, sessions: 0 });
+  return variant;
+}
+function abSessionStart() {
+  const variant = abVariant();
+  if (abStarted) return { variant: variant, first: abCached ? abCached.sessions === 1 : false };
+  abStarted = true;
+  const blob = abReadBlob() || { v: variant, sessions: 0 };
+  const first = blob.sessions === 0;
+  abWriteBlob({ v: blob.v, sessions: blob.sessions + 1 });
+  setAnalyticsGlobals({ ab: variant, fs: first ? 1 : 0 });
+  return { variant: variant, first: first };
+}
+function abFirstSession() {
+  const blob = abReadBlob();
+  if (blob) return blob.sessions <= 1;
+  return abCached ? abCached.sessions <= 1 : false;
+}
+function abShouldStartInGame(variant, firstSession) { return variant === 'B' && !!firstSession; }
+function abCoachActive(variant, level) { return variant === 'B' && level <= AB_COACH_MAX_LEVEL; }
+
 /* ---------------- лёгкая аналитика (Волна 2) ----------------
  * Кольцо событий в localStorage, без внешних сервисов (§5.6).
  * Выгрузка JSON — из профиля. Ключ ≠ сейв (§5.4).
@@ -2248,7 +2946,8 @@ function analyticsWrite(events) {
 function logEvent(e, props) {
   try {
     const events = analyticsRead();
-    const ev = Object.assign({ t: new Date().toISOString(), e: e }, props || {});
+    /* Волна 7: каждое событие тегировано ab/fs (A/B воронка) */
+    const ev = Object.assign({ t: new Date().toISOString(), e: e }, analyticsGlobalProps, props || {});
     events.push(ev);
     analyticsWrite(events);
   } catch (err) { /* noop */ }
@@ -2893,6 +3592,9 @@ function spawnWinConfetti() {
 /* ============================================================
  * MAP SCREEN
  * ============================================================ */
+/* Волна 7: глав на страницу карты (всего 1000) */
+const MAP_PAGE_SIZE = 8;
+
 function renderMap(box) {
   const wrap = el('div', 'map-wrap');
   const t = (k, v) => store.t(k, v);
@@ -2968,22 +3670,63 @@ function renderMap(box) {
   }
   wrap.appendChild(buildTeamCard(t));
 
-  for (const ch of CHAPTERS) {
-    const unlocked = ch.id <= currentChapter;
-    const theme = chapterTheme(ch.id);
+  /* Волна 7: пагинация карты — окно из 8 глав из 1000 */
+  if (App.mapPage === undefined || App.mapPage === null) {
+    App.mapPage = Math.floor(Math.max(0, Math.min(TOTAL_CHAPTERS - 1, maxUnlocked - 1)) / (CHAPTER_SIZE * MAP_PAGE_SIZE));
+  }
+  const currentPage = Math.floor(currentChapter / MAP_PAGE_SIZE);
+  const pageStart = App.mapPage * MAP_PAGE_SIZE;
+  const pageChapters = [];
+  for (let c = pageStart; c < Math.min(TOTAL_CHAPTERS, pageStart + MAP_PAGE_SIZE); c++) pageChapters.push(c);
+
+  const pager = el('div', 'map-pager');
+  const prevBtn = el('button', 'map-pager-btn');
+  prevBtn.type = 'button';
+  prevBtn.textContent = '‹';
+  prevBtn.setAttribute('aria-label', 'prev');
+  prevBtn.disabled = App.mapPage === 0;
+  prevBtn.onclick = () => { sfx.click(); App.mapPage = Math.max(0, App.mapPage - 1); renderApp(); };
+  pager.appendChild(prevBtn);
+  const pagerLabel = el('div', 'map-pager-label');
+  pagerLabel.textContent = t('map.pages', {
+    a: pageStart * CHAPTER_SIZE + 1,
+    b: Math.min(TOTAL_LEVELS, (pageStart + pageChapters.length) * CHAPTER_SIZE),
+    c: TOTAL_LEVELS,
+  });
+  pager.appendChild(pagerLabel);
+  if (App.mapPage !== currentPage) {
+    const curBtn = el('button', 'map-pager-current');
+    curBtn.type = 'button';
+    curBtn.textContent = '📍 ' + t('map.toCurrent');
+    curBtn.onclick = () => { sfx.click(); App.mapPage = currentPage; renderApp(); };
+    pager.appendChild(curBtn);
+  }
+  const nextBtn = el('button', 'map-pager-btn');
+  nextBtn.type = 'button';
+  nextBtn.textContent = '›';
+  nextBtn.setAttribute('aria-label', 'next');
+  nextBtn.disabled = pageStart + MAP_PAGE_SIZE >= TOTAL_CHAPTERS;
+  nextBtn.onclick = () => { sfx.click(); App.mapPage = Math.min(Math.floor((TOTAL_CHAPTERS - 1) / MAP_PAGE_SIZE), App.mapPage + 1); renderApp(); };
+  pager.appendChild(nextBtn);
+  wrap.appendChild(pager);
+
+  for (const chId of pageChapters) {
+    const unlocked = chId <= currentChapter;
+    const theme = chapterTheme(chId);
+    const era = CHAPTERS[theme.id];
     const card = el('div', 'chapter-card' + (unlocked ? '' : ' locked'));
-    card.appendChild(buildBackground(theme.bg, ch.id + 11, false, ch.id));
+    card.appendChild(buildBackground(theme.bg, chId + 11, false, chId));
     const inner = el('div', 'chapter-inner');
 
     const topRow = el('div');
     topRow.style.cssText = 'display:flex;justify-content:space-between;align-items:flex-start;';
     const titleBox = el('div');
     titleBox.innerHTML =
-      '<div class="chapter-kicker bm-text-outline">' + t('map.chapter') + ' ' + (ch.id + 1) + '</div>' +
-      '<div class="chapter-name bm-text-outline">' + ch.name[App.player.lang] + '</div>' +
-      '<div class="chapter-tag bm-text-outline">' + ch.tagline[App.player.lang] + '</div>';
+      '<div class="chapter-kicker bm-text-outline">' + t('map.chapter') + ' ' + (chId + 1) + '</div>' +
+      '<div class="chapter-name bm-text-outline">' + chapterDisplayName(chId, App.player.lang) + '</div>' +
+      '<div class="chapter-tag bm-text-outline">' + era.tagline[App.player.lang] + '</div>';
     topRow.appendChild(titleBox);
-    const levels = Array.from({ length: CHAPTER_SIZE }, (_, i) => ch.id * CHAPTER_SIZE + i + 1);
+    const levels = Array.from({ length: CHAPTER_SIZE }, (_, i) => chId * CHAPTER_SIZE + i + 1);
     const cleared = levels.filter((lv) => (App.player.stars[lv] || 0) > 0).length;
     if (cleared === CHAPTER_SIZE) {
       const bloom = el('span', 'bloomed-pill');
@@ -2996,7 +3739,7 @@ function renderMap(box) {
     for (const lv of levels) {
       const lvStars = App.player.stars[lv] || 0;
       const lvUnlocked = lv <= maxUnlocked;
-      const isCurrent = lv === maxUnlocked && ch.id === currentChapter;
+      const isCurrent = lv === maxUnlocked && chId === currentChapter;
       const btn = el('button', 'level-btn ' + (lvUnlocked ? (isCurrent ? 'current' : 'open') : 'locked'));
       btn.type = 'button';
       btn.setAttribute('aria-label', t('map.level') + ' ' + lv);
@@ -3010,10 +3753,11 @@ function renderMap(box) {
       grid.appendChild(btn);
     }
     inner.appendChild(grid);
-    if (!unlocked) {
+    /* Волна 7: подсказка только на первой закрытой главе, n = уровней до её открытия */
+    if (!unlocked && chId === currentChapter + 1) {
       const note = el('div', 'bm-text-outline');
       note.style.cssText = 'margin-top:8px;text-align:center;font-size:11px;font-weight:700;opacity:.85;';
-      note.textContent = t('map.nextChapter', { n: maxUnlocked - ch.id * CHAPTER_SIZE });
+      note.textContent = t('map.nextChapter', { n: chId * CHAPTER_SIZE + 1 - maxUnlocked });
       inner.appendChild(note);
     }
     card.appendChild(inner);
@@ -3022,7 +3766,7 @@ function renderMap(box) {
 
   const soon = el('div');
   soon.style.cssText = 'text-align:center;font-size:11px;opacity:.75;padding:6px 0 2px;';
-  soon.textContent = t('map.comingSoon');
+  soon.textContent = '🌸 ' + t('map.scale');
   wrap.appendChild(soon);
 
   box.appendChild(wrap);
@@ -3283,8 +4027,13 @@ const Game = {
     this.shakeIdx = null;
     this.clearing = new Set(); this.born = new Set(); this.spawned = new Set(); this.stonesHit = new Set();
     this.lostStreak = 0;
+    /* Волна 7 (A/B): коуч вариантов B на уровнях 1–3 до первого хода */
+    this.coached = false;
     logSessionStart();
     logEvent('level_start', { level: lv, attempt: this.attempt });
+    if (abCoachActive(abVariant(), lv)) {
+      logEvent('tutorial_shown', { level: lv, maxLevel: AB_COACH_MAX_LEVEL });
+    }
     /* Волна 5: GameplayAPI.start — площадка знает, что игрок в геймплее */
     platformGameplayStart();
     this.buildDom(box);
@@ -3390,9 +4139,16 @@ const Game = {
   updateHint() {
     const hint = document.getElementById('hint-line');
     if (!hint) return;
-    hint.textContent = this.activeBooster
-      ? store.t('game.selectTarget') + ' (' + BOOSTER_MAP[this.activeBooster].icon + ')'
-      : this.isBoss() ? store.t('game.tapHint') : store.t('game.swapHint');
+    /* Волна 7 (A/B): пульсирующий коуч до первого хода (варианты B, ур. 1–3) */
+    if (!this.coached && abCoachActive(abVariant(), this.cfg.level)) {
+      hint.classList.add('bm-coach');
+      hint.textContent = '👉 ' + (this.isBoss() ? store.t('tut.tap') : store.t('tut.swap'));
+    } else {
+      hint.classList.remove('bm-coach');
+      hint.textContent = this.activeBooster
+        ? store.t('game.selectTarget') + ' (' + BOOSTER_MAP[this.activeBooster].icon + ')'
+        : this.isBoss() ? store.t('game.tapHint') : store.t('game.swapHint');
+    }
     const cancelRow = document.getElementById('cancel-row');
     cancelRow.innerHTML = '';
     if (this.activeBooster) {
@@ -3686,6 +4442,12 @@ const Game = {
   async doMove(res, opts) {
     opts = opts || {};
     if (opts.snapshot) this.snapshot = opts.snapshot;
+    /* Волна 7 (A/B): первый реальный ход закрывает коуч */
+    if (!this.coached && abCoachActive(abVariant(), this.cfg.level)) {
+      this.coached = true;
+      logEvent('tutorial_done', { level: this.cfg.level });
+      this.updateHint();
+    }
     if (opts.consume !== false) {
       this.moves -= 1;
       this.updateHud();
@@ -4497,10 +5259,12 @@ function renderProfile(box) {
   settings.innerHTML = '<div style="font-size:14px;font-weight:900;margin-bottom:6px;">⚙️ ' + t('settings.title') + '</div>';
   const rowLang = el('div', 'settings-row');
   rowLang.innerHTML = '<span>' + t('settings.language') + '</span>';
-  const segLang = el('div', 'seg');
-  for (const l of ['ru', 'en']) {
-    const b = el('button', App.player.lang === l ? 'on' : '', l.toUpperCase());
+  const segLang = el('div', 'seg lang-row');
+  const LANG_LABELS = { ru: 'RU', en: 'EN', es: 'ES', pt: 'PT' };
+  for (const l of ['ru', 'en', 'es', 'pt']) {
+    const b = el('button', App.player.lang === l ? 'on' : '', LANG_LABELS[l]);
     b.type = 'button';
+    b.title = l === 'ru' ? 'Русский' : l === 'en' ? 'English' : l === 'es' ? 'Español' : 'Português';
     b.onclick = () => { sfx.click(); store.setLang(l); renderApp(); };
     segLang.appendChild(b);
   }
@@ -4558,6 +5322,17 @@ App.player = loadState();
 setSoundEnabled(App.player.sound);
 App.bots = generateBots();
 logSessionStart();
+/* Волна 7 (A/B): вариант сессии + теги ab/fs; B — первая сессия открывается уровнем 1 */
+const abStart = abSessionStart();
+if (abShouldStartInGame(abStart.variant, abStart.first)) {
+  App.level = 1;
+  App.daily = false;
+}
+logEvent('fs_screen', {
+  screen: abShouldStartInGame(abStart.variant, abStart.first) ? 'game' : 'map',
+  variant: abStart.variant,
+  first: abStart.first ? 1 : 0,
+});
 /* Волна 5: площадка (Yandex SDK — тихий фолбэк в веб) + PWA-слушатели */
 initPwa();
 void initPlatform();
