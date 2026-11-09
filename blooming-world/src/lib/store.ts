@@ -15,6 +15,7 @@ import { chapterOfLevel, TOTAL_LEVELS } from '@/lib/game/levels';
 import { GARDEN_MAP, gardenCoinsBack, piggyDeposit, PIGGY_WINS_TARGET } from '@/lib/game/garden';
 import { dateKeyOf, dailyLevelFor, DAILY_REWARD_MULT, cascadeBonus, weekendEventFor } from '@/lib/game/events';
 import type { WeekendEventId } from '@/lib/game/events';
+import { weekKeyOf, dayIndexOf, teamSnapshot, chestReachedFor, chestRewardBetween, TEAM_CHESTS } from '@/lib/game/team';
 
 export interface Owned {
   skins: string[];
@@ -87,6 +88,29 @@ export interface DailyState {
   done: boolean;
 }
 
+/**
+ * Волна 6: командный сундук — состояние недели.
+ * contributed — очки побед игрока за текущую ISO-неделю;
+ * claimed — сколько порогов-сундуков уже забрано (0..4).
+ */
+export interface TeamState {
+  week: string;
+  contributed: number;
+  claimed: number;
+}
+
+/** Расчёт горшка команды для карты (чистый, безопасен в рендере). */
+export interface TeamComputed extends TeamState {
+  week: string;
+  dayIdx: number;
+  botPot: number;
+  playerPot: number;
+  pot: number;
+  reached: number;
+  /** следующая цель: need следующего порога или null — всё собрано */
+  nextNeed: number | null;
+}
+
 interface PlayerState {
   name: string;
   lang: Lang;
@@ -108,6 +132,8 @@ interface PlayerState {
   piggy: { coins: number; wins: number };
   /** Волна 4: уровень дня — фиксируется на день при первом открытии карты */
   daily: DailyState;
+  /** Волна 6: командный сундук — вклад игрока и забранные сундуки недели */
+  team: TeamState;
   // actions
   setLang: (l: Lang) => void;
   setSound: (v: boolean) => void;
@@ -119,6 +145,12 @@ interface PlayerState {
   computeDaily: () => DailyState;
   /** Волна 4: зафиксировать уровень дня, если наступили новые сутки (вызывать из эффектов) */
   ensureDaily: () => DailyState;
+  /** Волна 6: ЧИСТЫЙ расчёт горшка команды (без записи) — безопасен в рендере */
+  computeTeam: () => TeamComputed;
+  /** Волна 6: перекат недели командного сундука, если наступил понедельник (вызывать из эффектов) */
+  ensureTeam: () => TeamState;
+  /** Волна 6: забрать все достижимые незабранные сундуки; возвращает монеты (0 — нечего) */
+  claimTeamChests: () => number;
   recordLoss: () => void;
   addBooster: (id: BoosterId, n: number) => void;
   useBooster: (id: BoosterId) => boolean;
@@ -177,6 +209,7 @@ export const usePlayer = create<PlayerState>()(
       garden: { restored: [] },
       piggy: { coins: 0, wins: 0 },
       daily: { date: '', level: 1, done: false },
+      team: { week: '', contributed: 0, claimed: 0 },
 
       setLang: (l) => set({ lang: l }),
       setSound: (v) => {
@@ -219,12 +252,19 @@ export const usePlayer = create<PlayerState>()(
         const today = dateKeyOf(new Date());
         const dailyNext =
           isDaily && s.daily.date === today ? { ...s.daily, done: true } : s.daily;
+        /* Волна 6: очки победы летят в общий горшок команды; при смене недели горшок новосоздан */
+        const wk = weekKeyOf(new Date());
+        const teamNext: TeamState =
+          s.team.week === wk
+            ? { ...s.team, contributed: s.team.contributed + score }
+            : { week: wk, contributed: score, claimed: 0 };
         set({
           stars: nextStars,
           scores: nextScores,
           coins: s.coins + reward,
           streak,
           daily: dailyNext,
+          team: teamNext,
           piggy: { coins: piggyCoins, wins: piggyWins % PIGGY_WINS_TARGET },
           stats: {
             wins: s.stats.wins + 1,
@@ -251,6 +291,48 @@ export const usePlayer = create<PlayerState>()(
         if (s.daily.date === computed.date) return s.daily;
         set({ daily: computed });
         return computed;
+      },
+      /* Волна 6: командный сундук — compute/ensure-пара (урок Волны 4: set() в рендере запрещён) */
+      computeTeam: () => {
+        const s = get();
+        const now = new Date();
+        const week = weekKeyOf(now);
+        const dayIdx = dayIndexOf(now);
+        const sameWeek = s.team.week === week;
+        const contributed = sameWeek ? s.team.contributed : 0;
+        const claimed = sameWeek ? s.team.claimed : 0;
+        const snap = teamSnapshot(week, dayIdx, contributed);
+        const nextChest = TEAM_CHESTS[snap.reached];
+        return {
+          week,
+          dayIdx,
+          contributed,
+          claimed,
+          botPot: snap.botPot,
+          playerPot: snap.playerPot,
+          pot: snap.pot,
+          reached: snap.reached,
+          nextNeed: nextChest ? nextChest.need : null,
+        };
+      },
+      ensureTeam: () => {
+        const s = get();
+        const week = weekKeyOf(new Date());
+        if (s.team.week === week) return s.team;
+        const t: TeamState = { week, contributed: 0, claimed: 0 };
+        set({ team: t });
+        return t;
+      },
+      claimTeamChests: () => {
+        const s = get();
+        const week = weekKeyOf(new Date());
+        if (s.team.week !== week) return 0;
+        const snap = teamSnapshot(week, dayIndexOf(new Date()), s.team.contributed);
+        const reached = chestReachedFor(snap.pot);
+        if (reached <= s.team.claimed) return 0;
+        const coins = chestRewardBetween(s.team.claimed, reached);
+        set({ coins: s.coins + coins, team: { ...s.team, claimed: reached } });
+        return coins;
       },
       recordLoss: () => set((s) => (s.streak === 0 ? s : { streak: 0 })),
       addBooster: (id, n) =>
@@ -339,6 +421,7 @@ export const usePlayer = create<PlayerState>()(
           garden: { restored: [] },
           piggy: { coins: 0, wins: 0 },
           daily: { date: '', level: 1, done: false },
+          team: { week: '', contributed: 0, claimed: 0 },
         }),
     }),
     {

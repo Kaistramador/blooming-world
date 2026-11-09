@@ -15,6 +15,8 @@ const App = {
   /* Волна 3: копилка */
   piggyDialog: null,    // null | 'status' | 'result'
   piggyGot: 0,
+  teamModal: null,      // Волна 6: null | 'result'
+  teamGot: 0,
 };
 
 function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
@@ -164,6 +166,69 @@ function renderPiggyDialog() {
   document.body.appendChild(over);
 }
 
+/* ============================================================
+ * TEAM CHEST (Волна 6): карточка горшка на карте + модаль награды
+ * ============================================================ */
+function buildTeamCard(t) {
+  const team = store.computeTeam();
+  const card = el('div', 'team-card');
+  const head = el('div', 'team-head');
+  head.innerHTML = '<div class="team-title bm-text-outline">🧰 ' + t('team.title') + '</div>' +
+    '<div class="team-week">' + t('team.week', { n: team.week }) + '</div>';
+  card.appendChild(head);
+  const sub = el('div', 'team-sub', t('team.sub'));
+  card.appendChild(sub);
+  const barWrap = el('div', 'team-bar');
+  const barFill = el('div', 'team-bar-fill');
+  barFill.style.width = team.nextNeed ? Math.min(100, (team.pot / team.nextNeed) * 100) + '%' : '100%';
+  barWrap.appendChild(barFill);
+  card.appendChild(barWrap);
+  const mid = el('div', 'team-mid');
+  mid.innerHTML = '<span>' + (team.nextNeed ? t('team.toNext', { n: fmt(Math.max(0, team.nextNeed - team.pot)) }) : t('team.allClaimed')) + '</span>' +
+    '<span>' + t('team.contrib', { p: fmt(team.playerPot), b: fmt(team.botPot) }) + '</span>';
+  card.appendChild(mid);
+  const chests = el('div', 'team-chests');
+  TEAM_CHESTS.forEach((c, i) => {
+    const claimed = i < team.claimed;
+    const reached = team.pot >= c.need;
+    const box = el('div', 'team-chest' + (claimed ? ' done' : reached ? ' ready' : ''));
+    box.title = t('team.chest', { n: i + 1 }) + ' · ' + t('team.need', { n: fmt(c.need) });
+    box.innerHTML = '<span class="ic">' + c.icon + '</span><span class="rw">' + (claimed ? '✓' : '🪙 ' + fmt(c.reward)) + '</span>';
+    chests.appendChild(box);
+  });
+  card.appendChild(chests);
+  return card;
+}
+
+function renderTeamDialog() {
+  const old = document.getElementById('bm-team-modal');
+  if (old) old.remove();
+  if (!App.teamModal) return;
+  const t = (k, v) => store.t(k, v);
+  const over = el('div', 'modal-overlay');
+  over.id = 'bm-team-modal';
+  over.style.zIndex = '90';
+  const modal = el('div', 'modal win');
+  modal.innerHTML = '<h2>🧰 ' + t('team.full') + '</h2>';
+  modal.appendChild(el('div', 'piggy-big', '🪙'));
+  const got = el('div', 'reward-pill');
+  got.textContent = '+' + fmt(App.teamGot || 0);
+  modal.appendChild(got);
+  const hint = el('div', 'sub');
+  hint.style.cssText = 'font-size:11px;opacity:.85;';
+  hint.textContent = t('team.hint');
+  modal.appendChild(hint);
+  const col = el('div', 'col');
+  const okBtn = el('button', 'btn btn-white');
+  okBtn.type = 'button';
+  okBtn.textContent = t('common.ok');
+  okBtn.onclick = () => { App.teamModal = null; App.teamGot = 0; renderTeamDialog(); renderApp(); };
+  col.appendChild(okBtn);
+  modal.appendChild(col);
+  over.appendChild(modal);
+  document.body.appendChild(over);
+}
+
 let toastTimer = null;
 function showToast(msg) {
   let wrap = document.getElementById('bm-toast');
@@ -263,6 +328,19 @@ function renderMap(box) {
     banner.appendChild(wMid);
     wrap.appendChild(banner);
   }
+
+  /* Волна 6: командный сундук — перекат недели + авто-забор достижимых сундуков */
+  store.ensureTeam();
+  if (!App.teamModal) {
+    const teamAuto = store.claimTeamChests();
+    if (teamAuto > 0) {
+      logEvent('team_claim', { coins: teamAuto, week: App.player.team.week });
+      App.teamGot = teamAuto;
+      App.teamModal = 'result';
+      renderTeamDialog();
+    }
+  }
+  wrap.appendChild(buildTeamCard(t));
 
   for (const ch of CHAPTERS) {
     const unlocked = ch.id <= currentChapter;

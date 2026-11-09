@@ -367,3 +367,22 @@ input { font-family: inherit; }
 .seasonal-mid { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .seasonal-name { font-size: 11px; font-weight: 900; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .seasonal-mid .btn { padding: 4px 10px; font-size: 10px; border-radius: 999px; align-self: flex-start; }
+
+/* ---------- Волна 6: командный сундук ---------- */
+.team-card { border-radius: 24px; padding: 12px; margin-bottom: 12px; background: linear-gradient(135deg,rgba(59,7,100,.92),rgba(30,64,175,.9)); border: 2px solid rgba(255,255,255,.35); box-shadow: 0 6px 20px rgba(0,0,0,.3); }
+.team-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.team-title { font-size: 14px; font-weight: 900; color: #fff; }
+.team-week { background: rgba(255,255,255,.2); color: #fff; border-radius: 999px; padding: 2px 8px; font-size: 10px; font-weight: 900; }
+.team-sub { font-size: 11px; font-weight: 700; color: rgba(255,255,255,.82); margin-bottom: 6px; }
+.team-bar { height: 12px; border-radius: 999px; background: rgba(0,0,0,.35); overflow: hidden; margin-bottom: 6px; }
+.team-bar-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg,#fbbf24,#f59e0b,#fb923c); transition: width .5s ease; }
+.team-mid { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 10px; font-weight: 800; color: rgba(255,255,255,.88); margin-bottom: 8px; }
+.team-chests { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; }
+.team-chest { display: flex; flex-direction: column; align-items: center; border-radius: 16px; padding: 6px 4px; background: rgba(0,0,0,.35); }
+.team-chest .ic { font-size: 18px; line-height: 1; }
+.team-chest .rw { margin-top: 2px; font-size: 9px; font-weight: 900; color: rgba(255,255,255,.85); }
+.team-chest.ready { background: rgba(251,191,36,.95); animation: team-glow 1.6s ease-in-out infinite; }
+.team-chest.ready .rw { color: #451a03; }
+.team-chest.done { background: rgba(16,185,129,.9); }
+.team-chest.done .rw { color: #fff; }
+@keyframes team-glow { 0%,100% { box-shadow: 0 0 0 0 rgba(251,191,36,.6); } 50% { box-shadow: 0 0 0 6px rgba(251,191,36,0); } }

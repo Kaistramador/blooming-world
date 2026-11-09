@@ -15,6 +15,7 @@ import { CHAPTER_SIZE, TOTAL_CHAPTERS, TOTAL_LEVELS } from '@/lib/game/levels';
 import { usePlayer, useT } from '@/lib/store';
 import { PIGGY_WINS_TARGET } from '@/lib/game/garden';
 import { WEEKEND_EVENTS, dateKeyOf, weekendEventFor } from '@/lib/game/events';
+import { TEAM_CHESTS } from '@/lib/game/team';
 import { logEvent } from '@/lib/game/analytics';
 import { sfx } from '@/lib/game/sound';
 
@@ -27,6 +28,8 @@ export function MapScreen({ onPlay }: MapScreenProps) {
   const player = usePlayer();
   const [piggyOpen, setPiggyOpen] = useState(false);
   const [piggyGot, setPiggyGot] = useState(0);
+  /* Волна 6: командный сундук */
+  const [teamGot, setTeamGot] = useState(0);
   const maxUnlocked = player.maxUnlocked();
   const currentChapter = Math.min(TOTAL_CHAPTERS - 1, Math.floor((maxUnlocked - 1) / CHAPTER_SIZE));
   const totalStars = player.totalStars();
@@ -36,12 +39,32 @@ export function MapScreen({ onPlay }: MapScreenProps) {
   const daily = player.computeDaily();
   const weekendId = weekendEventFor(dateKeyOf(new Date()));
   const weekend = weekendId ? WEEKEND_EVENTS[weekendId] : null;
+  /* Волна 6: горшок команды (чистый расчёт — безопасен в рендере) */
+  const team = player.computeTeam();
 
-  /* фиксация/перекат уровня дня — ТОЛЬКО из эффектов (не в рендере) */
+  /* фиксация/перекат уровня дня + недели команды — ТОЛЬКО из эффектов (не в рендере) */
   useEffect(() => {
     player.ensureDaily();
-    const id = setInterval(() => player.ensureDaily(), 30000);
+    player.ensureTeam();
+    const id = setInterval(() => {
+      player.ensureDaily();
+      player.ensureTeam();
+    }, 30000);
     return () => clearInterval(id);
+  }, [player]);
+
+  /* Волна 6: авто-забор достижимых сундуков команды (эффект, не рендер).
+   * БЕЗ cleanup-очистки таймера: в StrictMode-дев эффект идёт дважды
+   * (run → cleanup → run), и очистка съедала модаль первого прогона.
+   * Повторный прогон уже вернёт 0 (сундук забран) — таймер безопасен. */
+  useEffect(() => {
+    player.ensureTeam();
+    const got = player.claimTeamChests();
+    if (got > 0) {
+      sfx.coin();
+      logEvent('team_claim', { coins: got, week: player.team.week });
+      setTimeout(() => setTeamGot((v) => Math.max(v, got)), 80);
+    }
   }, [player]);
 
   const doOpenPiggy = () => {
@@ -160,6 +183,53 @@ export function MapScreen({ onPlay }: MapScreenProps) {
           </div>
         </div>
       )}
+
+      {/* Волна 6: командный сундук — общий горшок очков за неделю */}
+      <div
+        className="mb-3 rounded-3xl p-3 shadow-lg"
+        style={{ background: 'linear-gradient(135deg, rgba(59,7,100,.92), rgba(30,64,175,.9))', border: '2px solid rgba(255,255,255,.35)' }}
+      >
+        <div className="mb-1.5 flex items-center justify-between">
+          <div className="text-sm font-black text-white bm-text-outline">🧰 {t('team.title')}</div>
+          <div className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-black text-white">
+            {t('team.week', { n: team.week })}
+          </div>
+        </div>
+        <div className="mb-1.5 text-[11px] font-bold text-white/80">{t('team.sub')}</div>
+        {/* прогресс горшка до следующего сундука */}
+        <div className="mb-1 h-3 w-full overflow-hidden rounded-full bg-black/35" role="progressbar" aria-valuenow={team.pot} aria-valuemax={team.nextNeed ?? team.pot} aria-valuemin={0}>
+          <div
+            className="h-full rounded-full transition-all duration-500"
+            style={{
+              width: team.nextNeed ? `${Math.min(100, (team.pot / team.nextNeed) * 100)}%` : '100%',
+              background: 'linear-gradient(90deg,#fbbf24,#f59e0b,#fb923c)',
+            }}
+          />
+        </div>
+        <div className="mb-2 flex items-center justify-between text-[10px] font-bold text-white/85">
+          <span>{team.nextNeed ? t('team.toNext', { n: Math.max(0, team.nextNeed - team.pot) }) : t('team.allClaimed')}</span>
+          <span>{t('team.contrib', { p: team.playerPot, b: team.botPot })}</span>
+        </div>
+        {/* 4 сундука: собрано ✓ / достигнут (светится) / ещё закрыт */}
+        <div className="grid grid-cols-4 gap-1.5">
+          {TEAM_CHESTS.map((c, i) => {
+            const claimed = i < team.claimed;
+            const reached = team.pot >= c.need;
+            return (
+              <div
+                key={i}
+                className={`flex flex-col items-center rounded-2xl py-1.5 ${claimed ? 'bg-emerald-500/90' : reached ? 'bg-amber-400/95' : 'bg-black/35'}`}
+                title={t('team.chest', { n: i + 1 }) + ' · ' + t('team.need', { n: c.need })}
+              >
+                <span className="text-lg leading-none">{c.icon}</span>
+                <span className="mt-0.5 text-[9px] font-black leading-tight text-white">
+                  {claimed ? '✓' : `🪙 ${c.reward}`}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       <div className="flex flex-col gap-3">
         {CHAPTERS.map((ch) => {
@@ -298,6 +368,26 @@ export function MapScreen({ onPlay }: MapScreenProps) {
           <Button
             className="rounded-full bg-white font-black text-orange-600 hover:bg-orange-50"
             onClick={() => setPiggyGot(0)}
+          >
+            {t('common.ok')}
+          </Button>
+        </DialogContent>
+      </Dialog>
+      {/* Волна 6: командная награда — результат */}
+      <Dialog open={teamGot > 0} onOpenChange={(o) => !o && setTeamGot(0)}>
+        <DialogContent className="max-w-xs rounded-3xl border-0 bg-gradient-to-b from-violet-500 to-indigo-600 text-white">
+          <DialogHeader className="items-center">
+            <DialogTitle className="text-center text-2xl font-black">🧰 {t('team.full')}</DialogTitle>
+            <DialogDescription className="sr-only">{t('team.full')}</DialogDescription>
+            <div className="mt-2 text-5xl">🪙</div>
+            <div className="mt-2 rounded-full bg-white/95 px-5 py-2 text-xl font-black text-indigo-600 shadow-lg">
+              +{teamGot}
+            </div>
+            <div className="mt-1 text-[11px] font-bold text-violet-100">{t('team.hint')}</div>
+          </DialogHeader>
+          <Button
+            className="rounded-full bg-white font-black text-indigo-600 hover:bg-indigo-50"
+            onClick={() => setTeamGot(0)}
           >
             {t('common.ok')}
           </Button>

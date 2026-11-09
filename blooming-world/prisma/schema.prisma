@@ -30,3 +30,16 @@ model Post {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// Волна 6: онлайновый рейтинг — лучший результат игрока.
+// playerId уникален: дубли сабмитов отсекаются upsert'ом на уровне БД.
+model Score {
+  id        String   @id @default(cuid())
+  playerId  String   @unique
+  name      String
+  level     Int
+  stars     Int
+  score     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

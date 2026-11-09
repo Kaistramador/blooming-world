@@ -384,6 +384,25 @@ input { font-family: inherit; }
 .seasonal-name { font-size: 11px; font-weight: 900; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .seasonal-mid .btn { padding: 4px 10px; font-size: 10px; border-radius: 999px; align-self: flex-start; }
 
+/* ---------- Волна 6: командный сундук ---------- */
+.team-card { border-radius: 24px; padding: 12px; margin-bottom: 12px; background: linear-gradient(135deg,rgba(59,7,100,.92),rgba(30,64,175,.9)); border: 2px solid rgba(255,255,255,.35); box-shadow: 0 6px 20px rgba(0,0,0,.3); }
+.team-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.team-title { font-size: 14px; font-weight: 900; color: #fff; }
+.team-week { background: rgba(255,255,255,.2); color: #fff; border-radius: 999px; padding: 2px 8px; font-size: 10px; font-weight: 900; }
+.team-sub { font-size: 11px; font-weight: 700; color: rgba(255,255,255,.82); margin-bottom: 6px; }
+.team-bar { height: 12px; border-radius: 999px; background: rgba(0,0,0,.35); overflow: hidden; margin-bottom: 6px; }
+.team-bar-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg,#fbbf24,#f59e0b,#fb923c); transition: width .5s ease; }
+.team-mid { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 10px; font-weight: 800; color: rgba(255,255,255,.88); margin-bottom: 8px; }
+.team-chests { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; }
+.team-chest { display: flex; flex-direction: column; align-items: center; border-radius: 16px; padding: 6px 4px; background: rgba(0,0,0,.35); }
+.team-chest .ic { font-size: 18px; line-height: 1; }
+.team-chest .rw { margin-top: 2px; font-size: 9px; font-weight: 900; color: rgba(255,255,255,.85); }
+.team-chest.ready { background: rgba(251,191,36,.95); animation: team-glow 1.6s ease-in-out infinite; }
+.team-chest.ready .rw { color: #451a03; }
+.team-chest.done { background: rgba(16,185,129,.9); }
+.team-chest.done .rw { color: #fff; }
+@keyframes team-glow { 0%,100% { box-shadow: 0 0 0 0 rgba(251,191,36,.6); } 50% { box-shadow: 0 0 0 6px rgba(251,191,36,0); } }
+
 </style>
 </head>
 <body>
@@ -457,6 +476,10 @@ const I18N_RU = {
   'daily.badge': '📅 Уровень дня ×2', 'daily.weekendHint': 'В выходные ивенты: ×2 монеты и каскад-бонус',
   'event.weekend': 'Ивент выходных', 'event.coinsBadge': '🪙 Золотые выходные ×2',
   'event.cascadeBadge': '🌊 Каскад ×{n}: +{c} 🪙', 'event.today': 'Только сегодня',
+  'team.title': 'Командный сундук', 'team.sub': 'Очки побед всей команды за неделю', 'team.week': 'Неделя {n}', 'team.you': 'Вы',
+  'team.contrib': 'Вы: {p} · команда: {b}', 'team.toNext': 'До следующего сундука: {n} очков', 'team.allClaimed': 'Все сундуки собраны!',
+  'team.full': 'Награда команды!', 'team.hint': 'Побеждайте — очки каждой победы летят в общий горшок', 'team.members': 'Вклад недели',
+  'team.chest': 'Сундук {n}', 'team.need': 'Нужно {n}',
   'shop.seasonal': 'Сезонная коллекция', 'shop.seasonalSub': '{icon} {season} · смена по календарю', 'shop.seasonTag': 'Сезон',
   'shop.title': 'Магазин', 'shop.coins': 'Монеты',
   'shop.tab.boosters': 'Бусты', 'shop.tab.bank': 'Банк', 'shop.tab.skins': 'Скины',
@@ -529,6 +552,10 @@ const I18N_EN = {
   'daily.badge': '📅 Daily level ×2', 'daily.weekendHint': 'Weekend events: ×2 coins and cascade bonus',
   'event.weekend': 'Weekend event', 'event.coinsBadge': '🪙 Golden Weekend ×2',
   'event.cascadeBadge': '🌊 Cascade ×{n}: +{c} 🪙', 'event.today': 'Today only',
+  'team.title': 'Team Chest', 'team.sub': 'Team’s win points for the week', 'team.week': 'Week {n}', 'team.you': 'You',
+  'team.contrib': 'You: {p} · team: {b}', 'team.toNext': '{n} points to the next chest', 'team.allClaimed': 'All chests claimed!',
+  'team.full': 'Team reward!', 'team.hint': 'Win levels — every victory adds points to the shared pot', 'team.members': 'Weekly contribution',
+  'team.chest': 'Chest {n}', 'team.need': '{n} needed',
   'shop.seasonal': 'Seasonal Collection', 'shop.seasonalSub': '{icon} {season} · rotates with the calendar', 'shop.seasonTag': 'Season',
   'shop.title': 'Shop', 'shop.coins': 'Coins',
   'shop.tab.boosters': 'Boosters', 'shop.tab.bank': 'Bank', 'shop.tab.skins': 'Skins',
@@ -1894,6 +1921,74 @@ function seasonOfMonth(month0) {
   return 'autumn';
 }
 function seasonOn(now) { return seasonOfMonth(now.getMonth()); }
+
+/* ---------------- Волна 6: командный сундук (зеркало team.ts) ---------------- */
+function isoWeekNum(now) {
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const day = (d.getDay() + 6) % 7; // Пн=0..Вс=6
+  d.setDate(d.getDate() - day + 3); // четверг текущей недели — его год и неделя по ISO
+  const isoYear = d.getFullYear();
+  const jan4 = new Date(isoYear, 0, 4);
+  const jan4Day = (jan4.getDay() + 6) % 7;
+  const monday1 = new Date(isoYear, 0, 4 - jan4Day);
+  const week = Math.round((d.getTime() - monday1.getTime()) / (7 * 86400000)) + 1;
+  return { year: isoYear, week: week };
+}
+function weekKeyOf(now) {
+  const p = isoWeekNum(now);
+  return p.year + '-W' + String(p.week).padStart(2, '0');
+}
+function dayIndexOf(now) { return (now.getDay() + 6) % 7; }
+const TEAM_BOTS = 25;
+const TEAM_CHESTS = [
+  { need: 5000, reward: 150, icon: '📦', name: { ru: 'Деревянный', en: 'Wooden' } },
+  { need: 15000, reward: 300, icon: '🎁', name: { ru: 'Серебряный', en: 'Silver' } },
+  { need: 35000, reward: 600, icon: '🏆', name: { ru: 'Золотой', en: 'Golden' } },
+  { need: 70000, reward: 1200, icon: '💎', name: { ru: 'Бриллиантовый', en: 'Diamond' } },
+];
+function chestReachedFor(pot) {
+  let n = 0;
+  for (const c of TEAM_CHESTS) if (pot >= c.need) n++;
+  return n;
+}
+function chestRewardBetween(from, to) {
+  let sum = 0;
+  for (let i = Math.max(0, from); i < Math.min(to, TEAM_CHESTS.length); i++) sum += TEAM_CHESTS[i].reward;
+  return sum;
+}
+const TEAM_BOT_NAMES = ['Ирина', 'Алекс', 'Мария', 'Дмитрий', 'Софья', 'Максим', 'Алиса', 'Егор', 'Полина', 'Артём', 'Вика', 'Никита', 'Лиза', 'Кирилл', 'Настя', 'Роман', 'Даша', 'Влад', 'Катя', 'Олег', 'Юля', 'Саша', 'Глеб', 'Мила', 'Тимур'];
+function teamBots(weekKey) {
+  const rng = mulberry32(dateSeed(weekKey + '#team'));
+  const bots = [];
+  for (let i = 0; i < TEAM_BOTS; i++) {
+    const name = TEAM_BOT_NAMES[i % TEAM_BOT_NAMES.length] + (rng() < 0.4 ? ' ' + '🌼🌸🌻🌷🌺'[Math.floor(rng() * 5)] : '');
+    /* день активен с шансом 0.55 → ~3.9 активных дня; БЕЗ sort со случайным
+     * компаратором — число вызовов rng одинаково во всех движках (V8/JSC) */
+    const perDay = [0, 0, 0, 0, 0, 0, 0];
+    for (let d = 0; d < 7; d++) {
+      if (rng() < 0.55) perDay[d] = 100 + Math.floor(rng() * 251);
+    }
+    let total = 0;
+    for (const v of perDay) total += v;
+    bots.push({ name: name, perDay: perDay, total: total });
+  }
+  return bots;
+}
+function teamBotPotFor(weekKey, dayIdx) {
+  let sum = 0;
+  for (const b of teamBots(weekKey)) {
+    for (let d = 0; d <= Math.min(dayIdx, 6); d++) sum += b.perDay[d];
+  }
+  return sum;
+}
+function teamSnapshot(weekKey, dayIdx, playerContrib) {
+  const botPot = teamBotPotFor(weekKey, dayIdx);
+  let botTotal = 0;
+  for (const b of teamBots(weekKey)) botTotal += b.total;
+  const pot = botPot + Math.max(0, playerContrib);
+  return { week: weekKey, dayIdx: dayIdx, botPot: botPot, playerPot: Math.max(0, playerContrib), pot: pot, reached: chestReachedFor(pot), botTotal: botTotal };
+}
+
 function defaultState() {
   return {
     name: '', lang: 'ru', sound: true, coins: 300, stars: {}, scores: {},
@@ -1911,6 +2006,8 @@ function defaultState() {
     piggy: { coins: 0, wins: 0 },
     /* Волна 4: уровень дня (фиксируется на сутки при первом открытии карты) */
     daily: { date: '', level: 1, done: false },
+    /* Волна 6: командный сундук (аддитивно, §5.4) */
+    team: { week: '', contributed: 0, claimed: 0 },
   };
 }
 function normalizeState(s) {
@@ -1934,6 +2031,12 @@ function normalizeState(s) {
     date: s && s.daily && typeof s.daily.date === 'string' ? s.daily.date : '',
     level: s && s.daily && typeof s.daily.level === 'number' ? s.daily.level : 1,
     done: !!(s && s.daily && s.daily.done),
+  };
+  /* Волна 6: аддитивная миграция командного сундука */
+  out.team = {
+    week: s && s.team && typeof s.team.week === 'string' ? s.team.week : '',
+    contributed: s && s.team && typeof s.team.contributed === 'number' ? s.team.contributed : 0,
+    claimed: s && s.team && typeof s.team.claimed === 'number' ? Math.max(0, Math.min(4, s.team.claimed)) : 0,
   };
   out.lang = out.lang === 'en' ? 'en' : 'ru';
   return out;
@@ -1996,6 +2099,13 @@ const store = {
     const piggyCoins = (s.piggy.coins || 0) + deposit;
     s.piggy.coins = piggyCoins;
     s.piggy.wins = piggyWins % PIGGY_WINS_TARGET;
+    /* Волна 6: очки победы летят в общий горшок команды */
+    const wk = weekKeyOf(new Date());
+    if (s.team && s.team.week === wk) {
+      s.team.contributed = (s.team.contributed || 0) + score;
+    } else {
+      s.team = { week: wk, contributed: score, claimed: 0 };
+    }
     saveState();
     return { firstClear, newStars, reward, base, streak, mult, piggy: { deposit, coins: piggyCoins, wins: piggyWins, ready: piggyWins >= PIGGY_WINS_TARGET }, event: { daily: isDaily, weekend: weekend, cascadeCoins: cascadeCoins, maxCascade: maxCascade } };
   },
@@ -2008,6 +2118,44 @@ const store = {
     s.daily = daily;
     saveState();
     return daily;
+  },
+  /* Волна 6: командный сундук — перекат недели (из рендера карты) */
+  ensureTeam() {
+    const s = App.player;
+    const week = weekKeyOf(new Date());
+    if (s.team && s.team.week === week) return s.team;
+    s.team = { week: week, contributed: 0, claimed: 0 };
+    saveState();
+    return s.team;
+  },
+  computeTeam() {
+    const s = App.player;
+    const now = new Date();
+    const week = weekKeyOf(now);
+    const dayIdx = dayIndexOf(now);
+    const sameWeek = s.team && s.team.week === week;
+    const contributed = sameWeek ? s.team.contributed : 0;
+    const claimed = sameWeek ? s.team.claimed : 0;
+    const snap = teamSnapshot(week, dayIdx, contributed);
+    const nextChest = TEAM_CHESTS[snap.reached];
+    return {
+      week: week, dayIdx: dayIdx, contributed: contributed, claimed: claimed,
+      botPot: snap.botPot, playerPot: snap.playerPot, pot: snap.pot, reached: snap.reached,
+      nextNeed: nextChest ? nextChest.need : null,
+    };
+  },
+  claimTeamChests() {
+    const s = App.player;
+    const week = weekKeyOf(new Date());
+    if (!s.team || s.team.week !== week) return 0;
+    const snap = teamSnapshot(week, dayIndexOf(new Date()), s.team.contributed);
+    const reached = chestReachedFor(snap.pot);
+    if (reached <= s.team.claimed) return 0;
+    const coins = chestRewardBetween(s.team.claimed, reached);
+    s.coins += coins;
+    s.team.claimed = reached;
+    saveState();
+    return coins;
   },
   recordLoss() { if (App.player.streak) { App.player.streak = 0; saveState(); } },
   addBooster(id, n) { App.player.boosters[id] = (App.player.boosters[id] || 0) + n; saveState(); },
@@ -2493,6 +2641,8 @@ const App = {
   /* Волна 3: копилка */
   piggyDialog: null,    // null | 'status' | 'result'
   piggyGot: 0,
+  teamModal: null,      // Волна 6: null | 'result'
+  teamGot: 0,
 };
 
 function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
@@ -2642,6 +2792,69 @@ function renderPiggyDialog() {
   document.body.appendChild(over);
 }
 
+/* ============================================================
+ * TEAM CHEST (Волна 6): карточка горшка на карте + модаль награды
+ * ============================================================ */
+function buildTeamCard(t) {
+  const team = store.computeTeam();
+  const card = el('div', 'team-card');
+  const head = el('div', 'team-head');
+  head.innerHTML = '<div class="team-title bm-text-outline">🧰 ' + t('team.title') + '</div>' +
+    '<div class="team-week">' + t('team.week', { n: team.week }) + '</div>';
+  card.appendChild(head);
+  const sub = el('div', 'team-sub', t('team.sub'));
+  card.appendChild(sub);
+  const barWrap = el('div', 'team-bar');
+  const barFill = el('div', 'team-bar-fill');
+  barFill.style.width = team.nextNeed ? Math.min(100, (team.pot / team.nextNeed) * 100) + '%' : '100%';
+  barWrap.appendChild(barFill);
+  card.appendChild(barWrap);
+  const mid = el('div', 'team-mid');
+  mid.innerHTML = '<span>' + (team.nextNeed ? t('team.toNext', { n: fmt(Math.max(0, team.nextNeed - team.pot)) }) : t('team.allClaimed')) + '</span>' +
+    '<span>' + t('team.contrib', { p: fmt(team.playerPot), b: fmt(team.botPot) }) + '</span>';
+  card.appendChild(mid);
+  const chests = el('div', 'team-chests');
+  TEAM_CHESTS.forEach((c, i) => {
+    const claimed = i < team.claimed;
+    const reached = team.pot >= c.need;
+    const box = el('div', 'team-chest' + (claimed ? ' done' : reached ? ' ready' : ''));
+    box.title = t('team.chest', { n: i + 1 }) + ' · ' + t('team.need', { n: fmt(c.need) });
+    box.innerHTML = '<span class="ic">' + c.icon + '</span><span class="rw">' + (claimed ? '✓' : '🪙 ' + fmt(c.reward)) + '</span>';
+    chests.appendChild(box);
+  });
+  card.appendChild(chests);
+  return card;
+}
+
+function renderTeamDialog() {
+  const old = document.getElementById('bm-team-modal');
+  if (old) old.remove();
+  if (!App.teamModal) return;
+  const t = (k, v) => store.t(k, v);
+  const over = el('div', 'modal-overlay');
+  over.id = 'bm-team-modal';
+  over.style.zIndex = '90';
+  const modal = el('div', 'modal win');
+  modal.innerHTML = '<h2>🧰 ' + t('team.full') + '</h2>';
+  modal.appendChild(el('div', 'piggy-big', '🪙'));
+  const got = el('div', 'reward-pill');
+  got.textContent = '+' + fmt(App.teamGot || 0);
+  modal.appendChild(got);
+  const hint = el('div', 'sub');
+  hint.style.cssText = 'font-size:11px;opacity:.85;';
+  hint.textContent = t('team.hint');
+  modal.appendChild(hint);
+  const col = el('div', 'col');
+  const okBtn = el('button', 'btn btn-white');
+  okBtn.type = 'button';
+  okBtn.textContent = t('common.ok');
+  okBtn.onclick = () => { App.teamModal = null; App.teamGot = 0; renderTeamDialog(); renderApp(); };
+  col.appendChild(okBtn);
+  modal.appendChild(col);
+  over.appendChild(modal);
+  document.body.appendChild(over);
+}
+
 let toastTimer = null;
 function showToast(msg) {
   let wrap = document.getElementById('bm-toast');
@@ -2741,6 +2954,19 @@ function renderMap(box) {
     banner.appendChild(wMid);
     wrap.appendChild(banner);
   }
+
+  /* Волна 6: командный сундук — перекат недели + авто-забор достижимых сундуков */
+  store.ensureTeam();
+  if (!App.teamModal) {
+    const teamAuto = store.claimTeamChests();
+    if (teamAuto > 0) {
+      logEvent('team_claim', { coins: teamAuto, week: App.player.team.week });
+      App.teamGot = teamAuto;
+      App.teamModal = 'result';
+      renderTeamDialog();
+    }
+  }
+  wrap.appendChild(buildTeamCard(t));
 
   for (const ch of CHAPTERS) {
     const unlocked = ch.id <= currentChapter;

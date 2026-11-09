@@ -30,6 +30,7 @@ import type { Board, Frame, LevelConfig, MoveResult } from '@/lib/game/types';
 import { usePlayer, useT, STREAK_MAX_MULT } from '@/lib/store';
 import type { PiggyInfo, EventInfo } from '@/lib/store';
 import { PIGGY_WINS_TARGET } from '@/lib/game/garden';
+import { submitOnline } from '@/lib/game/online';
 import { logEvent, logSessionStart } from '@/lib/game/analytics';
 import {
   platformGameplayStart,
@@ -384,6 +385,13 @@ export function GameScreen({ level, daily = false, onExit, onLevelChange }: Game
         /* Волна 5: конец геймплея для площадки + лучший уровень в лидерборд */
         platformGameplayStop();
         submitScoreToLeaderboard(cfg.level);
+        /* Волна 6: тихий сабмит в онлайновый рейтинг (офлайн не ломает игру) */
+        void submitOnline({
+          level: cfg.level,
+          stars: player.totalStars(),
+          score: player.stats.totalScore,
+          name: player.name || 'Player',
+        });
       } else if (movesLeft <= 0) {
         sfx.lose();
         setLostStreak(player.streak);
