@@ -392,7 +392,8 @@ function resolveCascade(startBoard, cfg, rng, acc, preferCell) {
     }
     acc.frames.push({
       board: display,
-      clearingIds: [...st.clearSet].map((i) => b.cells[i].tile.id),
+      // Волна 7 (аудит масштаба): в clearSet могут быть клетки без тайла — фильтруем
+      clearingIds: [...st.clearSet].filter((i) => b.cells[i] && b.cells[i].tile).map((i) => b.cells[i].tile.id),
       bornIds: born.map((x) => x.idx),
       spawnIds: [],
       collectedIds: st.collectedIds,
@@ -405,6 +406,7 @@ function resolveCascade(startBoard, cfg, rng, acc, preferCell) {
     }
     for (const i of st.clearSet) {
       const cell = b.cells[i];
+      if (!cell) continue; // пустота (Волна 7)
       if (cell.tile && cell.tile.kind === 'item') acc.itemsCollected++;
       else if (cell.tile && cell.tile.kind === 'gem' && cell.tile.color >= 0) acc.colorsCollected[cell.tile.color]++;
       cell.tile = null;
@@ -448,19 +450,21 @@ function applyBlastMove(board, cfg, rng, initialClear, initialQueue, basePoints,
   const display = cloneBoard(b);
   acc.frames.push({
     board: display,
-    clearingIds: [...st.clearSet].map((i) => b.cells[i].tile.id),
+    // Волна 7 (аудит масштаба): фильтруем клетки без тайла (пустоты/камни)
+    clearingIds: [...st.clearSet].filter((i) => b.cells[i] && b.cells[i].tile).map((i) => b.cells[i].tile.id),
     bornIds: [], spawnIds: [], collectedIds: st.collectedIds,
     stonesHit: [...st.stonesHit], points: basePoints, cascade: 1,
   });
   for (const i of st.clearSet) {
     const cell = b.cells[i];
+    if (!cell) continue; // пустота (Волна 7)
     if (cell.tile && cell.tile.kind === 'item') acc.itemsCollected++;
     else if (cell.tile && cell.tile.kind === 'gem' && cell.tile.color >= 0) acc.colorsCollected[cell.tile.color]++;
     cell.tile = null;
   }
   for (const si of st.stonesHit) {
     const cell = b.cells[si];
-    if (cell.blocker) {
+    if (cell && cell.blocker) {
       cell.blocker.hp--;
       if (cell.blocker.hp <= 0) { cell.blocker = null; acc.stonesDestroyed++; }
     }
@@ -527,7 +531,14 @@ function trySwap(board, a, d, cfg, rng) {
         }
       }
     } else if (other.special !== 'none') {
-      for (const j of blastCellsFor(b, otherIdx)) st.clearSet.add(j);
+      for (const j of blastCellsFor(b, otherIdx)) {
+        // Волна 7: пустоты пропускаем, камни — в stonesHit (как в runDetonations)
+        const cell = b.cells[j];
+        if (!cell) continue;
+        if (cell.blocker) { st.stonesHit.add(j); continue; }
+        if (!cell.tile) continue;
+        st.clearSet.add(j);
+      }
       for (let i = 0; i < b.cells.length; i++) {
         const cell = b.cells[i];
         if (cell && cell.tile && cell.tile.kind === 'gem' && cell.tile.color === other.color) st.clearSet.add(i);
@@ -544,12 +555,13 @@ function trySwap(board, a, d, cfg, rng) {
     }
     runDetonations(b, st, queue, new Set());
     acc.frames.push({
-      board: cloneBoard(b), clearingIds: [...st.clearSet].map((i) => b.cells[i].tile.id),
+      board: cloneBoard(b), clearingIds: [...st.clearSet].filter((i) => b.cells[i] && b.cells[i].tile).map((i) => b.cells[i].tile.id),
       bornIds: [], spawnIds: [], collectedIds: st.collectedIds, stonesHit: [...st.stonesHit],
       points: st.clearSet.size * 15, cascade: 1,
     });
     for (const i of st.clearSet) {
       const cell = b.cells[i];
+      if (!cell) continue; // пустота (Волна 7)
       if (cell.tile && cell.tile.kind === 'item') acc.itemsCollected++;
       else if (cell.tile && cell.tile.kind === 'gem' && cell.tile.color >= 0) acc.colorsCollected[cell.tile.color]++;
       cell.tile = null;

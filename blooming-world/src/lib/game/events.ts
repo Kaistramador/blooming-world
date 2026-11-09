@@ -7,6 +7,7 @@
 
 import { mulberry32 } from './engine';
 import { TOTAL_LEVELS } from './levels';
+import type { Localized } from '../i18n';
 
 /* ---------------- Ключ даты ---------------- */
 
@@ -49,8 +50,8 @@ export type WeekendEventId = 'coins' | 'cascade';
 export interface WeekendEventDef {
   id: WeekendEventId;
   icon: string;
-  name: { ru: string; en: string };
-  desc: { ru: string; en: string };
+  name: Localized;
+  desc: Localized;
 }
 
 /** Суббота — «Золотые выходные» (×2 монеты), воскресенье — «Каскадный уикенд». */
@@ -58,19 +59,23 @@ export const WEEKEND_EVENTS: Record<WeekendEventId, WeekendEventDef> = {
   coins: {
     id: 'coins',
     icon: '🪙',
-    name: { ru: 'Золотые выходные', en: 'Golden Weekend' },
+    name: { ru: 'Золотые выходные', en: 'Golden Weekend', es: 'Fin de semana dorado', pt: 'Fim de semana dourado' },
     desc: {
       ru: 'Все победы приносят ×2 монет — только сегодня!',
       en: 'All wins grant ×2 coins — today only!',
+      es: 'Todas las victorias dan ×2 monedas — ¡solo hoy!',
+      pt: 'Todas as vitórias dão ×2 moedas — só hoje!',
     },
   },
   cascade: {
     id: 'cascade',
     icon: '🌊',
-    name: { ru: 'Каскадный уикенд', en: 'Cascade Weekend' },
+    name: { ru: 'Каскадный уикенд', en: 'Cascade Weekend', es: 'Fin de semana de cascadas', pt: 'Fim de semana de cascatas' },
     desc: {
       ru: 'Каскады 3+ приносят бонусные монеты к награде!',
       en: 'Cascades of 3+ grant bonus coins on top of the reward!',
+      es: '¡Las cascadas de 3+ dan monedas extra de recompensa!',
+      pt: 'Cascatas de 3+ dão moedas extras de recompensa!',
     },
   },
 };
@@ -99,14 +104,14 @@ export type SeasonId = 'autumn' | 'winter' | 'spring' | 'summer';
 export interface SeasonDef {
   id: SeasonId;
   icon: string;
-  name: { ru: string; en: string };
+  name: Localized;
 }
 
 export const SEASONS: Record<SeasonId, SeasonDef> = {
-  autumn: { id: 'autumn', icon: '🍂', name: { ru: 'Осень', en: 'Autumn' } },
-  winter: { id: 'winter', icon: '❄️', name: { ru: 'Зима', en: 'Winter' } },
-  spring: { id: 'spring', icon: '🌷', name: { ru: 'Весна', en: 'Spring' } },
-  summer: { id: 'summer', icon: '☀️', name: { ru: 'Лето', en: 'Summer' } },
+  autumn: { id: 'autumn', icon: '🍂', name: { ru: 'Осень', en: 'Autumn', es: 'Otoño', pt: 'Outono' } },
+  winter: { id: 'winter', icon: '❄️', name: { ru: 'Зима', en: 'Winter', es: 'Invierno', pt: 'Inverno' } },
+  spring: { id: 'spring', icon: '🌷', name: { ru: 'Весна', en: 'Spring', es: 'Primavera', pt: 'Primavera' } },
+  summer: { id: 'summer', icon: '☀️', name: { ru: 'Лето', en: 'Summer', es: 'Verano', pt: 'Verão' } },
 };
 
 /** Метеорологический сезон северного полушария по месяцу (0 = январь). */

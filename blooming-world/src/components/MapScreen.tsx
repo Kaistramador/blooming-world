@@ -10,7 +10,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { BloomingBackground } from './game/BloomingBackground';
-import { CHAPTERS, chapterTheme } from '@/lib/game/themes';
+import { CHAPTERS, chapterTheme, chapterDisplayName } from '@/lib/game/themes';
 import { CHAPTER_SIZE, TOTAL_CHAPTERS, TOTAL_LEVELS } from '@/lib/game/levels';
 import { usePlayer, useT } from '@/lib/store';
 import { PIGGY_WINS_TARGET } from '@/lib/game/garden';
@@ -23,6 +23,9 @@ interface MapScreenProps {
   onPlay: (level: number, opts?: { daily?: boolean }) => void;
 }
 
+/** Волна 7: глав на одну страницу карты (всего TOTAL_CHAPTERS = 1000). */
+const MAP_PAGE_SIZE = 8;
+
 export function MapScreen({ onPlay }: MapScreenProps) {
   const t = useT();
   const player = usePlayer();
@@ -30,8 +33,13 @@ export function MapScreen({ onPlay }: MapScreenProps) {
   const [piggyGot, setPiggyGot] = useState(0);
   /* Волна 6: командный сундук */
   const [teamGot, setTeamGot] = useState(0);
+  /* Волна 7: страница карты (окно из 8 глав из 1000) */
+  const [mapPage, setMapPage] = useState(() =>
+    Math.floor(Math.max(0, Math.min(TOTAL_CHAPTERS - 1, player.maxUnlocked() - 1)) / (CHAPTER_SIZE * MAP_PAGE_SIZE)),
+  );
   const maxUnlocked = player.maxUnlocked();
   const currentChapter = Math.min(TOTAL_CHAPTERS - 1, Math.floor((maxUnlocked - 1) / CHAPTER_SIZE));
+  const currentPage = Math.floor(currentChapter / MAP_PAGE_SIZE);
   const totalStars = player.totalStars();
   const starsAvail = player.starsAvailable();
   const piggyReady = player.piggy.wins >= PIGGY_WINS_TARGET;
@@ -77,11 +85,18 @@ export function MapScreen({ onPlay }: MapScreenProps) {
     }
   };
 
-  const chapterBlooming = (ch: number) => {
-    const levels = Array.from({ length: CHAPTER_SIZE }, (_, i) => ch * CHAPTER_SIZE + i + 1);
+  const chapterBlooming = (chId: number) => {
+    const levels = Array.from({ length: CHAPTER_SIZE }, (_, i) => chId * CHAPTER_SIZE + i + 1);
     const cleared = levels.filter((lv) => (player.stars[lv] ?? 0) > 0).length;
     return cleared;
   };
+
+  /* Волна 7: окно глав текущей страницы */
+  const pageStart = mapPage * MAP_PAGE_SIZE;
+  const pageChapters = Array.from(
+    { length: Math.min(MAP_PAGE_SIZE, TOTAL_CHAPTERS - pageStart) },
+    (_, i) => pageStart + i,
+  );
 
   return (
     <div className="mx-auto w-full max-w-lg px-3 pb-24 pt-3">
@@ -231,31 +246,72 @@ export function MapScreen({ onPlay }: MapScreenProps) {
         </div>
       </div>
 
+      {/* Волна 7: пагинация карты — 8 глав из 1000 за раз */}
+      <div className="mb-3 flex items-center justify-between gap-2 rounded-2xl bg-black/30 px-2 py-1.5">
+        <button
+          type="button"
+          className="min-h-[36px] min-w-[36px] rounded-xl bg-white/15 px-2 text-lg font-black text-white disabled:opacity-30"
+          disabled={mapPage === 0}
+          onClick={() => { sfx.click(); setMapPage((p) => Math.max(0, p - 1)); }}
+          aria-label="‹"
+        >
+          ‹
+        </button>
+        <div className="flex-1 text-center text-[11px] font-bold text-white/85">
+          {t('map.pages', {
+            a: pageStart * CHAPTER_SIZE + 1,
+            b: Math.min(TOTAL_LEVELS, (pageStart + pageChapters.length) * CHAPTER_SIZE),
+            c: TOTAL_LEVELS,
+          })}
+        </div>
+        {mapPage !== currentPage ? (
+          <button
+            type="button"
+            className="min-h-[36px] rounded-xl bg-amber-400/90 px-2.5 text-[11px] font-black text-amber-950"
+            onClick={() => { sfx.click(); setMapPage(currentPage); }}
+          >
+            📍 {t('map.toCurrent')}
+          </button>
+        ) : (
+          <span className="min-h-[36px] min-w-[36px]" aria-hidden />
+        )}
+        <button
+          type="button"
+          className="min-h-[36px] min-w-[36px] rounded-xl bg-white/15 px-2 text-lg font-black text-white disabled:opacity-30"
+          disabled={pageStart + MAP_PAGE_SIZE >= TOTAL_CHAPTERS}
+          onClick={() => { sfx.click(); setMapPage((p) => Math.min(Math.floor((TOTAL_CHAPTERS - 1) / MAP_PAGE_SIZE), p + 1)); }}
+          aria-label="›"
+        >
+          ›
+        </button>
+      </div>
+
       <div className="flex flex-col gap-3">
-        {CHAPTERS.map((ch) => {
-          const unlocked = ch.id <= currentChapter;
-          const bloomed = chapterBlooming(ch.id) === CHAPTER_SIZE;
-          const theme = chapterTheme(ch.id);
+        {pageChapters.map((chId) => {
+          const unlocked = chId <= currentChapter;
+          const bloomed = chapterBlooming(chId) === CHAPTER_SIZE;
+          const theme = chapterTheme(chId);
+          const era = CHAPTERS[theme.id];
           return (
             <div
-              key={ch.id}
+              key={chId}
               className={`relative overflow-hidden rounded-3xl ${
                 unlocked ? '' : 'opacity-70 saturate-0'
               }`}
               style={{ boxShadow: '0 6px 20px rgba(0,0,0,.3)', border: '2px solid rgba(255,255,255,.25)' }}
             >
-              <BloomingBackground bg={theme.bg} seed={ch.id + 11} />
+              <BloomingBackground bg={theme.bg} seed={chId + 11} />
               <div className="relative z-10 p-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-xs font-bold uppercase tracking-wider text-white/80 bm-text-outline">
-                      {t('map.chapter')} {ch.id + 1}
+                      {t('map.chapter')} {chId + 1}
                     </div>
                     <div className="text-lg font-black text-white bm-text-outline">
-                      {ch.name[player.lang]}
+                      {chapterDisplayName(chId, player.lang)}
                     </div>
                     <div className="text-[11px] text-white/85 bm-text-outline">
-                      {ch.tagline[player.lang]}
+                      {era.tagline[player.lang]}
                     </div>
                   </div>
                   {bloomed && (
@@ -267,10 +323,10 @@ export function MapScreen({ onPlay }: MapScreenProps) {
 
                 <div className="mt-2.5 grid grid-cols-5 gap-2">
                   {Array.from({ length: CHAPTER_SIZE }, (_, i) => {
-                    const lv = ch.id * CHAPTER_SIZE + i + 1;
+                    const lv = chId * CHAPTER_SIZE + i + 1;
                     const lvStars = player.stars[lv] ?? 0;
                     const lvUnlocked = lv <= maxUnlocked;
-                    const isCurrent = lv === maxUnlocked && ch.id === currentChapter;
+                    const isCurrent = lv === maxUnlocked && chId === currentChapter;
                     return (
                       <button
                         key={lv}
@@ -297,9 +353,10 @@ export function MapScreen({ onPlay }: MapScreenProps) {
                     );
                   })}
                 </div>
-                {!unlocked && (
+                {/* Волна 7: подсказка только на первой закрытой главе, n = уровней до её открытия */}
+                {!unlocked && chId === currentChapter + 1 && (
                   <div className="mt-2 text-center text-[11px] font-bold text-white/80 bm-text-outline">
-                    {t('map.nextChapter', { n: maxUnlocked - (ch.id * CHAPTER_SIZE) })}
+                    {t('map.nextChapter', { n: chId * CHAPTER_SIZE + 1 - maxUnlocked })}
                   </div>
                 )}
               </div>
@@ -308,7 +365,7 @@ export function MapScreen({ onPlay }: MapScreenProps) {
         })}
       </div>
 
-      <p className="mt-4 text-center text-[11px] text-white/60">{t('map.comingSoon')}</p>
+      <p className="mt-4 text-center text-[11px] text-white/60">🌸 {t('map.scale')}</p>
 
       {/* Волна 3: копилка — статус / вскрытие */}
       <Dialog open={piggyOpen} onOpenChange={setPiggyOpen}>

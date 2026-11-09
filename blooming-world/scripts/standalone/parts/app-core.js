@@ -77,8 +77,8 @@ function dailyLevelFor(dateKey) {
   return 1 + Math.floor(rng() * TOTAL_LEVELS);
 }
 const WEEKEND_EVENT_DEFS = {
-  coins: { id: 'coins', icon: '🪙', name: { ru: 'Золотые выходные', en: 'Golden Weekend' }, desc: { ru: 'Все победы приносят ×2 монет — только сегодня!', en: 'All wins grant ×2 coins — today only!' } },
-  cascade: { id: 'cascade', icon: '🌊', name: { ru: 'Каскадный уикенд', en: 'Cascade Weekend' }, desc: { ru: 'Каскады 3+ приносят бонусные монеты к награде!', en: 'Cascades of 3+ grant bonus coins on top of the reward!' } },
+  coins: { id: 'coins', icon: '🪙', name: { ru: 'Золотые выходные', en: 'Golden Weekend', es: 'Fin de semana dorado', pt: 'Fim de semana dourado' }, desc: { ru: 'Все победы приносят ×2 монет — только сегодня!', en: 'All wins grant ×2 coins — today only!', es: 'Todas las victorias dan ×2 monedas — ¡solo hoy!', pt: 'Todas as vitórias dão ×2 moedas — só hoje!' } },
+  cascade: { id: 'cascade', icon: '🌊', name: { ru: 'Каскадный уикенд', en: 'Cascade Weekend', es: 'Fin de semana de cascadas', pt: 'Fim de semana de cascatas' }, desc: { ru: 'Каскады 3+ приносят бонусные монеты к награде!', en: 'Cascades of 3+ grant bonus coins on top of the reward!', es: '¡Las cascadas de 3+ dan monedas extra de recompensa!', pt: 'Cascatas de 3+ dão moedas extras de recompensa!' } },
 };
 function weekendEventFor(dateKey) {
   const p = dateKey.split('-');
@@ -93,10 +93,10 @@ function cascadeBonus(maxCascade) {
   return steps * 30;
 }
 const SEASON_DEFS = {
-  autumn: { id: 'autumn', icon: '🍂', name: { ru: 'Осень', en: 'Autumn' } },
-  winter: { id: 'winter', icon: '❄️', name: { ru: 'Зима', en: 'Winter' } },
-  spring: { id: 'spring', icon: '🌷', name: { ru: 'Весна', en: 'Spring' } },
-  summer: { id: 'summer', icon: '☀️', name: { ru: 'Лето', en: 'Summer' } },
+  autumn: { id: 'autumn', icon: '🍂', name: { ru: 'Осень', en: 'Autumn', es: 'Otoño', pt: 'Outono' } },
+  winter: { id: 'winter', icon: '❄️', name: { ru: 'Зима', en: 'Winter', es: 'Invierno', pt: 'Inverno' } },
+  spring: { id: 'spring', icon: '🌷', name: { ru: 'Весна', en: 'Spring', es: 'Primavera', pt: 'Primavera' } },
+  summer: { id: 'summer', icon: '☀️', name: { ru: 'Лето', en: 'Summer', es: 'Verano', pt: 'Verão' } },
 };
 function seasonOfMonth(month0) {
   const m = ((month0 % 12) + 12) % 12 + 1;
@@ -126,10 +126,10 @@ function weekKeyOf(now) {
 function dayIndexOf(now) { return (now.getDay() + 6) % 7; }
 const TEAM_BOTS = 25;
 const TEAM_CHESTS = [
-  { need: 5000, reward: 150, icon: '📦', name: { ru: 'Деревянный', en: 'Wooden' } },
-  { need: 15000, reward: 300, icon: '🎁', name: { ru: 'Серебряный', en: 'Silver' } },
-  { need: 35000, reward: 600, icon: '🏆', name: { ru: 'Золотой', en: 'Golden' } },
-  { need: 70000, reward: 1200, icon: '💎', name: { ru: 'Бриллиантовый', en: 'Diamond' } },
+  { need: 5000, reward: 150, icon: '📦', name: { ru: 'Деревянный', en: 'Wooden', es: 'De madera', pt: 'De madeira' } },
+  { need: 15000, reward: 300, icon: '🎁', name: { ru: 'Серебряный', en: 'Silver', es: 'De plata', pt: 'De prata' } },
+  { need: 35000, reward: 600, icon: '🏆', name: { ru: 'Золотой', en: 'Golden', es: 'Dorado', pt: 'Dourado' } },
+  { need: 70000, reward: 1200, icon: '💎', name: { ru: 'Бриллиантовый', en: 'Diamond', es: 'De diamante', pt: 'De diamante' } },
 ];
 function chestReachedFor(pot) {
   let n = 0;
@@ -223,7 +223,8 @@ function normalizeState(s) {
     contributed: s && s.team && typeof s.team.contributed === 'number' ? s.team.contributed : 0,
     claimed: s && s.team && typeof s.team.claimed === 'number' ? Math.max(0, Math.min(4, s.team.claimed)) : 0,
   };
-  out.lang = out.lang === 'en' ? 'en' : 'ru';
+  /* Волна 7: 4 языка (ru/en/es/pt), иное — дефолт ru */
+  out.lang = (out.lang === 'ru' || out.lang === 'en' || out.lang === 'es' || out.lang === 'pt') ? out.lang : 'ru';
   return out;
 }
 function loadState() {
@@ -410,6 +411,73 @@ const store = {
   },
 };
 
+/* ---------------- Волна 7: A/B первых сессий (зеркало ab.ts) ----------------
+ * Вариант детерминирован по playerId (FNV-1a → 50/50), ключ ≠ сейв (§5.4).
+ * B «быстрый старт»: первая сессия открывается уровнем 1, коуч на ур. 1–3.
+ * ============================================================ */
+const AB_KEY = 'blooming-world-ab-v1';
+const AB_COACH_MAX_LEVEL = 3;
+let abCached = null;
+let abStarted = false;
+let analyticsGlobalProps = {};
+function setAnalyticsGlobals(props) { analyticsGlobalProps = Object.assign({}, analyticsGlobalProps, props || {}); }
+function analyticsGlobals() { return Object.assign({}, analyticsGlobalProps); }
+function abFnv1a(s) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+function abPlayerId() {
+  try {
+    let id = localStorage.getItem('blooming-world-player-id');
+    if (!id || !/^[A-Za-z0-9_-]{8,64}$/.test(id)) {
+      id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID().replace(/-/g, '') : ('p' + Date.now().toString(36) + Math.floor(Math.random() * 1e12).toString(36));
+      localStorage.setItem('blooming-world-player-id', id);
+    }
+    return id;
+  } catch (e) { return ''; }
+}
+function abReadBlob() {
+  try {
+    const raw = localStorage.getItem(AB_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw);
+    if (!p || (p.v !== 'A' && p.v !== 'B') || typeof p.sessions !== 'number') return null;
+    return p;
+  } catch (e) { return null; }
+}
+function abWriteBlob(blob) {
+  abCached = blob;
+  try { localStorage.setItem(AB_KEY, JSON.stringify(blob)); } catch (e) { /* только память */ }
+}
+function abVariantForId(pid) { return abFnv1a(pid) % 2 === 1 ? 'B' : 'A'; }
+function abVariant() {
+  if (abCached) return abCached.v;
+  const stored = abReadBlob();
+  if (stored) { abCached = stored; return stored.v; }
+  const pid = abPlayerId();
+  const variant = abVariantForId(pid || 'fallback-id');
+  abWriteBlob({ v: variant, sessions: 0 });
+  return variant;
+}
+function abSessionStart() {
+  const variant = abVariant();
+  if (abStarted) return { variant: variant, first: abCached ? abCached.sessions === 1 : false };
+  abStarted = true;
+  const blob = abReadBlob() || { v: variant, sessions: 0 };
+  const first = blob.sessions === 0;
+  abWriteBlob({ v: blob.v, sessions: blob.sessions + 1 });
+  setAnalyticsGlobals({ ab: variant, fs: first ? 1 : 0 });
+  return { variant: variant, first: first };
+}
+function abFirstSession() {
+  const blob = abReadBlob();
+  if (blob) return blob.sessions <= 1;
+  return abCached ? abCached.sessions <= 1 : false;
+}
+function abShouldStartInGame(variant, firstSession) { return variant === 'B' && !!firstSession; }
+function abCoachActive(variant, level) { return variant === 'B' && level <= AB_COACH_MAX_LEVEL; }
+
 /* ---------------- лёгкая аналитика (Волна 2) ----------------
  * Кольцо событий в localStorage, без внешних сервисов (§5.6).
  * Выгрузка JSON — из профиля. Ключ ≠ сейв (§5.4).
@@ -433,7 +501,8 @@ function analyticsWrite(events) {
 function logEvent(e, props) {
   try {
     const events = analyticsRead();
-    const ev = Object.assign({ t: new Date().toISOString(), e: e }, props || {});
+    /* Волна 7: каждое событие тегировано ab/fs (A/B воронка) */
+    const ev = Object.assign({ t: new Date().toISOString(), e: e }, analyticsGlobalProps, props || {});
     events.push(ev);
     analyticsWrite(events);
   } catch (err) { /* noop */ }

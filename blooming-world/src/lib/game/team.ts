@@ -8,6 +8,7 @@
 
 import { mulberry32 } from './engine';
 import { dateSeed } from './events';
+import type { Localized } from '../i18n';
 
 /* ---------------- ISO-неделя ---------------- */
 
@@ -44,15 +45,15 @@ export interface TeamChest {
   /** награда монетами за порог */
   reward: number;
   icon: string;
-  name: { ru: string; en: string };
+  name: Localized;
 }
 
 /** 4 сундука: вклад ботов обычно дотягивает до 2-го, активный игрок — до 3–4-го. */
 export const TEAM_CHESTS: TeamChest[] = [
-  { need: 5000, reward: 150, icon: '📦', name: { ru: 'Деревянный', en: 'Wooden' } },
-  { need: 15000, reward: 300, icon: '🎁', name: { ru: 'Серебряный', en: 'Silver' } },
-  { need: 35000, reward: 600, icon: '🏆', name: { ru: 'Золотой', en: 'Golden' } },
-  { need: 70000, reward: 1200, icon: '💎', name: { ru: 'Бриллиантовый', en: 'Diamond' } },
+  { need: 5000, reward: 150, icon: '📦', name: { ru: 'Деревянный', en: 'Wooden', es: 'De madera', pt: 'De madeira' } },
+  { need: 15000, reward: 300, icon: '🎁', name: { ru: 'Серебряный', en: 'Silver', es: 'De plata', pt: 'De prata' } },
+  { need: 35000, reward: 600, icon: '🏆', name: { ru: 'Золотой', en: 'Golden', es: 'Dorado', pt: 'Dourado' } },
+  { need: 70000, reward: 1200, icon: '💎', name: { ru: 'Бриллиантовый', en: 'Diamond', es: 'De diamante', pt: 'De diamante' } },
 ];
 
 /** Сколько порогов достигнуто при данном горшке (0..TEAM_CHESTS.length). */

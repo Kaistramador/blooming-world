@@ -3,9 +3,11 @@
  * cosmetics (gem skins, avatars, frames, name styles, effects).
  * Волна 4: сезонные коллекции — 6 предметов × 4 сезона, витрина
  * rotates по календарю автоматически (events.ts → seasonOn).
+ * Волна 7: локализация ES/PT (Localized = ru/en/es/pt).
  * ============================================================ */
 
 import type { SeasonId } from './events';
+import type { Localized } from '../i18n';
 
 export type BoosterId = 'hammer' | 'bomb' | 'cross' | 'shuffle' | 'undo' | 'moves5';
 
@@ -13,40 +15,40 @@ export interface BoosterDef {
   id: BoosterId;
   icon: string;
   price: number;
-  name: { ru: string; en: string };
-  desc: { ru: string; en: string };
+  name: Localized;
+  desc: Localized;
 }
 
 export const BOOSTERS: BoosterDef[] = [
   {
     id: 'hammer', icon: '🔨', price: 40,
-    name: { ru: 'Молоток', en: 'Hammer' },
-    desc: { ru: 'Убрать один камень с поля', en: 'Remove a single gem' },
+    name: { ru: 'Молоток', en: 'Hammer', es: 'Martillo', pt: 'Martelo' },
+    desc: { ru: 'Убрать один камень с поля', en: 'Remove a single gem', es: 'Quita una gema del tablero', pt: 'Remove uma gema do tabuleiro' },
   },
   {
     id: 'bomb', icon: '💣', price: 60,
-    name: { ru: 'Бомба', en: 'Bomb' },
-    desc: { ru: 'Взрыв 3×3 в выбранной точке', en: 'Blast a 3×3 area' },
+    name: { ru: 'Бомба', en: 'Bomb', es: 'Bomba', pt: 'Bomba' },
+    desc: { ru: 'Взрыв 3×3 в выбранной точке', en: 'Blast a 3×3 area', es: 'Explota un área de 3×3', pt: 'Explode uma área de 3×3' },
   },
   {
     id: 'cross', icon: '⚡', price: 80,
-    name: { ru: 'Молния', en: 'Lightning' },
-    desc: { ru: 'Очистить ряд и столбец крестом', en: 'Clear a row and column' },
+    name: { ru: 'Молния', en: 'Lightning', es: 'Rayo', pt: 'Raio' },
+    desc: { ru: 'Очистить ряд и столбец крестом', en: 'Clear a row and column', es: 'Limpia una fila y una columna', pt: 'Limpa uma linha e uma coluna' },
   },
   {
     id: 'shuffle', icon: '🔀', price: 50,
-    name: { ru: 'Перемешать', en: 'Shuffle' },
-    desc: { ru: 'Перемешать все камни на поле', en: 'Reshuffle all gems' },
+    name: { ru: 'Перемешать', en: 'Shuffle', es: 'Mezclar', pt: 'Embaralhar' },
+    desc: { ru: 'Перемешать все камни на поле', en: 'Reshuffle all gems', es: 'Mezcla todas las gemas del tablero', pt: 'Embaralha todas as gemas' },
   },
   {
     id: 'undo', icon: '↩️', price: 30,
-    name: { ru: 'Отмена хода', en: 'Undo' },
-    desc: { ru: 'Отменить последний своп', en: 'Undo your last swap' },
+    name: { ru: 'Отмена хода', en: 'Undo', es: 'Deshacer', pt: 'Desfazer' },
+    desc: { ru: 'Отменить последний своп', en: 'Undo your last swap', es: 'Deshace tu último intercambio', pt: 'Desfaz sua última troca' },
   },
   {
     id: 'moves5', icon: '➕5', price: 100,
-    name: { ru: '+5 ходов', en: '+5 Moves' },
-    desc: { ru: 'Дополнительные 5 ходов в уровне', en: 'Five extra moves in a level' },
+    name: { ru: '+5 ходов', en: '+5 Moves', es: '+5 movimientos', pt: '+5 jogadas' },
+    desc: { ru: 'Дополнительные 5 ходов в уровне', en: 'Five extra moves in a level', es: 'Cinco movimientos extra en un nivel', pt: 'Cinco jogadas extra num nível' },
   },
 ];
 
@@ -74,7 +76,7 @@ export const COIN_PACKS: CoinPack[] = [
 
 export interface GemSkinDef {
   id: string;
-  name: { ru: string; en: string };
+  name: Localized;
   price: number;
   /** glyph per color; when set, tiles render as emoji.
    * Note: the silhouette is always shape-coded by color (see shapes.ts),
@@ -89,55 +91,55 @@ export interface GemSkinDef {
 }
 
 export const GEM_SKINS: GemSkinDef[] = [
-  { id: 'classic', name: { ru: 'Классика', en: 'Classic' }, price: 0 },
-  { id: 'stones', name: { ru: 'Камни', en: 'Stones' }, price: 0, ring: true },
+  { id: 'classic', name: { ru: 'Классика', en: 'Classic', es: 'Clásico', pt: 'Clássico' }, price: 0 },
+  { id: 'stones', name: { ru: 'Камни', en: 'Stones', es: 'Piedras', pt: 'Pedras' }, price: 0, ring: true },
   {
-    id: 'fruits', name: { ru: 'Фрукты', en: 'Fruits' }, price: 300,
+    id: 'fruits', name: { ru: 'Фрукты', en: 'Fruits', es: 'Frutas', pt: 'Frutas' }, price: 300,
     glyphs: ['🍓', '🍋', '🍏', '🫐', '🍇', '🍊'],
   },
   {
-    id: 'sweets', name: { ru: 'Сладости', en: 'Sweets' }, price: 400,
+    id: 'sweets', name: { ru: 'Сладости', en: 'Sweets', es: 'Dulces', pt: 'Doces' }, price: 400,
     glyphs: ['🍬', '🍭', '🍩', '🧊', '🧁', '🍫'],
   },
   {
-    id: 'flowers', name: { ru: 'Цветы', en: 'Flowers' }, price: 500,
+    id: 'flowers', name: { ru: 'Цветы', en: 'Flowers', es: 'Flores', pt: 'Flores' }, price: 500,
     glyphs: ['🌹', '🌻', '🍀', '🪻', '🌸', '🌷'],
   },
   {
-    id: 'planets', name: { ru: 'Планеты', en: 'Planets' }, price: 600,
+    id: 'planets', name: { ru: 'Планеты', en: 'Planets', es: 'Planetas', pt: 'Planetas' }, price: 600,
     glyphs: ['🔴', '🪐', '🌍', '🌑', '💫', '⭐'],
   },
   {
-    id: 'runes', name: { ru: 'Руны', en: 'Runes' }, price: 700,
+    id: 'runes', name: { ru: 'Руны', en: 'Runes', es: 'Runas', pt: 'Runas' }, price: 700,
     glyphs: ['🔥', '⚡', '🌿', '🌊', '🔮', '☀️'],
   },
   {
-    id: 'ocean', name: { ru: 'Океан', en: 'Ocean' }, price: 800,
+    id: 'ocean', name: { ru: 'Океан', en: 'Ocean', es: 'Océano', pt: 'Oceano' }, price: 800,
     glyphs: ['🐠', '🐟', '🐙', '🦐', '🐡', '🦑'],
   },
   {
-    id: 'animals', name: { ru: 'Зверята', en: 'Critters' }, price: 900,
+    id: 'animals', name: { ru: 'Зверята', en: 'Critters', es: 'Animalitos', pt: 'Bichinhos' }, price: 900,
     glyphs: ['🐭', '🐤', '🐸', '🦋', '🐹', '🦊'],
   },
   {
-    id: 'cosmos', name: { ru: 'Космос', en: 'Cosmos' }, price: 1200,
+    id: 'cosmos', name: { ru: 'Космос', en: 'Cosmos', es: 'Cosmos', pt: 'Cosmos' }, price: 1200,
     glyphs: ['🚀', '🛸', '☄️', '🌌', '🔭', '👾'],
   },
   /* --- Волна 4: сезонные скины (силуэты a11y не трогаем — §5.2) --- */
   {
-    id: 'season-autumn', name: { ru: 'Осенний сад', en: 'Autumn Garden' }, price: 800, season: 'autumn',
+    id: 'season-autumn', name: { ru: 'Осенний сад', en: 'Autumn Garden', es: 'Jardín de otoño', pt: 'Jardim de outono' }, price: 800, season: 'autumn',
     glyphs: ['🍁', '🌽', '🌰', '🫐', '🍇', '🎃'],
   },
   {
-    id: 'season-winter', name: { ru: 'Зимние узоры', en: 'Winter Patterns' }, price: 800, season: 'winter',
+    id: 'season-winter', name: { ru: 'Зимние узоры', en: 'Winter Patterns', es: 'Patrones de invierno', pt: 'Padrões de inverno' }, price: 800, season: 'winter',
     glyphs: ['🎅', '⭐', '🎄', '❄️', '🔮', '🍊'],
   },
   {
-    id: 'season-spring', name: { ru: 'Весенний цвет', en: 'Spring Bloom' }, price: 800, season: 'spring',
+    id: 'season-spring', name: { ru: 'Весенний цвет', en: 'Spring Bloom', es: 'Flor de primavera', pt: 'Flor da primavera' }, price: 800, season: 'spring',
     glyphs: ['🌷', '🌼', '🌱', '💧', '🦋', '🌸'],
   },
   {
-    id: 'season-summer', name: { ru: 'Летний бриз', en: 'Summer Breeze' }, price: 800, season: 'summer',
+    id: 'season-summer', name: { ru: 'Летний бриз', en: 'Summer Breeze', es: 'Brisa de verano', pt: 'Brisa de verão' }, price: 800, season: 'summer',
     glyphs: ['🍉', '🌞', '🌴', '🌊', '🐚', '🍍'],
   },
 ];
@@ -193,7 +195,7 @@ export const AVATARS: AvatarDef[] = [
 
 export interface FrameDef {
   id: string;
-  name: { ru: string; en: string };
+  name: Localized;
   price: number;
   css: string; // box-shadow / border style for avatar container
   /** сезон коллекции (Волна 4) */
@@ -201,30 +203,30 @@ export interface FrameDef {
 }
 
 export const FRAMES: FrameDef[] = [
-  { id: 'fr-none', name: { ru: 'Без рамки', en: 'None' }, price: 0, css: 'none' },
-  { id: 'fr-wood', name: { ru: 'Дерево', en: 'Wood' }, price: 60, css: '0 0 0 3px #8a5f40, 0 2px 6px rgba(0,0,0,.3)' },
-  { id: 'fr-leaf', name: { ru: 'Листья', en: 'Leaves' }, price: 100, css: '0 0 0 3px #4fd05c, 0 0 8px rgba(79,208,92,.5)' },
-  { id: 'fr-sun', name: { ru: 'Солнце', en: 'Sun' }, price: 120, css: '0 0 0 3px #ffb300, 0 0 12px rgba(255,179,0,.6)' },
-  { id: 'fr-ice', name: { ru: 'Лёд', en: 'Ice' }, price: 150, css: '0 0 0 3px #6be5ff, 0 0 10px rgba(107,229,255,.6)' },
-  { id: 'fr-rose', name: { ru: 'Роза', en: 'Rose' }, price: 180, css: '0 0 0 3px #ff7799, 0 0 10px rgba(255,119,153,.6)' },
-  { id: 'fr-gold', name: { ru: 'Золото', en: 'Gold' }, price: 300, css: '0 0 0 4px #ffd83d, 0 0 14px rgba(255,216,61,.7)' },
-  { id: 'fr-emerald', name: { ru: 'Изумруд', en: 'Emerald' }, price: 300, css: '0 0 0 4px #6bff8f, 0 0 14px rgba(107,255,143,.7)' },
-  { id: 'fr-amethyst', name: { ru: 'Аметист', en: 'Amethyst' }, price: 350, css: '0 0 0 4px #d18bff, 0 0 14px rgba(209,139,255,.7)' },
-  { id: 'fr-royal', name: { ru: 'Королевский', en: 'Royal' }, price: 500, css: '0 0 0 4px #fff, 0 0 0 7px #ffd83d, 0 0 18px rgba(255,216,61,.8)' },
-  { id: 'fr-neon', name: { ru: 'Неон', en: 'Neon' }, price: 500, css: '0 0 0 3px #22e0ff, 0 0 18px #22e0ff, 0 0 30px rgba(34,224,255,.5)' },
-  { id: 'fr-rainbow', name: { ru: 'Радуга', en: 'Rainbow' }, price: 800, css: '0 0 0 4px transparent, 0 0 16px #ff9ab8, 0 0 24px #ffd83d, 0 0 32px #6bff8f' },
+  { id: 'fr-none', name: { ru: 'Без рамки', en: 'None', es: 'Sin marco', pt: 'Sem moldura' }, price: 0, css: 'none' },
+  { id: 'fr-wood', name: { ru: 'Дерево', en: 'Wood', es: 'Madera', pt: 'Madeira' }, price: 60, css: '0 0 0 3px #8a5f40, 0 2px 6px rgba(0,0,0,.3)' },
+  { id: 'fr-leaf', name: { ru: 'Листья', en: 'Leaves', es: 'Hojas', pt: 'Folhas' }, price: 100, css: '0 0 0 3px #4fd05c, 0 0 8px rgba(79,208,92,.5)' },
+  { id: 'fr-sun', name: { ru: 'Солнце', en: 'Sun', es: 'Sol', pt: 'Sol' }, price: 120, css: '0 0 0 3px #ffb300, 0 0 12px rgba(255,179,0,.6)' },
+  { id: 'fr-ice', name: { ru: 'Лёд', en: 'Ice', es: 'Hielo', pt: 'Gelo' }, price: 150, css: '0 0 0 3px #6be5ff, 0 0 10px rgba(107,229,255,.6)' },
+  { id: 'fr-rose', name: { ru: 'Роза', en: 'Rose', es: 'Rosa', pt: 'Rosa' }, price: 180, css: '0 0 0 3px #ff7799, 0 0 10px rgba(255,119,153,.6)' },
+  { id: 'fr-gold', name: { ru: 'Золото', en: 'Gold', es: 'Oro', pt: 'Ouro' }, price: 300, css: '0 0 0 4px #ffd83d, 0 0 14px rgba(255,216,61,.7)' },
+  { id: 'fr-emerald', name: { ru: 'Изумруд', en: 'Emerald', es: 'Esmeralda', pt: 'Esmeralda' }, price: 300, css: '0 0 0 4px #6bff8f, 0 0 14px rgba(107,255,143,.7)' },
+  { id: 'fr-amethyst', name: { ru: 'Аметист', en: 'Amethyst', es: 'Ametista', pt: 'Ametista' }, price: 350, css: '0 0 0 4px #d18bff, 0 0 14px rgba(209,139,255,.7)' },
+  { id: 'fr-royal', name: { ru: 'Королевский', en: 'Royal', es: 'Real', pt: 'Real' }, price: 500, css: '0 0 0 4px #fff, 0 0 0 7px #ffd83d, 0 0 18px rgba(255,216,61,.8)' },
+  { id: 'fr-neon', name: { ru: 'Неон', en: 'Neon', es: 'Neón', pt: 'Neon' }, price: 500, css: '0 0 0 3px #22e0ff, 0 0 18px #22e0ff, 0 0 30px rgba(34,224,255,.5)' },
+  { id: 'fr-rainbow', name: { ru: 'Радуга', en: 'Rainbow', es: 'Arcoíris', pt: 'Arco-íris' }, price: 800, css: '0 0 0 4px transparent, 0 0 16px #ff9ab8, 0 0 24px #ffd83d, 0 0 32px #6bff8f' },
   /* --- Волна 4: сезонные рамки --- */
-  { id: 'fr-amber', name: { ru: 'Янтарь', en: 'Amber' }, price: 320, css: '0 0 0 4px #ef8f2a, 0 0 14px rgba(239,143,42,.7)', season: 'autumn' },
-  { id: 'fr-snow', name: { ru: 'Снежная', en: 'Snow' }, price: 320, css: '0 0 0 4px #e8f4ff, 0 0 14px rgba(200,230,255,.85)', season: 'winter' },
-  { id: 'fr-petal', name: { ru: 'Лепестки', en: 'Petals' }, price: 320, css: '0 0 0 4px #ff9ab8, 0 0 14px rgba(255,154,184,.7)', season: 'spring' },
-  { id: 'fr-sunburst', name: { ru: 'Солнечная', en: 'Sunburst' }, price: 320, css: '0 0 0 4px #ffd83d, 0 0 16px rgba(255,216,61,.85)', season: 'summer' },
+  { id: 'fr-amber', name: { ru: 'Янтарь', en: 'Amber', es: 'Ámbar', pt: 'Âmbar' }, price: 320, css: '0 0 0 4px #ef8f2a, 0 0 14px rgba(239,143,42,.7)', season: 'autumn' },
+  { id: 'fr-snow', name: { ru: 'Снежная', en: 'Snow', es: 'Nieve', pt: 'Neve' }, price: 320, css: '0 0 0 4px #e8f4ff, 0 0 14px rgba(200,230,255,.85)', season: 'winter' },
+  { id: 'fr-petal', name: { ru: 'Лепестки', en: 'Petals', es: 'Pétalos', pt: 'Pétalas' }, price: 320, css: '0 0 0 4px #ff9ab8, 0 0 14px rgba(255,154,184,.7)', season: 'spring' },
+  { id: 'fr-sunburst', name: { ru: 'Солнечная', en: 'Sunburst', es: 'Solsticio', pt: 'Solstício' }, price: 320, css: '0 0 0 4px #ffd83d, 0 0 16px rgba(255,216,61,.85)', season: 'summer' },
 ];
 
 /* ---------------- Name styles ---------------- */
 
 export interface NameStyleDef {
   id: string;
-  name: { ru: string; en: string };
+  name: Localized;
   price: number;
   css: string; // css text style
   /** сезон коллекции (Волна 4) */
@@ -232,28 +234,28 @@ export interface NameStyleDef {
 }
 
 export const NAME_STYLES: NameStyleDef[] = [
-  { id: 'ns-basic', name: { ru: 'Обычный', en: 'Basic' }, price: 0, css: 'color:#ffffff;font-weight:700' },
-  { id: 'ns-fire', name: { ru: 'Огонь', en: 'Fire' }, price: 100, css: 'color:#ff7a1f;font-weight:900;text-shadow:0 0 8px rgba(255,122,31,.8)' },
-  { id: 'ns-ice', name: { ru: 'Лёд', en: 'Ice' }, price: 100, css: 'color:#9be8ff;font-weight:700;text-shadow:0 1px 0 #2a9ad6,0 0 8px rgba(107,229,255,.6)' },
-  { id: 'ns-gold', name: { ru: 'Золото', en: 'Gold' }, price: 200, css: 'color:#ffd83d;font-weight:900;text-shadow:0 1px 0 #a68a00,0 0 10px rgba(255,216,61,.7)' },
-  { id: 'ns-emerald', name: { ru: 'Изумруд', en: 'Emerald' }, price: 150, css: 'color:#8fffa8;font-weight:800;text-shadow:0 0 8px rgba(107,255,143,.6)' },
-  { id: 'ns-rose', name: { ru: 'Роза', en: 'Rose' }, price: 150, css: 'color:#ffb8c8;font-weight:800;text-shadow:0 0 8px rgba(255,119,153,.7)' },
-  { id: 'ns-royal', name: { ru: 'Роял', en: 'Royal' }, price: 300, css: 'color:#fff;font-weight:900;letter-spacing:.06em;text-shadow:0 0 4px #ffd83d,0 0 12px #e0a81f' },
-  { id: 'ns-neon', name: { ru: 'Неон', en: 'Neon' }, price: 350, css: 'color:#22e0ff;font-weight:900;text-shadow:0 0 6px #22e0ff,0 0 14px rgba(34,224,255,.8)' },
-  { id: 'ns-shadow', name: { ru: 'Тень', en: 'Shadow' }, price: 200, css: 'color:#3a3a4a;font-weight:900;text-shadow:0 2px 0 rgba(255,255,255,.25)' },
-  { id: 'ns-magic', name: { ru: 'Магия', en: 'Magic' }, price: 400, css: 'color:#e8ccff;font-weight:900;font-style:italic;text-shadow:0 0 8px #c44dff,0 0 16px rgba(196,77,255,.6)' },
+  { id: 'ns-basic', name: { ru: 'Обычный', en: 'Basic', es: 'Normal', pt: 'Normal' }, price: 0, css: 'color:#ffffff;font-weight:700' },
+  { id: 'ns-fire', name: { ru: 'Огонь', en: 'Fire', es: 'Fuego', pt: 'Fogo' }, price: 100, css: 'color:#ff7a1f;font-weight:900;text-shadow:0 0 8px rgba(255,122,31,.8)' },
+  { id: 'ns-ice', name: { ru: 'Лёд', en: 'Ice', es: 'Hielo', pt: 'Gelo' }, price: 100, css: 'color:#9be8ff;font-weight:700;text-shadow:0 1px 0 #2a9ad6,0 0 8px rgba(107,229,255,.6)' },
+  { id: 'ns-gold', name: { ru: 'Золото', en: 'Gold', es: 'Oro', pt: 'Ouro' }, price: 200, css: 'color:#ffd83d;font-weight:900;text-shadow:0 1px 0 #a68a00,0 0 10px rgba(255,216,61,.7)' },
+  { id: 'ns-emerald', name: { ru: 'Изумруд', en: 'Emerald', es: 'Esmeralda', pt: 'Esmeralda' }, price: 150, css: 'color:#8fffa8;font-weight:800;text-shadow:0 0 8px rgba(107,255,143,.6)' },
+  { id: 'ns-rose', name: { ru: 'Роза', en: 'Rose', es: 'Rosa', pt: 'Rosa' }, price: 150, css: 'color:#ffb8c8;font-weight:800;text-shadow:0 0 8px rgba(255,119,153,.7)' },
+  { id: 'ns-royal', name: { ru: 'Роял', en: 'Royal', es: 'Real', pt: 'Real' }, price: 300, css: 'color:#fff;font-weight:900;letter-spacing:.06em;text-shadow:0 0 4px #ffd83d,0 0 12px #e0a81f' },
+  { id: 'ns-neon', name: { ru: 'Неон', en: 'Neon', es: 'Neón', pt: 'Neon' }, price: 350, css: 'color:#22e0ff;font-weight:900;text-shadow:0 0 6px #22e0ff,0 0 14px rgba(34,224,255,.8)' },
+  { id: 'ns-shadow', name: { ru: 'Тень', en: 'Shadow', es: 'Sombra', pt: 'Sombra' }, price: 200, css: 'color:#3a3a4a;font-weight:900;text-shadow:0 2px 0 rgba(255,255,255,.25)' },
+  { id: 'ns-magic', name: { ru: 'Магия', en: 'Magic', es: 'Magia', pt: 'Magia' }, price: 400, css: 'color:#e8ccff;font-weight:900;font-style:italic;text-shadow:0 0 8px #c44dff,0 0 16px rgba(196,77,255,.6)' },
   /* --- Волна 4: сезонные стили имени --- */
-  { id: 'ns-amber', name: { ru: 'Янтарный', en: 'Amber' }, price: 260, css: 'color:#ffc890;font-weight:900;text-shadow:0 1px 0 #a8611f,0 0 10px rgba(239,143,42,.7)', season: 'autumn' },
-  { id: 'ns-frost', name: { ru: 'Морозный', en: 'Frost' }, price: 260, css: 'color:#e8f4ff;font-weight:900;text-shadow:0 1px 0 #5a8ac0,0 0 10px rgba(200,230,255,.9)', season: 'winter' },
-  { id: 'ns-petal', name: { ru: 'Нежный', en: 'Petal' }, price: 260, css: 'color:#ffd8e8;font-weight:800;text-shadow:0 0 8px rgba(255,154,184,.8)', season: 'spring' },
-  { id: 'ns-sunny', name: { ru: 'Солнечный', en: 'Sunny' }, price: 260, css: 'color:#fff0a0;font-weight:900;text-shadow:0 0 10px rgba(255,216,61,.8)', season: 'summer' },
+  { id: 'ns-amber', name: { ru: 'Янтарный', en: 'Amber', es: 'Ámbar', pt: 'Âmbar' }, price: 260, css: 'color:#ffc890;font-weight:900;text-shadow:0 1px 0 #a8611f,0 0 10px rgba(239,143,42,.7)', season: 'autumn' },
+  { id: 'ns-frost', name: { ru: 'Морозный', en: 'Frost', es: 'Escarcha', pt: 'Geada' }, price: 260, css: 'color:#e8f4ff;font-weight:900;text-shadow:0 1px 0 #5a8ac0,0 0 10px rgba(200,230,255,.9)', season: 'winter' },
+  { id: 'ns-petal', name: { ru: 'Нежный', en: 'Petal', es: 'Pétalo', pt: 'Pétala' }, price: 260, css: 'color:#ffd8e8;font-weight:800;text-shadow:0 0 8px rgba(255,154,184,.8)', season: 'spring' },
+  { id: 'ns-sunny', name: { ru: 'Солнечный', en: 'Sunny', es: 'Soleado', pt: 'Ensolarado' }, price: 260, css: 'color:#fff0a0;font-weight:900;text-shadow:0 0 10px rgba(255,216,61,.8)', season: 'summer' },
 ];
 
 /* ---------------- Effects ---------------- */
 
 export interface EffectDef {
   id: string;
-  name: { ru: string; en: string };
+  name: Localized;
   price: number;
   kind: 'tile' | 'avatar' | 'name';
   /** particle emoji or css class key */
@@ -264,31 +266,31 @@ export interface EffectDef {
 
 export const EFFECTS: EffectDef[] = [
   // tile match particles
-  { id: 'fx-sparkle', kind: 'tile', visual: '✦', price: 150, name: { ru: 'Искры', en: 'Sparks' } },
-  { id: 'fx-petals', kind: 'tile', visual: '🌸', price: 200, name: { ru: 'Лепестки', en: 'Petals' } },
-  { id: 'fx-stars', kind: 'tile', visual: '⭐', price: 250, name: { ru: 'Звёзды', en: 'Stars' } },
-  { id: 'fx-leaves', kind: 'tile', visual: '🍃', price: 250, name: { ru: 'Листья', en: 'Leaves' } },
-  { id: 'fx-hearts', kind: 'tile', visual: '💚', price: 300, name: { ru: 'Сердечки', en: 'Hearts' } },
-  { id: 'fx-rainbow', kind: 'tile', visual: '🌈', price: 500, name: { ru: 'Радуга', en: 'Rainbow' } },
+  { id: 'fx-sparkle', kind: 'tile', visual: '✦', price: 150, name: { ru: 'Искры', en: 'Sparks', es: 'Chispas', pt: 'Fagulhas' } },
+  { id: 'fx-petals', kind: 'tile', visual: '🌸', price: 200, name: { ru: 'Лепестки', en: 'Petals', es: 'Pétalos', pt: 'Pétalas' } },
+  { id: 'fx-stars', kind: 'tile', visual: '⭐', price: 250, name: { ru: 'Звёзды', en: 'Stars', es: 'Estrellas', pt: 'Estrelas' } },
+  { id: 'fx-leaves', kind: 'tile', visual: '🍃', price: 250, name: { ru: 'Листья', en: 'Leaves', es: 'Hojas', pt: 'Folhas' } },
+  { id: 'fx-hearts', kind: 'tile', visual: '💚', price: 300, name: { ru: 'Сердечки', en: 'Hearts', es: 'Corazones', pt: 'Corações' } },
+  { id: 'fx-rainbow', kind: 'tile', visual: '🌈', price: 500, name: { ru: 'Радуга', en: 'Rainbow', es: 'Arcoíris', pt: 'Arco-íris' } },
   // avatar effects
-  { id: 'ae-glow', kind: 'avatar', visual: 'glow', price: 100, name: { ru: 'Свечение', en: 'Glow' } },
-  { id: 'ae-pulse', kind: 'avatar', visual: 'pulse', price: 150, name: { ru: 'Пульс', en: 'Pulse' } },
-  { id: 'ae-spin', kind: 'avatar', visual: 'spin', price: 250, name: { ru: 'Вращение', en: 'Spin' } },
-  { id: 'ae-aurora', kind: 'avatar', visual: 'aurora', price: 350, name: { ru: 'Аврора', en: 'Aurora' } },
-  { id: 'ae-flame', kind: 'avatar', visual: 'flame', price: 350, name: { ru: 'Пламя', en: 'Flame' } },
-  { id: 'ae-galaxy', kind: 'avatar', visual: 'galaxy', price: 500, name: { ru: 'Галактика', en: 'Galaxy' } },
+  { id: 'ae-glow', kind: 'avatar', visual: 'glow', price: 100, name: { ru: 'Свечение', en: 'Glow', es: 'Resplandor', pt: 'Brilho' } },
+  { id: 'ae-pulse', kind: 'avatar', visual: 'pulse', price: 150, name: { ru: 'Пульс', en: 'Pulse', es: 'Pulso', pt: 'Pulso' } },
+  { id: 'ae-spin', kind: 'avatar', visual: 'spin', price: 250, name: { ru: 'Вращение', en: 'Spin', es: 'Giro', pt: 'Giro' } },
+  { id: 'ae-aurora', kind: 'avatar', visual: 'aurora', price: 350, name: { ru: 'Аврора', en: 'Aurora', es: 'Aurora', pt: 'Aurora' } },
+  { id: 'ae-flame', kind: 'avatar', visual: 'flame', price: 350, name: { ru: 'Пламя', en: 'Flame', es: 'Llama', pt: 'Chama' } },
+  { id: 'ae-galaxy', kind: 'avatar', visual: 'galaxy', price: 500, name: { ru: 'Галактика', en: 'Galaxy', es: 'Galaxia', pt: 'Galáxia' } },
   // name effects
-  { id: 'ne-glow', kind: 'name', visual: 'glow', price: 100, name: { ru: 'Сияние', en: 'Radiance' } },
-  { id: 'ne-rainbow', kind: 'name', visual: 'rainbow', price: 250, name: { ru: 'Радуга', en: 'Rainbow' } },
-  { id: 'ne-blink', kind: 'name', visual: 'blink', price: 150, name: { ru: 'Мерцание', en: 'Blink' } },
-  { id: 'ne-wave', kind: 'name', visual: 'wave', price: 300, name: { ru: 'Волна', en: 'Wave' } },
-  { id: 'ne-fire', kind: 'name', visual: 'fire', price: 300, name: { ru: 'Пламя', en: 'Flame' } },
-  { id: 'ne-starlight', kind: 'name', visual: 'starlight', price: 450, name: { ru: 'Звёздный свет', en: 'Starlight' } },
+  { id: 'ne-glow', kind: 'name', visual: 'glow', price: 100, name: { ru: 'Сияние', en: 'Radiance', es: 'Resplandor', pt: 'Refulgência' } },
+  { id: 'ne-rainbow', kind: 'name', visual: 'rainbow', price: 250, name: { ru: 'Радуга', en: 'Rainbow', es: 'Arcoíris', pt: 'Arco-íris' } },
+  { id: 'ne-blink', kind: 'name', visual: 'blink', price: 150, name: { ru: 'Мерцание', en: 'Blink', es: 'Parpadeo', pt: 'Piscar' } },
+  { id: 'ne-wave', kind: 'name', visual: 'wave', price: 300, name: { ru: 'Волна', en: 'Wave', es: 'Onda', pt: 'Onda' } },
+  { id: 'ne-fire', kind: 'name', visual: 'fire', price: 300, name: { ru: 'Пламя', en: 'Flame', es: 'Llama', pt: 'Chama' } },
+  { id: 'ne-starlight', kind: 'name', visual: 'starlight', price: 450, name: { ru: 'Звёздный свет', en: 'Starlight', es: 'Luz de estrellas', pt: 'Luz das estrelas' } },
   /* --- Волна 4: сезонные эффекты поля --- */
-  { id: 'fx-leaffall', kind: 'tile', visual: '🍂', price: 380, name: { ru: 'Листопад', en: 'Leaf Fall' }, season: 'autumn' },
-  { id: 'fx-snowflakes', kind: 'tile', visual: '❄️', price: 380, name: { ru: 'Снежинки', en: 'Snowflakes' }, season: 'winter' },
-  { id: 'fx-petalrain', kind: 'tile', visual: '🌷', price: 380, name: { ru: 'Лепестковый дождь', en: 'Petal Rain' }, season: 'spring' },
-  { id: 'fx-sunshine', kind: 'tile', visual: '☀️', price: 380, name: { ru: 'Солнечные зайчики', en: 'Sunshine' }, season: 'summer' },
+  { id: 'fx-leaffall', kind: 'tile', visual: '🍂', price: 380, name: { ru: 'Листопад', en: 'Leaf Fall', es: 'Caída de hojas', pt: 'Queda de folhas' }, season: 'autumn' },
+  { id: 'fx-snowflakes', kind: 'tile', visual: '❄️', price: 380, name: { ru: 'Снежинки', en: 'Snowflakes', es: 'Copos de nieve', pt: 'Flocos de neve' }, season: 'winter' },
+  { id: 'fx-petalrain', kind: 'tile', visual: '🌷', price: 380, name: { ru: 'Лепестковый дождь', en: 'Petal Rain', es: 'Lluvia de pétalos', pt: 'Chuva de pétalas' }, season: 'spring' },
+  { id: 'fx-sunshine', kind: 'tile', visual: '☀️', price: 380, name: { ru: 'Солнечные зайчики', en: 'Sunshine', es: 'Rayos de sol', pt: 'Raios de sol' }, season: 'summer' },
 ];
 
 export const TILE_EFFECTS = EFFECTS.filter((e) => e.kind === 'tile');

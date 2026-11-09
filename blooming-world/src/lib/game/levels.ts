@@ -1,15 +1,34 @@
 /* ============================================================
- * Bloom Match — deterministic level generator (100 levels / 10
- * chapters). Fully formula-driven: raising TOTAL_LEVELS scales
- * the whole game (roadmap: 10 000 levels).
+ * Bloom Match — deterministic level generator (10 000 levels /
+ * 1 000 chapters). Fully formula-driven: raising TOTAL_LEVELS
+ * scales the whole game.
+ *
+ * Волна 7 «Масштаб»: главы 0–9 (первые 100 уровней) считаются
+ * ИМЕННО по исходной кривой Волны 2 — существующий баланс не
+ * меняется. Дальше цели выходят на плато с мягким ростом
+ * (goalDepthOf), чтобы дальние главы оставались проходимыми —
+ * калибровка проверяется симуляцией в scripts/audit-scale.ts.
+ * Сейв аддитивен (§5.4): stars — Record<number, number>, старые
+ * сейвы живут в новом масштабе без миграции.
  * ============================================================ */
 
 import type { Goal, LevelConfig } from './types';
 import { mulberry32 } from './engine';
 
-export const TOTAL_LEVELS = 100;
+export const TOTAL_LEVELS = 10_000;
 export const CHAPTER_SIZE = 10;
 export const TOTAL_CHAPTERS = TOTAL_LEVELS / CHAPTER_SIZE;
+
+/**
+ * Волна 7: глубина целей (для targetScore/colorCount).
+ * Главы 0–9 → точные исходные значения (d = chapter); далее плато
+ * d = 9 — дальние главы по сложности равны финальной эре базовой
+ * игры (уровень 100), без инфляции на 999 главах. Калибровка:
+ * scripts/audit-scale.ts (win-rate дальних ≈ базе −10 п.п.).
+ */
+export function goalDepthOf(chapter: number): number {
+  return Math.min(9, chapter);
+}
 
 export function chapterOfLevel(level: number): number {
   return Math.min(TOTAL_CHAPTERS - 1, Math.floor((level - 1) / CHAPTER_SIZE));
@@ -68,9 +87,10 @@ export function getLevelConfig(level: number): LevelConfig {
     stones = generateStones(rng, w, h, Math.min(10, chapter - 2), 1, 2);
   }
 
-  // drop items ("blossom buds") from chapter 4, every ~8th level
+  // drop items ("blossom buds") from chapter 4, every ~8th level;
+  // Волна 7: кап 8 бутонов (board 8×8 не вместит больше)
   const isItemLevel = !isBoss && chapter >= 3 && lv % 8 === 5;
-  const items = isItemLevel ? 2 + Math.floor(chapter / 2) : 0;
+  const items = isItemLevel ? Math.min(8, 2 + Math.floor(chapter / 2)) : 0;
   if (isItemLevel) {
     // keep the bottom clear so items can be collected
     stones = stones.filter((s) => Math.floor(s.idx / w) < h - 1);
@@ -95,14 +115,16 @@ export function getLevelConfig(level: number): LevelConfig {
   // goals
   const goals: Goal[] = [];
   // calibrated against greedy-bot simulation: score/move falls with
-  // board complexity, so per-move target grows slowly (42 + ch*3)
+  // board complexity, so per-move target grows slowly (42 + d*3);
+  // d = goalDepthOf(chapter) — плато для дальних глав (Волна 7)
+  const depth = goalDepthOf(chapter);
   const targetScore = Math.round(
-    moves * (isBoss ? 30 + chapter * 2 : 42 + chapter * 3),
+    moves * (isBoss ? 30 + depth * 2 : 42 + depth * 3),
   );
   const target2 = Math.round(targetScore * 1.6);
   const target3 = Math.round(targetScore * 2.4);
 
-  const colorCount = Math.max(8, Math.round(moves * (0.5 + chapter * 0.03)));
+  const colorCount = Math.max(8, Math.round(moves * (0.5 + depth * 0.03)));
 
   if (isBoss) {
     goals.push({ type: 'score', count: targetScore });

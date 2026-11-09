@@ -12,6 +12,8 @@
  * gem additionally carries its own silhouette (see shapes.ts).
  * ============================================================ */
 
+import type { Localized } from '../i18n';
+
 export interface EraTileStyle {
   rim: string;           // outline color drawn around every tile silhouette
   rimWidth: number;      // rim thickness, fraction of tile (0..0.08)
@@ -48,9 +50,9 @@ export interface EraBackground {
 }
 
 export interface ChapterTheme {
-  id: number;            // 0..9
-  name: { ru: string; en: string };
-  tagline: { ru: string; en: string };
+  id: number;            // 0..9 (дальше главы циклят эры — eraOfChapter)
+  name: Localized;
+  tagline: Localized;
   palette: string[];     // 6 tile base colors (index by gem color)
   paletteDark: string[]; // shading partner for gradients
   bg: EraBackground;
@@ -135,8 +137,8 @@ const PAL = [
 export const CHAPTERS: ChapterTheme[] = [
   {
     id: 0,
-    name: { ru: 'Пустошь', en: 'The Barrens' },
-    tagline: { ru: 'Всё начинается с простых камней', en: 'It all starts with simple stones' },
+    name: { ru: 'Пустошь', en: 'The Barrens', es: 'El páramo', pt: 'O ermo' },
+    tagline: { ru: 'Всё начинается с простых камней', en: 'It all starts with simple stones', es: 'Todo empieza con piedras simples', pt: 'Tudo começa com pedras simples' },
     palette: PAL[0].p,
     paletteDark: PAL[0].d,
     uiAccent: '#8a7a68',
@@ -156,8 +158,8 @@ export const CHAPTERS: ChapterTheme[] = [
   },
   {
     id: 1,
-    name: { ru: 'Первые ростки', en: 'First Sprouts' },
-    tagline: { ru: 'Пиксельная жизнь пробивается сквозь камень', en: 'Pixel life breaks through the stone' },
+    name: { ru: 'Первые ростки', en: 'First Sprouts', es: 'Primeros brotes', pt: 'Primeiros brotos' },
+    tagline: { ru: 'Пиксельная жизнь пробивается сквозь камень', en: 'Pixel life breaks through the stone', es: 'La vida pixelada brota entre las piedras', pt: 'A vida pixelada brota entre as pedras' },
     palette: PAL[1].p,
     paletteDark: PAL[1].d,
     uiAccent: '#7ac96a',
@@ -177,8 +179,8 @@ export const CHAPTERS: ChapterTheme[] = [
   },
   {
     id: 2,
-    name: { ru: 'Зелёный берег', en: 'Green Shore' },
-    tagline: { ru: '16 цветов вместо четырёх', en: 'Sixteen colors instead of four' },
+    name: { ru: 'Зелёный берег', en: 'Green Shore', es: 'La orilla verde', pt: 'A margem verde' },
+    tagline: { ru: '16 цветов вместо четырёх', en: 'Sixteen colors instead of four', es: 'Dieciséis colores en lugar de cuatro', pt: 'Dezesseis cores em vez de quatro' },
     palette: PAL[2].p,
     paletteDark: PAL[2].d,
     uiAccent: '#3d9be0',
@@ -198,8 +200,8 @@ export const CHAPTERS: ChapterTheme[] = [
   },
   {
     id: 3,
-    name: { ru: 'Роща', en: 'The Grove' },
-    tagline: { ru: 'Глянец и глубина', en: 'Gloss and depth' },
+    name: { ru: 'Роща', en: 'The Grove', es: 'El bosquecillo', pt: 'O bosque' },
+    tagline: { ru: 'Глянец и глубина', en: 'Gloss and depth', es: 'Brillo y profundidad', pt: 'Brilho e profundidade' },
     palette: PAL[3].p,
     paletteDark: PAL[3].d,
     uiAccent: '#ef8f2a',
@@ -219,8 +221,8 @@ export const CHAPTERS: ChapterTheme[] = [
   },
   {
     id: 4,
-    name: { ru: 'Луг цветов', en: 'Flower Meadow' },
-    tagline: { ru: 'Флэт, чистота и свет', en: 'Flat, clean and light' },
+    name: { ru: 'Луг цветов', en: 'Flower Meadow', es: 'La pradera florida', pt: 'A campina florida' },
+    tagline: { ru: 'Флэт, чистота и свет', en: 'Flat, clean and light', es: 'Plano, limpio y luminoso', pt: 'Plano, limpo e claro' },
     palette: PAL[4].p,
     paletteDark: PAL[4].d,
     uiAccent: '#2ea56d',
@@ -240,8 +242,8 @@ export const CHAPTERS: ChapterTheme[] = [
   },
   {
     id: 5,
-    name: { ru: 'Светлый лес', en: 'Bright Forest' },
-    tagline: { ru: 'Мягкие граденты оживают', en: 'Soft gradients come alive' },
+    name: { ru: 'Светлый лес', en: 'Bright Forest', es: 'El bosque luminoso', pt: 'A floresta clara' },
+    tagline: { ru: 'Мягкие граденты оживают', en: 'Soft gradients come alive', es: 'Los degradados suaves cobran vida', pt: 'Os degradados suaves ganham vida' },
     palette: PAL[5].p,
     paletteDark: PAL[5].d,
     uiAccent: '#3d9be0',
@@ -261,8 +263,8 @@ export const CHAPTERS: ChapterTheme[] = [
   },
   {
     id: 6,
-    name: { ru: 'Волшебный сад', en: 'Enchanted Garden' },
-    tagline: { ru: 'Неон зажигает сад', en: 'Neon lights up the garden' },
+    name: { ru: 'Волшебный сад', en: 'Enchanted Garden', es: 'El jardín encantado', pt: 'O jardim encantado' },
+    tagline: { ru: 'Неон зажигает сад', en: 'Neon lights up the garden', es: 'El neón enciende el jardín', pt: 'O neon acende o jardim' },
     palette: PAL[6].p,
     paletteDark: PAL[6].d,
     uiAccent: '#22e0ff',
@@ -282,8 +284,8 @@ export const CHAPTERS: ChapterTheme[] = [
   },
   {
     id: 7,
-    name: { ru: 'Сумеречные поляны', en: 'Twilight Glades' },
-    tagline: { ru: 'Сад становится стеклянным', en: 'The garden turns to glass' },
+    name: { ru: 'Сумеречные поляны', en: 'Twilight Glades', es: 'Los claros del crepúsculo', pt: 'Clareiras do crepúsculo' },
+    tagline: { ru: 'Сад становится стеклянным', en: 'The garden turns to glass', es: 'El jardín se vuelve de cristal', pt: 'O jardim vira vidro' },
     palette: PAL[7].p,
     paletteDark: PAL[7].d,
     uiAccent: '#3d9be0',
@@ -303,8 +305,8 @@ export const CHAPTERS: ChapterTheme[] = [
   },
   {
     id: 8,
-    name: { ru: 'Радужная долина', en: 'Rainbow Valley' },
-    tagline: { ru: 'Мир наполняется жизнью', en: 'The world fills with life' },
+    name: { ru: 'Радужная долина', en: 'Rainbow Valley', es: 'El valle arcoíris', pt: 'O vale arco-íris' },
+    tagline: { ru: 'Мир наполняется жизнью', en: 'The world fills with life', es: 'El mundo se llena de vida', pt: 'O mundo se enche de vida' },
     palette: PAL[8].p,
     paletteDark: PAL[8].d,
     uiAccent: '#ef8f2a',
@@ -324,8 +326,8 @@ export const CHAPTERS: ChapterTheme[] = [
   },
   {
     id: 9,
-    name: { ru: 'Золотой сад', en: 'Golden Garden' },
-    tagline: { ru: 'Вершина расцвета', en: 'The peak of bloom' },
+    name: { ru: 'Золотой сад', en: 'Golden Garden', es: 'El jardín dorado', pt: 'O jardim dourado' },
+    tagline: { ru: 'Вершина расцвета', en: 'The peak of bloom', es: 'La cima de la floración', pt: 'O auge da floração' },
     palette: PAL[9].p,
     paletteDark: PAL[9].d,
     uiAccent: '#f6e04b',
@@ -345,6 +347,52 @@ export const CHAPTERS: ChapterTheme[] = [
   },
 ];
 
+/* ============================================================
+ * Волна 7 «Масштаб»: главы дальше 10-й циклически переиспользуют
+ * 10 эр (эра = chapter % 10), к циклу добавляется римский номер
+ * («Роща · II»). Палитры и силуэты a11y не меняются — порядок
+ * оттенков зафиксирован (§5.1), эры эволюционируют стилем, а не
+ * оттенками, поэтому цикл безопасен для дальтоников (§5.2).
+ * ============================================================ */
+
+/** Эра (0..9) для любого номера главы (0-based). */
+export function eraOfChapter(chapter: number): number {
+  const n = CHAPTERS.length;
+  return ((Math.floor(chapter) % n) + n) % n;
+}
+
+/** Круг эр (0-based): глава 47 → круг 4, эра 7. */
+export function cycleOfChapter(chapter: number): number {
+  return Math.floor(Math.floor(chapter) / CHAPTERS.length);
+}
+
+/** Тема эры для любой главы (цикл эр — Волна 7). */
 export function chapterTheme(chapter: number): ChapterTheme {
-  return CHAPTERS[Math.max(0, Math.min(CHAPTERS.length - 1, chapter))];
+  return CHAPTERS[eraOfChapter(chapter)];
+}
+
+/* Римские цифры для кругов эр (достаточно до C — 100 кругов = 1000 глав). */
+const ROMAN: [number, string][] = [
+  [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'], [10, 'X'],
+  [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I'],
+];
+
+export function romanNumeral(n: number): string {
+  let v = Math.max(1, Math.floor(n));
+  let out = '';
+  for (const [num, sym] of ROMAN) {
+    while (v >= num) {
+      out += sym;
+      v -= num;
+    }
+  }
+  return out;
+}
+
+/** Отображаемое имя главы: «Роща», дальние — «Роща II», «Роща XV»… */
+export function chapterDisplayName(chapter: number, lang: 'ru' | 'en' | 'es' | 'pt'): string {
+  const era = CHAPTERS[eraOfChapter(chapter)];
+  const cycle = cycleOfChapter(chapter);
+  const base = era.name[lang];
+  return cycle > 0 ? `${base} ${romanNumeral(cycle + 1)}` : base;
 }

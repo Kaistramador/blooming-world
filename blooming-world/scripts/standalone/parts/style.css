@@ -386,3 +386,32 @@ input { font-family: inherit; }
 .team-chest.done { background: rgba(16,185,129,.9); }
 .team-chest.done .rw { color: #fff; }
 @keyframes team-glow { 0%,100% { box-shadow: 0 0 0 0 rgba(251,191,36,.6); } 50% { box-shadow: 0 0 0 6px rgba(251,191,36,0); } }
+
+/* ---------- Волна 7: пагинация карты + A/B коуч + 4 языка ---------- */
+.map-pager {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  border-radius: 16px; background: rgba(0,0,0,.3);
+  padding: 6px 8px; margin-bottom: 12px;
+}
+.map-pager-label { flex: 1; text-align: center; font-size: 11px; font-weight: 700; color: rgba(255,255,255,.85); }
+.map-pager-btn {
+  min-width: 36px; min-height: 36px; border-radius: 12px;
+  background: rgba(255,255,255,.15); color: #fff; border: 0;
+  font-size: 18px; font-weight: 900; padding: 0 10px; cursor: pointer;
+}
+.map-pager-btn:disabled { opacity: .3; cursor: default; }
+.map-pager-current {
+  min-height: 36px; border-radius: 12px; padding: 0 10px;
+  background: rgba(251,191,36,.9); color: #451a03; border: 0;
+  font-size: 11px; font-weight: 900; cursor: pointer;
+}
+.hint-line.bm-coach {
+  animation: bm-coach-pulse 1.15s ease-in-out infinite;
+  font-size: 13px; font-weight: 900; color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,.7);
+}
+@keyframes bm-coach-pulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(255,216,61,0)); }
+  50% { transform: scale(1.07); filter: drop-shadow(0 0 10px rgba(255,216,61,.75)); }
+}
+.seg.lang-row { flex-wrap: wrap; }

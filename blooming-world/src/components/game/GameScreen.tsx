@@ -32,6 +32,7 @@ import type { PiggyInfo, EventInfo } from '@/lib/store';
 import { PIGGY_WINS_TARGET } from '@/lib/game/garden';
 import { submitOnline } from '@/lib/game/online';
 import { logEvent, logSessionStart } from '@/lib/game/analytics';
+import { abVariant, abCoachActive, AB_COACH_MAX_LEVEL } from '@/lib/game/ab';
 import {
   platformGameplayStart,
   platformGameplayStop,
@@ -163,6 +164,9 @@ export function GameScreen({ level, daily = false, onExit, onLevelChange }: Game
   const [lostStreak, setLostStreak] = useState(0);
   const [plus5Used, setPlus5Used] = useState(0);
   const [attempt, setAttempt] = useState(0);
+  /* Волна 7 (A/B): коуч-туториал вариантов B — до первого совпадения */
+  const [coached, setCoached] = useState(false);
+  const coachShownRef = useRef(false);
 
   const rngRef = useRef<() => number>(() => 0);
   const playIdRef = useRef(0);
@@ -203,6 +207,16 @@ export function GameScreen({ level, daily = false, onExit, onLevelChange }: Game
     /* Волна 5: GameplayAPI.start — площадка знает, что игрок в геймплее */
     platformGameplayStart();
   }, [level, attempt]);
+
+  /* Волна 7 (A/B): коуч виден в вариантах B на уровнях 1..3 до первого хода.
+   * Вариант детерминирован по playerId — стабилен между сессиями. */
+  const abV = abVariant();
+  const coachActive = abCoachActive(abV, level) && !coached;
+  useEffect(() => {
+    if (!coachActive || coachShownRef.current) return;
+    coachShownRef.current = true;
+    logEvent('tutorial_shown', { level, maxLevel: AB_COACH_MAX_LEVEL });
+  }, [coachActive, level]);
 
   /* Волна 5: выход с экрана уровня — GameplayAPI.stop */
   useEffect(() => {
@@ -412,10 +426,15 @@ export function GameScreen({ level, daily = false, onExit, onLevelChange }: Game
       if (opts?.consume !== false) {
         setMoves((m) => m - 1);
       }
+      /* Волна 7 (A/B): первый реальный ход игрока закрывает коуч */
+      if (coachActive && !coached) {
+        setCoached(true);
+        logEvent('tutorial_done', { level });
+      }
       await playFrames(res);
       afterMove(res, opts?.consume === false ? 0 : 1);
     },
-    [playFrames, afterMove],
+    [playFrames, afterMove, coachActive, coached, level],
   );
 
   const handleCellClick = useCallback(
@@ -851,14 +870,20 @@ export function GameScreen({ level, daily = false, onExit, onLevelChange }: Game
           </div>
         </div>
 
-        {/* hint */}
-        <div className="mt-2 text-center text-[11px] text-white/75">
-          {activeBooster
-            ? `${t('game.selectTarget')} (${BOOSTER_MAP[activeBooster].icon})`
-            : isBoss
-              ? t('game.tapHint')
-              : t('game.swapHint')}
-        </div>
+        {/* hint — Волна 7 (A/B): пульсирующий коуч до первого хода в B, иначе статичная строка */}
+        {coachActive ? (
+          <div className="bm-coach mt-2 text-center text-[13px] font-black text-white bm-text-outline">
+            👉 {isBoss ? t('tut.tap') : t('tut.swap')}
+          </div>
+        ) : (
+          <div className="mt-2 text-center text-[11px] text-white/75">
+            {activeBooster
+              ? `${t('game.selectTarget')} (${BOOSTER_MAP[activeBooster].icon})`
+              : isBoss
+                ? t('game.tapHint')
+                : t('game.swapHint')}
+          </div>
+        )}
 
         {/* boosters */}
         <div className="mt-1.5 grid grid-cols-6 gap-1.5">

@@ -596,7 +596,8 @@ function resolveCascade(
     }
     acc.frames.push({
       board: display,
-      clearingIds: [...st.clearSet].map((i) => b.cells[i]!.tile!.id),
+      // Волна 7: defensive — clearSet здесь всегда с тайлами, но фильтр страхует
+      clearingIds: [...st.clearSet].filter((i) => b.cells[i]?.tile).map((i) => b.cells[i]!.tile!.id),
       bornIds: born.map((x) => x.idx),
       spawnIds: [],
       collectedIds: st.collectedIds,
@@ -612,7 +613,8 @@ function resolveCascade(
       t.special = bornSpec.kind;
     }
     for (const i of st.clearSet) {
-      const cell = b.cells[i]!;
+      const cell = b.cells[i];
+      if (!cell) continue; // defensive: пустота
       if (cell.tile?.kind === 'item') {
         acc.itemsCollected++;
       } else if (cell.tile && cell.tile.kind === 'gem' && cell.tile.color >= 0) {
@@ -710,7 +712,9 @@ function applyBlastMove(
   const display = cloneBoard(b);
   acc.frames.push({
     board: display,
-    clearingIds: [...st.clearSet].map((i) => b.cells[i]!.tile!.id),
+    // Волна 7 (аудит масштаба): clearSet может содержать клетки без тайла
+    // (пустоты/камни из зоны взрыва комбо) — фильтруем, иначе tile!.id падает
+    clearingIds: [...st.clearSet].filter((i) => b.cells[i]?.tile).map((i) => b.cells[i]!.tile!.id),
     bornIds: [],
     spawnIds: [],
     collectedIds: st.collectedIds,
@@ -719,7 +723,8 @@ function applyBlastMove(
     cascade: 1,
   });
   for (const i of st.clearSet) {
-    const cell = b.cells[i]!;
+    const cell = b.cells[i];
+    if (!cell) continue; // пустота (null-клетка) — чистить нечего
     if (cell.tile?.kind === 'item') acc.itemsCollected++;
     else if (cell.tile && cell.tile.kind === 'gem' && cell.tile.color >= 0)
       acc.colorsCollected[cell.tile.color]++;
@@ -841,6 +846,15 @@ export function trySwap(
       }
     } else if (other.special !== 'none') {
       for (const j of blastCellsFor(b, rIdx === otherIdx ? rIdx : otherIdx, rng)) {
+        // Волна 7 (аудит масштаба): в зону взрыва могут попасть пустоты и камни —
+        // пустоты пропускаем, камни идут в stonesHit (как в runDetonations)
+        const cell = b.cells[j];
+        if (!cell) continue;
+        if (cell.blocker) {
+          st.stonesHit.add(j);
+          continue;
+        }
+        if (!cell.tile) continue;
         st.clearSet.add(j);
       }
       for (let i = 0; i < b.cells.length; i++) {
@@ -862,7 +876,7 @@ export function trySwap(
     runDetonations(b, st, queue, new Set(), rng);
     acc.frames.push({
       board: cloneBoard(b),
-      clearingIds: [...st.clearSet].map((i) => b.cells[i]!.tile!.id),
+      clearingIds: [...st.clearSet].filter((i) => b.cells[i]?.tile).map((i) => b.cells[i]!.tile!.id),
       bornIds: [],
       spawnIds: [],
       collectedIds: st.collectedIds,
@@ -871,7 +885,8 @@ export function trySwap(
       cascade: 1,
     });
     for (const i of st.clearSet) {
-      const cell = b.cells[i]!;
+      const cell = b.cells[i];
+      if (!cell) continue; // пустота
       if (cell.tile?.kind === 'item') acc.itemsCollected++;
       else if (cell.tile && cell.tile.kind === 'gem' && cell.tile.color >= 0)
         acc.colorsCollected[cell.tile.color]++;

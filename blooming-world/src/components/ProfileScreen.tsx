@@ -172,10 +172,10 @@ export function ProfileScreen() {
         {t('settings.title')}
       </div>
       <div className="flex flex-col gap-2 rounded-3xl bg-white/90 p-4 shadow">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-bold text-slate-700">🌐 {t('settings.language')}</span>
-          <div className="flex gap-1">
-            {(['ru', 'en'] as Lang[]).map((l) => (
+        <div className="flex items-center justify-between gap-2">
+          <span className="shrink-0 text-sm font-bold text-slate-700">🌐 {t('settings.language')}</span>
+          <div className="flex flex-wrap justify-end gap-1">
+            {(['ru', 'en', 'es', 'pt'] as Lang[]).map((l) => (
               <button
                 key={l}
                 type="button"
@@ -187,7 +187,7 @@ export function ProfileScreen() {
                   player.lang === l ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-600'
                 }`}
               >
-                {l === 'ru' ? 'Русский' : 'English'}
+                {l === 'ru' ? 'Русский' : l === 'en' ? 'English' : l === 'es' ? 'Español' : 'Português'}
               </button>
             ))}
           </div>

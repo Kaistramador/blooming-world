@@ -267,6 +267,9 @@ function spawnWinConfetti() {
 /* ============================================================
  * MAP SCREEN
  * ============================================================ */
+/* Волна 7: глав на страницу карты (всего 1000) */
+const MAP_PAGE_SIZE = 8;
+
 function renderMap(box) {
   const wrap = el('div', 'map-wrap');
   const t = (k, v) => store.t(k, v);
@@ -342,22 +345,63 @@ function renderMap(box) {
   }
   wrap.appendChild(buildTeamCard(t));
 
-  for (const ch of CHAPTERS) {
-    const unlocked = ch.id <= currentChapter;
-    const theme = chapterTheme(ch.id);
+  /* Волна 7: пагинация карты — окно из 8 глав из 1000 */
+  if (App.mapPage === undefined || App.mapPage === null) {
+    App.mapPage = Math.floor(Math.max(0, Math.min(TOTAL_CHAPTERS - 1, maxUnlocked - 1)) / (CHAPTER_SIZE * MAP_PAGE_SIZE));
+  }
+  const currentPage = Math.floor(currentChapter / MAP_PAGE_SIZE);
+  const pageStart = App.mapPage * MAP_PAGE_SIZE;
+  const pageChapters = [];
+  for (let c = pageStart; c < Math.min(TOTAL_CHAPTERS, pageStart + MAP_PAGE_SIZE); c++) pageChapters.push(c);
+
+  const pager = el('div', 'map-pager');
+  const prevBtn = el('button', 'map-pager-btn');
+  prevBtn.type = 'button';
+  prevBtn.textContent = '‹';
+  prevBtn.setAttribute('aria-label', 'prev');
+  prevBtn.disabled = App.mapPage === 0;
+  prevBtn.onclick = () => { sfx.click(); App.mapPage = Math.max(0, App.mapPage - 1); renderApp(); };
+  pager.appendChild(prevBtn);
+  const pagerLabel = el('div', 'map-pager-label');
+  pagerLabel.textContent = t('map.pages', {
+    a: pageStart * CHAPTER_SIZE + 1,
+    b: Math.min(TOTAL_LEVELS, (pageStart + pageChapters.length) * CHAPTER_SIZE),
+    c: TOTAL_LEVELS,
+  });
+  pager.appendChild(pagerLabel);
+  if (App.mapPage !== currentPage) {
+    const curBtn = el('button', 'map-pager-current');
+    curBtn.type = 'button';
+    curBtn.textContent = '📍 ' + t('map.toCurrent');
+    curBtn.onclick = () => { sfx.click(); App.mapPage = currentPage; renderApp(); };
+    pager.appendChild(curBtn);
+  }
+  const nextBtn = el('button', 'map-pager-btn');
+  nextBtn.type = 'button';
+  nextBtn.textContent = '›';
+  nextBtn.setAttribute('aria-label', 'next');
+  nextBtn.disabled = pageStart + MAP_PAGE_SIZE >= TOTAL_CHAPTERS;
+  nextBtn.onclick = () => { sfx.click(); App.mapPage = Math.min(Math.floor((TOTAL_CHAPTERS - 1) / MAP_PAGE_SIZE), App.mapPage + 1); renderApp(); };
+  pager.appendChild(nextBtn);
+  wrap.appendChild(pager);
+
+  for (const chId of pageChapters) {
+    const unlocked = chId <= currentChapter;
+    const theme = chapterTheme(chId);
+    const era = CHAPTERS[theme.id];
     const card = el('div', 'chapter-card' + (unlocked ? '' : ' locked'));
-    card.appendChild(buildBackground(theme.bg, ch.id + 11, false, ch.id));
+    card.appendChild(buildBackground(theme.bg, chId + 11, false, chId));
     const inner = el('div', 'chapter-inner');
 
     const topRow = el('div');
     topRow.style.cssText = 'display:flex;justify-content:space-between;align-items:flex-start;';
     const titleBox = el('div');
     titleBox.innerHTML =
-      '<div class="chapter-kicker bm-text-outline">' + t('map.chapter') + ' ' + (ch.id + 1) + '</div>' +
-      '<div class="chapter-name bm-text-outline">' + ch.name[App.player.lang] + '</div>' +
-      '<div class="chapter-tag bm-text-outline">' + ch.tagline[App.player.lang] + '</div>';
+      '<div class="chapter-kicker bm-text-outline">' + t('map.chapter') + ' ' + (chId + 1) + '</div>' +
+      '<div class="chapter-name bm-text-outline">' + chapterDisplayName(chId, App.player.lang) + '</div>' +
+      '<div class="chapter-tag bm-text-outline">' + era.tagline[App.player.lang] + '</div>';
     topRow.appendChild(titleBox);
-    const levels = Array.from({ length: CHAPTER_SIZE }, (_, i) => ch.id * CHAPTER_SIZE + i + 1);
+    const levels = Array.from({ length: CHAPTER_SIZE }, (_, i) => chId * CHAPTER_SIZE + i + 1);
     const cleared = levels.filter((lv) => (App.player.stars[lv] || 0) > 0).length;
     if (cleared === CHAPTER_SIZE) {
       const bloom = el('span', 'bloomed-pill');
@@ -370,7 +414,7 @@ function renderMap(box) {
     for (const lv of levels) {
       const lvStars = App.player.stars[lv] || 0;
       const lvUnlocked = lv <= maxUnlocked;
-      const isCurrent = lv === maxUnlocked && ch.id === currentChapter;
+      const isCurrent = lv === maxUnlocked && chId === currentChapter;
       const btn = el('button', 'level-btn ' + (lvUnlocked ? (isCurrent ? 'current' : 'open') : 'locked'));
       btn.type = 'button';
       btn.setAttribute('aria-label', t('map.level') + ' ' + lv);
@@ -384,10 +428,11 @@ function renderMap(box) {
       grid.appendChild(btn);
     }
     inner.appendChild(grid);
-    if (!unlocked) {
+    /* Волна 7: подсказка только на первой закрытой главе, n = уровней до её открытия */
+    if (!unlocked && chId === currentChapter + 1) {
       const note = el('div', 'bm-text-outline');
       note.style.cssText = 'margin-top:8px;text-align:center;font-size:11px;font-weight:700;opacity:.85;';
-      note.textContent = t('map.nextChapter', { n: maxUnlocked - ch.id * CHAPTER_SIZE });
+      note.textContent = t('map.nextChapter', { n: chId * CHAPTER_SIZE + 1 - maxUnlocked });
       inner.appendChild(note);
     }
     card.appendChild(inner);
@@ -396,7 +441,7 @@ function renderMap(box) {
 
   const soon = el('div');
   soon.style.cssText = 'text-align:center;font-size:11px;opacity:.75;padding:6px 0 2px;';
-  soon.textContent = t('map.comingSoon');
+  soon.textContent = '🌸 ' + t('map.scale');
   wrap.appendChild(soon);
 
   box.appendChild(wrap);
@@ -657,8 +702,13 @@ const Game = {
     this.shakeIdx = null;
     this.clearing = new Set(); this.born = new Set(); this.spawned = new Set(); this.stonesHit = new Set();
     this.lostStreak = 0;
+    /* Волна 7 (A/B): коуч вариантов B на уровнях 1–3 до первого хода */
+    this.coached = false;
     logSessionStart();
     logEvent('level_start', { level: lv, attempt: this.attempt });
+    if (abCoachActive(abVariant(), lv)) {
+      logEvent('tutorial_shown', { level: lv, maxLevel: AB_COACH_MAX_LEVEL });
+    }
     /* Волна 5: GameplayAPI.start — площадка знает, что игрок в геймплее */
     platformGameplayStart();
     this.buildDom(box);
@@ -764,9 +814,16 @@ const Game = {
   updateHint() {
     const hint = document.getElementById('hint-line');
     if (!hint) return;
-    hint.textContent = this.activeBooster
-      ? store.t('game.selectTarget') + ' (' + BOOSTER_MAP[this.activeBooster].icon + ')'
-      : this.isBoss() ? store.t('game.tapHint') : store.t('game.swapHint');
+    /* Волна 7 (A/B): пульсирующий коуч до первого хода (варианты B, ур. 1–3) */
+    if (!this.coached && abCoachActive(abVariant(), this.cfg.level)) {
+      hint.classList.add('bm-coach');
+      hint.textContent = '👉 ' + (this.isBoss() ? store.t('tut.tap') : store.t('tut.swap'));
+    } else {
+      hint.classList.remove('bm-coach');
+      hint.textContent = this.activeBooster
+        ? store.t('game.selectTarget') + ' (' + BOOSTER_MAP[this.activeBooster].icon + ')'
+        : this.isBoss() ? store.t('game.tapHint') : store.t('game.swapHint');
+    }
     const cancelRow = document.getElementById('cancel-row');
     cancelRow.innerHTML = '';
     if (this.activeBooster) {
@@ -1060,6 +1117,12 @@ const Game = {
   async doMove(res, opts) {
     opts = opts || {};
     if (opts.snapshot) this.snapshot = opts.snapshot;
+    /* Волна 7 (A/B): первый реальный ход закрывает коуч */
+    if (!this.coached && abCoachActive(abVariant(), this.cfg.level)) {
+      this.coached = true;
+      logEvent('tutorial_done', { level: this.cfg.level });
+      this.updateHint();
+    }
     if (opts.consume !== false) {
       this.moves -= 1;
       this.updateHud();
@@ -1871,10 +1934,12 @@ function renderProfile(box) {
   settings.innerHTML = '<div style="font-size:14px;font-weight:900;margin-bottom:6px;">⚙️ ' + t('settings.title') + '</div>';
   const rowLang = el('div', 'settings-row');
   rowLang.innerHTML = '<span>' + t('settings.language') + '</span>';
-  const segLang = el('div', 'seg');
-  for (const l of ['ru', 'en']) {
-    const b = el('button', App.player.lang === l ? 'on' : '', l.toUpperCase());
+  const segLang = el('div', 'seg lang-row');
+  const LANG_LABELS = { ru: 'RU', en: 'EN', es: 'ES', pt: 'PT' };
+  for (const l of ['ru', 'en', 'es', 'pt']) {
+    const b = el('button', App.player.lang === l ? 'on' : '', LANG_LABELS[l]);
     b.type = 'button';
+    b.title = l === 'ru' ? 'Русский' : l === 'en' ? 'English' : l === 'es' ? 'Español' : 'Português';
     b.onclick = () => { sfx.click(); store.setLang(l); renderApp(); };
     segLang.appendChild(b);
   }
@@ -1932,6 +1997,17 @@ App.player = loadState();
 setSoundEnabled(App.player.sound);
 App.bots = generateBots();
 logSessionStart();
+/* Волна 7 (A/B): вариант сессии + теги ab/fs; B — первая сессия открывается уровнем 1 */
+const abStart = abSessionStart();
+if (abShouldStartInGame(abStart.variant, abStart.first)) {
+  App.level = 1;
+  App.daily = false;
+}
+logEvent('fs_screen', {
+  screen: abShouldStartInGame(abStart.variant, abStart.first) ? 'game' : 'map',
+  variant: abStart.variant,
+  first: abStart.first ? 1 : 0,
+});
 /* Волна 5: площадка (Yandex SDK — тихий фолбэк в веб) + PWA-слушатели */
 initPwa();
 void initPlatform();

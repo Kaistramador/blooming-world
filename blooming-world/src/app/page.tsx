@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { GameScreen } from '@/components/game/GameScreen';
 import { GardenScreen } from '@/components/game/GardenScreen';
 import { MapScreen } from '@/components/MapScreen';
@@ -11,7 +11,8 @@ import { BloomingBackground } from '@/components/game/BloomingBackground';
 import { chapterTheme } from '@/lib/game/themes';
 import { CHAPTER_SIZE } from '@/lib/game/levels';
 import { usePlayer } from '@/lib/store';
-import { logSessionStart } from '@/lib/game/analytics';
+import { logSessionStart, logEvent } from '@/lib/game/analytics';
+import { abSessionStart, abShouldStartInGame } from '@/lib/game/ab';
 import { initPlatform } from '@/lib/game/platform';
 import { initPwa } from '@/lib/game/pwa';
 import { sfx } from '@/lib/game/sound';
@@ -38,9 +39,24 @@ export default function Home() {
   const [playingLevel, setPlayingLevel] = useState<number | null>(null);
   /* Волна 4: признак уровня дня (×2 награда и бейджи событий) */
   const [playingDaily, setPlayingDaily] = useState(false);
+  /* Волна 7 (A/B): событие первого экрана логируется один раз за загрузку */
+  const funnelLoggedRef = useRef(false);
 
+  /* Волна 7: A/B сессии (теги ab/fs в аналитику) + воронка первого экрана */
   useEffect(() => {
-    if (hydrated) logSessionStart();
+    if (!hydrated) return;
+    const ab = abSessionStart();
+    logSessionStart();
+    if (funnelLoggedRef.current) return;
+    funnelLoggedRef.current = true;
+    const startInGame = abShouldStartInGame(ab.variant, ab.first);
+    logEvent('fs_screen', { screen: startInGame ? 'game' : 'map', variant: ab.variant, first: ab.first ? 1 : 0 });
+    /* Вариант B: первая сессия открывается сразу уровнем 1 (быстрый старт).
+     * setPlayingLevel отложен в таймер: без записи в рендере/эффекте (react-hooks) */
+    if (startInGame) {
+      const id = setTimeout(() => setPlayingLevel(1), 0);
+      return () => clearTimeout(id);
+    }
   }, [hydrated]);
 
   /* Волна 5: площадка (Yandex SDK — тихий фолбэк в веб) + PWA (SW, установка) */

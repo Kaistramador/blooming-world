@@ -22,6 +22,21 @@ const ANALYTICS_CAP = 500;
 
 let sessionLogged = false;
 
+/**
+ * Волна 7 (A/B): глобальные свойства, попадающие в КАЖДОЕ событие
+ * (ab — вариант эксперимента, fs — «первая сессия»). Задаются один
+ * раз при старте приложения (ab.ts), конкретные props перекрывают их.
+ */
+let globalProps: Record<string, string | number> = {};
+
+export function setAnalyticsGlobals(props: Record<string, string | number>): void {
+  globalProps = { ...globalProps, ...props };
+}
+
+export function analyticsGlobals(): Record<string, string | number> {
+  return { ...globalProps };
+}
+
 function safeParse(raw: string | null): AnalyticsEvent[] {
   if (!raw) return [];
   try {
@@ -55,16 +70,16 @@ function writeAll(events: AnalyticsEvent[]): void {
 export function logEvent(e: string, props?: Record<string, string | number>): void {
   if (typeof window === 'undefined') return;
   const events = readAll();
-  const ev: AnalyticsEvent = { t: new Date().toISOString(), e, ...(props ?? {}) };
+  const ev: AnalyticsEvent = { t: new Date().toISOString(), e, ...globalProps, ...(props ?? {}) };
   events.push(ev);
   writeAll(events);
 }
 
 /** Однократное событие сессии (защита от StrictMode-дублей). */
-export function logSessionStart(): void {
+export function logSessionStart(extraProps?: Record<string, string | number>): void {
   if (sessionLogged || typeof window === 'undefined') return;
   sessionLogged = true;
-  logEvent('session_start');
+  logEvent('session_start', extraProps);
 }
 
 export function getEvents(): AnalyticsEvent[] {
