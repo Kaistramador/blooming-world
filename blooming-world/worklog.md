@@ -183,3 +183,21 @@
 **Деплой:** standalone в download/ пересобран; пуш по §4 в конце сессии (root + зеркало).
 
 **Следующим сессиям:** Волны ROADMAP исчерпаны (1–7 ✅). Кандидаты: порталы Poki/CrazyGames/Telegram (Волна 5 п.3), Capacitor-упаковка (историч. E), A/B-анализ по накопленным экспортам JSON (fs_screen→level_win конверсия по ab). При правках i18n/каталогов — НЕ править data.js руками: править TS-источник → `python3 scripts/patch-standalone-i18n.py` → `python3 scripts/standalone/build.py`. Наблюдение: двойные-коллекты глав 8–9 (ур. 96/99) жёсткие у бота (16–26%) — если игрок попросит ретеншен-правку, качать colorCount-формулу, не плато.
+
+---
+
+## Сессия 9 (10.11.2026) — закрытие без новых волн
+
+**Команда игрока:** «завершаем работу». Волны ROADMAP 1–7 уже закрыты (сессии 1–8), новых задач не ставилось — сессия верификационная.
+
+**Сделано:**
+- **Конфиг GitHub восстановлен**: сброс песочницы стёр GITHUB-строки в `.env` (остался только DATABASE_URL). Вписаны `GITHUB_TOKEN` (fine-grained PAT от игрока), `GITHUB_REPO=Kaistramador/blooming-world`, `GITHUB_TARGET_FOLDER=blooming-world`.
+- **Проверка токена**: `GET /user` → 200; `GET /repos/Kaistramador/blooming-world` → private: true, permissions admin/maintain/push = true (сильнее старого токена).
+- **Сверка синхрона**: remote main HEAD = `2404be6` («Волна 7 — масштаб и рост», пуш зеркала) — локальный HEAD `23525c5` соответствует, ничего не потеряно, пушить было нечего.
+- **Pages повторно**: `POST /repos/.../pages` (source main /root) → **403 «Resource not accessible by personal access token»** — у fine-grained токена не включено разрешение Pages (отдельный переключатель в настройках токена); плюс репо приватное (free-план → Pages требует public или Pro). STATE §2/§4 обновлены: путь ручной (public + Settings → Pages → Deploy from branch → main / root).
+- **Контрольные тесты (§5.7)**: `node scripts/standalone/run-tests.js` — ALL TESTS PASSED; `bun scripts/test-engine.ts` — симуляция 10 000 уровней (1000 глав × skill 0.55): **0 ошибок** (фикс пустот Волны 7 держится); `bun run lint` — 0; `bunx tsc --noEmit` — 0; секрет-гвард: `.env` не в git, токенов в трекаемых файлах нет.
+- **STATE.md**: строка «Обновлено» → сессия 9; §2 «Следующий шаг» и §4 — точный статус Pages/токена; §7 — запись сессии 9.
+
+**Деплой:** standalone в корне репо не менялся (код не трогался) — обновлено только зеркало (STATE/worklog). Пуш `sync-github.sh` в конце сессии.
+
+**Следующим сессиям:** без изменений — волны исчерпаны, кандидаты в STATE §2 (порталы Poki/CrazyGames/Telegram, Capacitor, A/B-анализ экспортов). Для Pages: репо → public + ручное включение, либо токен с разрешением Pages: RW.
